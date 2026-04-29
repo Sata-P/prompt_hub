@@ -23,13 +23,23 @@ export async function DELETE(request: Request, { params }: RouteContext) {
             return NextResponse.json({ error: "Invalid prompt ID" }, { status: 400 });
         }
 
-        await prisma.collections_prompts.delete({
-            where: {
-                collection_id_prompt_id: {
-                    collection_id: collectionId,
-                    prompt_id: pId
-                }
-            }
+        await prisma.$transaction(async (tx) => {
+            await tx.collections_prompts.delete({
+                where: {
+                    collection_id_prompt_id: {
+                        collection_id: collectionId,
+                        prompt_id: pId,
+                    },
+                },
+            });
+
+            await tx.activity_log.create({
+                data: {
+                    user_id: Number(session.user.id),
+                    action: "REMOVE_PROMPT_FROM_COLLECTION",
+                    details: { collectionId, promptId: pId },
+                },
+            });
         });
 
         return NextResponse.json({ success: true });

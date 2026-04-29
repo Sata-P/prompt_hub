@@ -67,8 +67,28 @@ export async function DELETE(request: Request, { params }: RouteContext) {
             return NextResponse.json({ error: "Invalid collection ID" }, { status: 400 });
         }
 
-        await prisma.collections.delete({
+        // Fetch info before deletion for logging
+        const targetCollection = await prisma.collections.findUnique({
             where: { id: collectionId },
+            select: { id: true, name: true },
+        });
+
+        if (!targetCollection) {
+            return NextResponse.json({ error: "Collection not found" }, { status: 404 });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.collections.delete({
+                where: { id: collectionId },
+            });
+
+            await tx.activity_log.create({
+                data: {
+                    user_id: Number(session.user.id),
+                    action: "DELETE_COLLECTION",
+                    details: { collectionId: targetCollection.id, name: targetCollection.name },
+                },
+            });
         });
 
         return NextResponse.json({ message: "Collection deleted successfully" });
@@ -109,13 +129,29 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
         const { name, description, visibility } = validated.data;
 
-        const updatedCollection = await prisma.collections.update({
-            where: { id: collectionId },
-            data: {
-                name,
-                description,
-                visibility,
-            },
+        const updatedCollection = await prisma.$transaction(async (tx) => {
+            const updated = await tx.collections.update({
+                where: { id: collectionId },
+                data: {
+                    name,
+                    description,
+                    visibility,
+                },
+            });
+
+            await tx.activity_log.create({
+                data: {
+                    user_id: Number(session.user.id),
+                    action: "UPDATE_COLLECTION",
+                    details: {
+                        collectionId: updated.id,
+                        name: updated.name,
+                        visibility: updated.visibility,
+                    },
+                },
+            });
+
+            return updated;
         });
 
         return NextResponse.json(updatedCollection);

@@ -62,15 +62,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const newCollection = await prisma.$transaction
+    const collection = await prisma.$transaction(async (tx) => {
+      const newCollection = await tx.collections.create({
+        data: {
+          name: String(data.name),
+          description: String(data.description),
+        },
+      });
 
-    const collection = await prisma.collections.create({
-      data: {
-        name: String(data.name),
-        description: String(data.description),
-        // color: data.color || "#000000",
-        // created_by: session.user.id, ต้องบอกคนสร้างด้วยหรอ??
-      },
+      await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "CREATE_COLLECTION",
+          details: { collectionId: newCollection.id, name: newCollection.name },
+        },
+      });
+
+      return newCollection;
     });
 
     return NextResponse.json(collection, { status: 201 });

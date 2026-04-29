@@ -10,7 +10,8 @@ import {
   PlayCircle,
   Sparkles,
   Star,
-  Pin
+  Pin,
+  ClipboardClock
 } from "lucide-react";
 
 import {
@@ -34,7 +35,7 @@ const navItems = [
   { label: "Playground", icon: PlayCircle, path: "/playground" },
   { label: "Favorites", icon: Pin, path: "/favorites" },
   { label: "Collections", icon: FolderOpen, path: "/collections" },
-  { label: "Activity Log", icon: Settings, path: "/activity_log" },
+  { label: "Activity Log", icon: ClipboardClock, path: "/activity_log" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
