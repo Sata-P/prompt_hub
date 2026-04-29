@@ -27,10 +27,34 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
     }
 
-    // Since we cascade on relations like Prompts/Favorites/Versions, deleting a user will delete their data
-    // Or we might want to check if they have prompts. For now we will delete.
-    await prisma.users.delete({
+    // Fetch user info before deletion for logging purposes
+    const targetUser = await prisma.users.findUnique({
       where: { id: userId },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Since we cascade on relations like Prompts/Favorites/Versions, deleting a user will delete their data
+    await prisma.$transaction(async (tx) => {
+      await tx.users.delete({
+        where: { id: userId },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "DELETE_USER",
+          details: {
+            deletedUserId: targetUser.id,
+            deletedUserName: targetUser.name,
+            deletedUserEmail: targetUser.email,
+            deletedUserRole: targetUser.role,
+          },
+        },
+      });
     });
 
     return NextResponse.json({ message: "User deleted successfully" });
