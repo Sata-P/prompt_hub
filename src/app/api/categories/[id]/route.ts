@@ -45,15 +45,28 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       }
     }
 
-    const updated = await prisma.categories.update({
-      where: { id: categoryId },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.color !== undefined && { color: data.color }),
-      },
+    const updatedCategory = await prisma.$transaction(async (tx) => {
+      const updated = await tx.categories.update({
+        where: { id: categoryId },
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.color !== undefined && { color: data.color }),
+        },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "UPDATE_CATEGORY",
+          details: { categoryId: updated.id, name: updated.name },
+        },
+      });
+
+      return updated;
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ message: "Category updated", category: updatedCategory }, { status: 200 });
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -99,18 +112,26 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     if (promptCount > 0) {
       return NextResponse.json(
-        {
-          error: `Cannot delete category: ${promptCount} prompt(s) are still linked to it`,
-        },
+        { error: `Cannot delete category: ${promptCount} prompt(s) are still linked to it` },
         { status: 400 }
       );
     }
 
-    await prisma.categories.delete({
-      where: { id: categoryId },
+    await prisma.$transaction(async (tx) => {
+      const deletedCategory = await tx.categories.delete({
+        where: { id: categoryId },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "DELETE_CATEGORY",
+          details: { categoryId: deletedCategory.id, name: deletedCategory.name },
+        },
+      });
     });
 
-    return NextResponse.json({ message: "Category deleted successfully" });
+    return NextResponse.json({ message: "Category deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting category:", error);
     return NextResponse.json(

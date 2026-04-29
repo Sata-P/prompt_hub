@@ -87,7 +87,7 @@ export default function SettingsPage() {
     setCategorySaving(true);
     try {
       const res = await axios.post("/api/categories", { name: newCategoryName.trim() });
-      setCategories(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+      setCategories(prev => [...prev, res.data.category ?? res.data].sort((a, b) => a.name.localeCompare(b.name)));
       setNewCategoryName("");
       setIsAddingCategory(false);
     } catch (err: any) {
@@ -163,7 +163,7 @@ export default function SettingsPage() {
   return (
     <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">จัดการข้อมูลระบบ</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-1">ตั้งค่าหมวดหมู่และป้ายกำกับสำหรับ Prompts ทั้งหมด</p>
       </div>
 

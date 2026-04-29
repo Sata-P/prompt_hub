@@ -230,6 +230,18 @@ export async function POST(request: Request) {
         });
       }
 
+      //activity log
+        await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "CREATE_PROMPT",
+          details: { promptId: prompt.id,
+                      name: prompt.title,
+                      version: prompt.latest_version_no
+                    },
+        },
+      });
+
       return { prompt, version };
     });
 

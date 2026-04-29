@@ -36,14 +36,31 @@ export async function POST(request: Request) {
         }
 
         const { prompt_id } = await request.json();
-        const favorite = await prisma.favorites.create({
-            data: {
-                user_id: Number(session.user.id),
-                prompt_id: Number(prompt_id),
-            },
+
+        const favPrompt = await prisma.$transaction(async (tx) => {
+            
+            const favorite = await tx.favorites.create({
+                data: {
+                    user_id: Number(session.user.id),
+                    prompt_id: Number(prompt_id),
+                },
+            });
+
+            await tx.activity_log.create({
+                data: {
+                    user_id: Number(session.user.id),
+                    action: "FAVORITE_PROMPT",
+                    details: {
+                        prompt_id: Number(prompt_id),
+                    },
+                },
+            });
+
+            return favorite;
         });
 
-        return NextResponse.json(favorite);
+       return NextResponse.json({ message: "Favorited", favorite: favPrompt  }, { status: 200 });
+    
     } catch (error) {
         console.error("Error adding favorite:", error);
         return NextResponse.json(

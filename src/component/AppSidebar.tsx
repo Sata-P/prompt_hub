@@ -34,6 +34,7 @@ const navItems = [
   { label: "Playground", icon: PlayCircle, path: "/playground" },
   { label: "Favorites", icon: Pin, path: "/favorites" },
   { label: "Collections", icon: FolderOpen, path: "/collections" },
+  { label: "Activity Log", icon: Settings, path: "/activity_log" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
@@ -66,7 +67,7 @@ export function AppSidebar({ user }: { user: { email?: string | null; name?: str
             <SidebarMenu>
               {navItems.map((item) => {
                 if (item.path === "/settings" && user.role !== "ADMIN") return null;
-
+                if (item.path === "/activity_log" && user.role !== "ADMIN") return null;
                 const isActive =
                   item.path === "/dashboard"
                     ? pathname === "/dashboard" || pathname === "/"

@@ -44,10 +44,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // const userRole = session.user.role;
-    // if (userRole !== "ADMIN" && userRole !== "EDITOR") {
-    //   return NextResponse.json({ error: "You don't have permission to create a collection, only ADMIN and EDITOR can create a collection" }, { status: 403 });
-    // }
+    const userRole = session.user.role;
+    if (userRole !== "ADMIN" && userRole !== "EDITOR") {
+      return NextResponse.json({ error: "You don't have permission to create a collection, only ADMIN and EDITOR can create a collection" }, { status: 403 });
+    }
 
     const body = await request.json();
     const data = UpdateCollectionSchema.parse(body);
@@ -61,6 +61,8 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+
+    const newCollection = await prisma.$transaction
 
     const collection = await prisma.collections.create({
       data: {

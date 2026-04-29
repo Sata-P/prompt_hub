@@ -21,6 +21,7 @@ model Users {
   created_versions Prompt_versions[]
   favorites        Favorites[]
   promptRuns       Prompt_run[]
+  activityLogs     Activity_log[]
 }
 
 model Categories {
@@ -205,6 +206,19 @@ model Prompt_run {
   prompt         Prompts         @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
   prompt_version Prompt_versions @relation(fields: [prompt_version_id], references: [id], onDelete: Cascade)
 }
+
+//activity log
+model Activity_log {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  action     String   @db.VarChar(255)
+  details    Json?    @db.Json
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
 
 enum Role {
   VIEWER
