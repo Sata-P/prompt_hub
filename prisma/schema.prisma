@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
- 
 }
 
 datasource db {
@@ -20,6 +19,10 @@ model Users {
   // Relations
   prompts          Prompts[]         @relation("UserPrompts")
   created_versions Prompt_versions[]
+  favorites        Favorites[]
+  promptRuns       Prompt_run[]
+  activityLogs     Activity_log[]
+  comments         Prompt_comments[]
 }
 
 model Categories {
@@ -36,7 +39,7 @@ model Categories {
 model Prompts {
   id                 Int       @id @default(autoincrement())
   title              String    @db.VarChar(255)
-  slug               String    @unique @db.VarChar(255)
+  // slug               String?   @unique @db.VarChar(255)
   description        String?   @db.Text
   status             String    @default("DRAFT") @db.VarChar(30)
   visibility         String    @default("PRIVATE") @db.VarChar(30)
@@ -52,11 +55,15 @@ model Prompts {
   owner_id    Int
 
   // Relations
-  category  Categories?        @relation(fields: [category_id], references: [id])
-  owner     Users              @relation("UserPrompts", fields: [owner_id], references: [id])
-  versions  Prompt_versions[]
-  variables Prompt_variables[]
-  tags      Prompt_tags[]
+  category    Categories?           @relation(fields: [category_id], references: [id])
+  owner       Users                 @relation("UserPrompts", fields: [owner_id], references: [id], onDelete: Cascade)
+  versions    Prompt_versions[]
+  variables   Prompt_variables[]
+  tags        Prompt_tags[]
+  collections Collections_prompts[]
+  favorites   Favorites[]
+  promptRuns  Prompt_run[]
+  comments    Prompt_comments[]
 }
 
 model Tags {
@@ -84,8 +91,9 @@ model Prompt_versions {
 
   // Relations
   prompt          Prompts            @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
-  creator         Users              @relation(fields: [created_by], references: [id])
+  creator         Users              @relation(fields: [created_by], references: [id], onDelete: Cascade)
   promptVariables Prompt_variables[]
+  promptRuns      Prompt_run[]
 
   @@unique([prompt_id, version_no], name: "uq_prompt_versions")
 }
@@ -106,13 +114,13 @@ model Prompt_variables {
 
   // FK Field
   prompt_id         Int
-  prompt_version_id Int?
+  prompt_version_id Int
 
   // Relation
   prompt         Prompts          @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
-  prompt_version Prompt_versions? @relation(fields: [prompt_version_id], references: [id])
+  prompt_version Prompt_versions? @relation(fields: [prompt_version_id], references: [id], onDelete: Cascade)
 
-  @@unique([prompt_id, name], name: "uq_prompt_variable_name")
+  @@unique([prompt_version_id, name], name: "uq_prompt_variable_version_name")
 }
 
 model Prompt_tags {
@@ -126,6 +134,110 @@ model Prompt_tags {
   @@id([prompt_id, tag_id]) // Composite Primary Key
 }
 
+model Collections {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  visibility  String   @default("PRIVATE") @db.VarChar(30)
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  prompts Collections_prompts[]
+}
+
+model Collections_prompts {
+  collection_id Int
+  prompt_id     Int
+  sort_order    Int @default(0)
+
+  // Relations
+  collection Collections @relation(fields: [collection_id], references: [id], onDelete: Cascade)
+  prompt     Prompts     @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+
+  @@id([collection_id, prompt_id]) // Composite Primary Key
+}
+
+model Favorites {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  prompt_id  Int
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  user   Users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  prompt Prompts @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, prompt_id], name: "uq_favorites")
+}
+
+model Prompt_run {
+  id Int @id @default(autoincrement())
+
+  prompt_id         Int
+  prompt_version_id Int
+  //ใครรัน
+  user_id           Int
+
+  rendered_prompt String @db.Text
+
+  // เก็บข้อมูล Input ที่ผู้ใช้กรอกเข้ามา (JSON)
+  variables_input Json?
+
+  // เก็บผลลัพธ์ที่ได้จาก LLM (ถ้ามีการยิง API จริง)
+  output_response String? @db.Text
+
+  // เก็บเวลาที่ใช้ในการประมวลผล (milliseconds)
+  execution_time_ms Int?
+
+  token_used Float   @default(0)
+  model      String? @db.VarChar(100)
+
+  // สถานะการทำงาน (เช่น "SUCCESS", "ERROR")
+  status String @default("SUCCESS") @db.VarChar(30)
+
+  // หากเกิด Error สามารถเก็บข้อความ Error ได้
+  error_message String? @db.Text
+
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  user           Users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  prompt         Prompts         @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+  prompt_version Prompt_versions @relation(fields: [prompt_version_id], references: [id], onDelete: Cascade)
+}
+
+//activity log
+model Activity_log {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  action     String   @db.VarChar(255)
+  details    Json?    @db.Json
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Prompt_comments {
+  id         Int      @id @default(autoincrement())
+  content    String   @db.Text
+  prompt_id  Int
+  user_id    Int
+  parent_id  Int?     // ถ้าเป็น null คือ comment หลัก ถ้ามีค่าคือเป็นการตอบกลับ (reply)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  prompt     Prompts           @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+  user       Users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parent     Prompt_comments?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies    Prompt_comments[] @relation("CommentReplies")
+}
+
+
 enum Role {
   VIEWER
   EDITOR
@@ -138,4 +250,9 @@ enum Status {
   ARCHIVED
   REJECTED
   REVIEW
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
 }
