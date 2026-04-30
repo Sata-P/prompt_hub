@@ -189,6 +189,7 @@ export async function POST(request: Request) {
           visibility: data.visibility ?? "PRIVATE",
           owner_id: userId,
           latest_version_no: 1,
+          status: "PUBLISHED",
           tags: {
             create: tagRecords.map((t) => ({
               tag_id: t.id,
@@ -207,7 +208,7 @@ export async function POST(request: Request) {
           output_format: data.outputFormat ?? null,
           changelog: "Initial version",
           created_by: userId,
-          status: "DRAFT",
+          status: "PUBLISHED",
         },
       });
 

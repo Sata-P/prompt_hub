@@ -68,13 +68,7 @@ export default function PromptDetailPage() {
     userRole === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
 
-  const canApprove = 
-    (userRole === "ADMIN" || userRole === "EDITOR") && 
-    (prompt?.status !== "PUBLISHED");
 
-  const canSendReview = 
-    (prompt && userId && Number(userId) === prompt.owner.id) && 
-    prompt?.status === "DRAFT";
 
   const canDelete = 
     userRole === "ADMIN" || 
@@ -91,25 +85,7 @@ export default function PromptDetailPage() {
     }
   };
 
-  const handleApprove = async () => {
-    if (!confirm("คุณต้องการอนุมัติ (Approve) Prompt นี้ให้สถานะเป็น PUBLISHED หรือไม่?")) return;
-    try {
-      await axios.patch(`/api/prompts/${id}`, { status: "PUBLISHED" });
-      setPrompt(prev => prev ? { ...prev, status: "PUBLISHED" } : null);
-    } catch (err: any) {
-      alert(err.response?.data?.error || "เกิดข้อผิดพลาดในการอนุมัติ Prompt");
-    }
-  };
 
-  const handleSendReview = async () => {
-    if (!confirm("คุณต้องการส่ง Prompt นี้ไปให้ผู้ดูแลระบบตรวจสอบ (Review) หรือไม่?")) return;
-    try {
-      await axios.patch(`/api/prompts/${id}`, { status: "REVIEW" });
-      setPrompt(prev => prev ? { ...prev, status: "REVIEW" } : null);
-    } catch (err: any) {
-      alert(err.response?.data?.error || "เกิดข้อผิดพลาดในการส่ง Review");
-    }
-  };
 
   useEffect(() => {
     if (!id) return;
@@ -198,16 +174,7 @@ export default function PromptDetailPage() {
           <Button variant="outline" size="sm" asChild>
             <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>Use Prompt</Link>
           </Button>
-          {canSendReview && (
-            <Button size="sm" variant="secondary" onClick={handleSendReview}>
-              <Clock className="mr-1 h-4 w-4" /> Send for Review
-            </Button>
-          )}
-          {canApprove && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleApprove}>
-              <Check className="mr-1 h-4 w-4" /> Approve
-            </Button>
-          )}
+
           {canEdit && (
             <Button size="sm" asChild>
               <Link href={`/prompts/${id}/edit`}>Edit</Link>
