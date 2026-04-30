@@ -108,6 +108,39 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
     }
   };
 
+  const handleEdit = async (commentId: number, content: string) => {
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.ok) {
+        const updatedComment = await res.json();
+        // อัปเดต state แบบ local (หา comment หรือ reply แล้วอัปเดต content)
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === commentId) {
+              return { ...c, content: updatedComment.content };
+            }
+            if (c.replies) {
+              return {
+                ...c,
+                replies: c.replies.map((r) =>
+                  r.id === commentId ? { ...r, content: updatedComment.content } : r
+                ),
+              };
+            }
+            return c;
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error editing comment:", error);
+    }
+  };
+
   const currentUserId = session?.user?.id ? Number(session.user.id) : undefined;
 
   return (
@@ -160,6 +193,7 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
               currentUserId={currentUserId}
               onReply={handleReply}
               onDelete={handleDelete}
+              onEdit={handleEdit}
             />
           ))}
         </div>

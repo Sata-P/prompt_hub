@@ -24,6 +24,7 @@ type CommentItemProps = {
   currentUserId?: number;
   onReply: (parentId: number, content: string) => Promise<void>;
   onDelete: (commentId: number) => Promise<void>;
+  onEdit: (commentId: number, content: string) => Promise<void>;
   isReply?: boolean;
 };
 
@@ -32,11 +33,14 @@ export default function CommentItem({
   currentUserId,
   onReply,
   onDelete,
+  onEdit,
   isReply = false,
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [showReplies, setShowReplies] = useState(false); // Toggle for replies
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
 
   const handleReplySubmit = async () => {
     if (!replyContent.trim()) return;
@@ -44,6 +48,12 @@ export default function CommentItem({
     setReplyContent("");
     setIsReplying(false);
     setShowReplies(true); // Open replies when a new reply is added
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editContent.trim()) return;
+    await onEdit(comment.id, editContent);
+    setIsEditing(false);
   };
 
   const hasReplies = comment.replies && comment.replies.length > 0;
@@ -68,13 +78,32 @@ export default function CommentItem({
         </div>
 
         {/* Comment Bubble */}
-        <div className="bg-gray-100 rounded-2xl px-4 py-2 text-sm text-gray-800 inline-block">
-          {comment.content}
-        </div>
+        {isEditing ? (
+          <div className="mt-2 flex flex-col gap-2 w-full max-w-md">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full text-sm border-gray-300 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-blue-500 outline-none border resize-none min-h-[60px]"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setEditContent(comment.content); }} className="rounded-full">
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editContent.trim() || editContent === comment.content}>
+                Save
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-100 rounded-2xl px-4 py-2 text-sm text-gray-800 inline-block whitespace-pre-wrap">
+            {comment.content}
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex items-center gap-4 text-xs font-medium text-gray-500 mt-1 pl-2">
-          {!isReply && (
+          {!isReply && !isEditing && (
             <button
               onClick={() => setIsReplying(!isReplying)}
               className="hover:text-blue-600 transition-colors"
@@ -83,17 +112,25 @@ export default function CommentItem({
             </button>
           )}
           
-          {(currentUserId === comment.user_id) && (
-            <button
-              onClick={() => {
-                if (confirm("Are you sure you want to delete this comment?")) {
-                  onDelete(comment.id);
-                }
-              }}
-              className="hover:text-red-600 transition-colors"
-            >
-              Delete
-            </button>
+          {(currentUserId === comment.user_id) && !isEditing && (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="hover:text-blue-600 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm("Are you sure you want to delete this comment?")) {
+                    onDelete(comment.id);
+                  }
+                }}
+                className="hover:text-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </>
           )}
         </div>
 
@@ -143,6 +180,7 @@ export default function CommentItem({
                 currentUserId={currentUserId}
                 onReply={onReply}
                 onDelete={onDelete}
+                onEdit={onEdit}
                 isReply={true}
               />
             ))}
