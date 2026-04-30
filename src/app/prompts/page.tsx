@@ -55,7 +55,7 @@ export default function PromptsList() {
   const [filterTag, setFilterTag] = useState("all");
 
   // Load categories and tags once
-  useEffect(() => {
+  useEffect(() => { 
     Promise.all([
       axios.get<Category[]>("/api/categories"),
       axios.get<Tag[]>("/api/tags"),

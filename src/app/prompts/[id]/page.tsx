@@ -13,6 +13,7 @@ import { Badge } from "@/component/ui/badge";
 import { Skeleton } from "@/component/ui/skeleton";
 import { useFavorites } from "@/hooks/useFavorite";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
+import CommentSection from "@/component/comments/CommentSection";
 
 type Version = {
   id: number;
@@ -423,6 +424,11 @@ export default function PromptDetailPage() {
           </Card>
 
         </div>
+      </div>
+
+      {/* ─── Comments Section ─── */}
+      <div className="mt-8">
+        <CommentSection promptId={prompt.id} />
       </div>
     </div>
   );

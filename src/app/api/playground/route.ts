@@ -38,19 +38,37 @@ export async function POST(request: Request) {
 
     const version = prompt.versions[0];
 
-    const result = await prisma.prompt_run.create({
-        data: {
-            prompt_id: promptId,
-            prompt_version_id: versionId,
-            user_id: Number(session.user.id),
-            rendered_prompt: rendered_prompt || "",
-            variables_input: variables_input || {},
-            status: "SUCCESS",
-            token_used: 0,
-            model: prompt.recommended_model ?? null,
-        },
+    const result = await prisma.$transaction(async (tx) => {
+        const run = await tx.prompt_run.create({
+            data: {
+                prompt_id: promptId,
+                prompt_version_id: versionId,
+                user_id: Number(session.user.id),
+                rendered_prompt: rendered_prompt || "",
+                variables_input: variables_input || {},
+                status: "SUCCESS",
+                token_used: 0,
+                model: prompt.recommended_model ?? null,
+            },
+        });
+
+        await tx.activity_log.create({
+            data: {
+                user_id: Number(session.user.id),
+                action: "RUN_PROMPT",
+                details: {
+                    promptRunId: run.id,
+                    promptId,
+                    versionId,
+                    promptTitle: prompt.title,
+                    model: prompt.recommended_model ?? null,
+                },
+            },
+        });
+
+        return run;
     });
 
     return NextResponse.json(result);
 
-}
+}

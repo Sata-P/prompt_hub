@@ -22,6 +22,7 @@ model Users {
   favorites        Favorites[]
   promptRuns       Prompt_run[]
   activityLogs     Activity_log[]
+  comments         Prompt_comments[]
 }
 
 model Categories {
@@ -62,6 +63,7 @@ model Prompts {
   collections Collections_prompts[]
   favorites   Favorites[]
   promptRuns  Prompt_run[]
+  comments    Prompt_comments[]
 }
 
 model Tags {
@@ -217,6 +219,22 @@ model Activity_log {
 
   // Relations
   user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Prompt_comments {
+  id         Int      @id @default(autoincrement())
+  content    String   @db.Text
+  prompt_id  Int
+  user_id    Int
+  parent_id  Int?     // ถ้าเป็น null คือ comment หลัก ถ้ามีค่าคือเป็นการตอบกลับ (reply)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  prompt     Prompts           @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+  user       Users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parent     Prompt_comments?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies    Prompt_comments[] @relation("CommentReplies")
 }
 
 
