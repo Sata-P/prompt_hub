@@ -44,8 +44,11 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="text-primary-foreground/80 hover:text-primary-foreground" />
           <div className="h-5 w-px bg-primary-foreground/20 hidden sm:block" />
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold tracking-tight">SOFT DE'BUT</span>
+          <div className="flex items-center">
+            <span className="text-lg font-bold tracking-tight text-white mx-0.5">SOFT</span>
+            <span className="text-lg font-bold tracking-tight text-black bg-primary">DE</span>
+            <span className="text-lg font-bold tracking-tight text-white bg-primary">'</span>
+            <span className="text-lg font-bold tracking-tight text-black bg-primary">BUT</span>
           </div>
         </div>
         <div className="flex items-center gap-3">

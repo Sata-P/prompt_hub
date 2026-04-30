@@ -19,6 +19,9 @@ import { Textarea } from "@/component/ui/textarea";
 // Type สำหรับข้อมูลหมวดหมู่ที่ดึงมาจาก API
 type Category = { id: number; name: string };
 
+// Type สำหรับ Model AI
+type ModelInfo = { id: string; name: string };
+
 // Type สำหรับ config ของตัวแปรแต่ละตัวที่ตรวจพบใน template
 type VariableConfig = {
   name: string;        // ชื่อตัวแปร (เช่น "topic")
@@ -45,12 +48,25 @@ export default function CreatePromptPage() {
   
   // --- State สำหรับ list ของหมวดหมู่ (โหลดครั้งเดียวตอน mount) ---
   const [categories, setCategories] = useState<Category[]>([]);
+  
+  // --- State สำหรับ list ของ AI Models ---
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [recommendedModel, setRecommendedModel] = useState<string>("");
 
   // โหลดหมวดหมู่จาก API ตอนที่ component mount
   useEffect(() => {
     axios.get<Category[]>("/api/categories")
       .then(res => setCategories(res.data || []))
       .catch(err => console.error("Failed to load categories:", err));
+
+    axios.get<{models: ModelInfo[], defaultModel: string}>("/api/llm/models")
+      .then(res => {
+        setModels(res.data.models || []);
+        if (res.data.defaultModel) {
+          setRecommendedModel(res.data.defaultModel);
+        }
+      })
+      .catch(err => console.error("Failed to load models:", err));
   }, []);
 
   // -------------------------------------------------------
@@ -131,6 +147,7 @@ export default function CreatePromptPage() {
         title,
         description: description || undefined,                      // optional
         categoryId: categoryId ? Number(categoryId) : undefined,    // optional
+        recommendedModel: recommendedModel || undefined,            // optional
         tags,
         templateContent,
         variables: variables.length > 0 ? variables : undefined     // ส่งเฉพาะถ้ามีตัวแปร
@@ -160,14 +177,13 @@ export default function CreatePromptPage() {
 
         <form onSubmit={handleSubmit}>
           {/* Header: ชื่อหน้า + ปุ่ม submit */}
-          <div className="flex flex-col md:flex-row items-start justify-between mb-6 gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">สร้าง Prompt ใหม่</h1>
-              <p className="text-muted-foreground mt-1">ตั้งค่าชื่อ และโครงสร้าง Prompt ให้พร้อมสำหรับการใช้งาน</p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b pb-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">สร้าง <span className="text-primary">Prompt ใหม่</span></h1>
             </div>
-            <Button type="submit" disabled={loading}>
-              <Save className="mr-2 h-4 w-4" />
-              {loading ? "กำลังบันทึก..." : "บันทึกและสร้าง"}
+            <Button type="submit" disabled={loading} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-transform active:scale-95">
+              <Save className="mr-2 h-5 w-5" />
+              {loading ? "กำลังบันทึก..." : "บันทึก Prompt"}
             </Button>
           </div>
 
@@ -178,64 +194,89 @@ export default function CreatePromptPage() {
              </div>
           )}
 
-          {/* Layout 2 คอลัมน์: ซ้าย = ข้อมูลทั่วไป, ขวา = template content */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Layout 2 คอลัมน์: ซ้าย = ข้อมูลทั่วไป, ขวา = template content (Asymmetrical Grid) */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-8 xl:gap-12 items-start">
             
             {/* คอลัมน์ซ้าย: ข้อมูลทั่วไป */}
-            <div className="space-y-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>ข้อมูลทั่วไป (General Info)</CardTitle>
-                  <CardDescription>รายละเอียดพื้นฐานที่จะช่วยให้คุณจำได้ว่า Prompt นี้มีไว้ทำอะไร</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
+            <div className="space-y-6 lg:sticky lg:top-6">
+              <section className="flex flex-col gap-6">
+                <div className="pb-2 border-b">
+                  <h2 className="text-xl font-bold font-heading flex items-center gap-2">
+                    <span className="bg-primary/10 p-1.5 rounded-md"><Sparkles className="h-4 w-4 text-primary" /></span>
+                    ข้อมูลทั่วไป
+                  </h2>
+                </div>
+                
+                <div className="flex flex-col gap-8">
                   {/* ชื่อ Prompt (required) */}
-                  <div className="space-y-2">
-                    <Label htmlFor="title">ชื่อ Prompt <span className="text-destructive">*</span></Label>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="title" className="text-base font-semibold">ชื่อ Prompt <span className="text-destructive">*</span></Label>
                     <Input 
                       id="title" 
                       placeholder="เช่น: เขียนเรซูเม่สมัครงาน, สรุปบทความ..." 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
+                      className="h-11"
                       required
                     />
                   </div>
                   
                   {/* รายละเอียด (optional) */}
-                  <div className="space-y-2">
-                    <Label htmlFor="description">รายละเอียด (Optional)</Label>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="description" className="text-sm font-semibold">รายละเอียด (Optional)</Label>
                     <Textarea 
                       id="description" 
                       placeholder="อธิบายสั้นๆ ว่า Prompt นี้ใช้งานยังไง..." 
                       rows={2}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      className="resize-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6">
+                  <div className="grid grid-cols-1 gap-8">
                     {/* Dropdown เลือกหมวดหมู่ */}
-                    <div className="space-y-2">
-                      <Label htmlFor="category">หมวดหมู่</Label>
-                      <div className="relative">
-                        <select 
-                          id="category"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={categoryId}
-                          onChange={(e) => setCategoryId(e.target.value)}
-                        >
-                          <option value="">-- ไม่ระบุ --</option>
-                          {/* render ตัวเลือกหมวดหมู่ที่โหลดมา */}
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="category" className="text-sm font-semibold">หมวดหมู่</Label>
+                        <div className="relative">
+                          <select 
+                            id="category"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
+                          >
+                            <option value="">-- ไม่ระบุ --</option>
+                            {/* render ตัวเลือกหมวดหมู่ที่โหลดมา */}
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="model" className="text-sm font-semibold">Model AI แนะนำ</Label>
+                        <div className="relative">
+                          <select 
+                            id="model"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={recommendedModel}
+                            onChange={(e) => setRecommendedModel(e.target.value)}
+                          >
+                            <option value="">-- ไม่ระบุ (ใช้ Default) --</option>
+                            {/* render ตัวเลือกโมเดลที่โหลดมา */}
+                            {models.map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
                     {/* Tags input: กด Enter เพื่อเพิ่ม */}
-                    <div className="space-y-2">
-                      <Label htmlFor="tags">Tags (พิมพ์แล้วกด Enter)</Label>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="tags" className="text-sm font-semibold">Tags (พิมพ์แล้วกด Enter)</Label>
                       <Input 
                         id="tags" 
                         placeholder="เพิ่ม tag..." 
@@ -247,9 +288,9 @@ export default function CreatePromptPage() {
                       {tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {tags.map(t => (
-                            <div key={t} className="flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-md">
+                            <div key={t} className="flex items-center gap-1 bg-primary/10 text-primary font-medium text-xs px-2.5 py-1 rounded-full border border-primary/20">
                               {t}
-                              <button type="button" onClick={() => removeTag(t)} className="text-muted-foreground hover:text-foreground">
+                              <button type="button" onClick={() => removeTag(t)} className="text-primary hover:text-primary/70 transition-colors">
                                 &times;
                               </button>
                             </div>
@@ -258,18 +299,20 @@ export default function CreatePromptPage() {
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
 
             {/* คอลัมน์ขวา: Template Content + ตัวแปร */}
-            <div className="space-y-8">
-              <Card className="flex flex-col h-full">
-                <CardHeader>
-                  <CardTitle>เนื้อหาคำสั่ง (Template Content)</CardTitle>
-                  <CardDescription>รูปแบบคำสั่ง Prompt พร้อมใส่ตัวแปร (เช่น {"{{name}}"}, {"{{topic}}"})</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-6 flex-1">
+            <div className="space-y-6">
+              <section className="flex flex-col h-full gap-6">
+                <div className="pb-2 border-b flex justify-between items-end">
+                  <h2 className="text-xl font-bold font-heading flex items-center gap-2">
+                    <span className="bg-primary/10 p-1.5 rounded-md"><Sparkles className="h-4 w-4 text-primary" /></span>
+                    เนื้อหาคำสั่ง
+                  </h2>
+                </div>
+                <div className="flex flex-col gap-6 flex-1">
                   {/* Textarea สำหรับพิมพ์ template (required) */}
                   <Textarea 
                     id="templateContent" 
@@ -282,14 +325,14 @@ export default function CreatePromptPage() {
 
                   {/* แสดง panel ตัวแปรที่ detect ได้ (เฉพาะเมื่อมีตัวแปร) */}
                   {variables.length > 0 && (
-                    <div className="bg-muted/30 rounded-lg border p-4 space-y-4">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <Sparkles className="h-4 w-4 text-primary" /> ตัวแปรที่ตรวจพบ ({variables.length})
+                    <div className="bg-primary/[0.04] rounded-xl border border-primary/20 p-5 flex flex-col gap-5">
+                      <div className="flex items-center gap-2 font-semibold text-base text-primary">
+                        <Sparkles className="h-5 w-5" /> ตัวแปรที่ตรวจพบ ({variables.length})
                       </div>
-                      <div className="space-y-4">
+                      <div className="flex flex-col gap-4">
                         {/* แสดง config ของแต่ละตัวแปร */}
                         {variables.map((v, idx) => (
-                          <div key={idx} className="grid grid-cols-[1fr_2fr] gap-4 items-start border-l-2 border-primary/50 pl-3">
+                          <div key={idx} className="grid grid-cols-[1fr_2fr] gap-4 items-start bg-background/60 p-3 rounded-lg border border-primary/10 shadow-sm">
                             <div>
                               <div className="font-mono text-sm font-bold text-primary mb-2 truncate" title={v.name}>
                                 {"{{"}{v.name.length > 22 ? v.name.substring(0, 18) + "..." : v.name}{"}}"}
@@ -326,8 +369,8 @@ export default function CreatePromptPage() {
                     </div>
                   )}
 
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
           </div>
         </form>

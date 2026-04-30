@@ -202,10 +202,10 @@ export default function FavoritesPage() {
     if (!q) return favorites;
     return favorites.filter(
       (f) =>
-        f.prompt.title.toLowerCase().includes(q) ||
-        f.prompt.description?.toLowerCase().includes(q) ||
-        f.prompt.category?.name.toLowerCase().includes(q) ||
-        f.prompt.tags.some((t) => t.name.toLowerCase().includes(q))
+        (f.prompt.title || "").toLowerCase().includes(q) ||
+        (f.prompt.description || "").toLowerCase().includes(q) ||
+        (f.prompt.category?.name || "").toLowerCase().includes(q) ||
+        (f.prompt.tags || []).some((t) => (t.name || "").toLowerCase().includes(q))
     );
   }, [favorites, search]);
 

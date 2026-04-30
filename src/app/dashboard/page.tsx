@@ -80,25 +80,25 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
 
-      <main className="py-4">
+      <main className="py-4 fade-in-up">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">ภาพรวมการทำงานและระบบ Prompt ของคุณ</p>
+            <p className="text-muted-foreground mt-1">Operations and Prompt System Overview</p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" asChild>
-              <Link href="/prompts"><LayoutGrid className="mr-2 h-4 w-4" /> ดูทั้งหมด</Link>
+              <Link href="/prompts"><LayoutGrid className="mr-2 h-4 w-4" /> View All</Link>
             </Button>
             <Button asChild>
-              <Link href="/prompts/new"><Plus className="mr-2 h-4 w-4" /> สร้าง Prompt</Link>
+              <Link href="/prompts/new"><Plus className="mr-2 h-4 w-4" /> New Prompt</Link>
             </Button>
           </div>
         </div>
 
         {/* Overview Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 fade-in-up stagger-1">
+          <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-primary/20">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Prompt ทั้งหมด</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -109,7 +109,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-green-500/20">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">พร้อมใช้งาน (Published)</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -120,7 +120,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-yellow-500/20">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">กำลังแก้ไข (Draft)</CardTitle>
               <AlertCircle className="h-4 w-4 text-yellow-500" />
@@ -131,7 +131,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="transition-all duration-200 hover:scale-[1.02] hover:shadow-md hover:border-border/60">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">เก็บถาวร (Archived)</CardTitle>
               <Archive className="h-4 w-4 text-muted-foreground" />
@@ -144,8 +144,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Prompts List */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 fade-in-up stagger-2">
+          <Card className="lg:col-span-2 shadow-sm border-border/50">
             <CardHeader>
               <CardTitle>ใช้งานล่าสุด</CardTitle>
             </CardHeader>
@@ -162,11 +162,12 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {stats?.recentPrompts?.map(prompt => (
+                  {stats?.recentPrompts?.map((prompt, i) => (
                     <Link 
                       key={prompt.id} 
                       href={`/prompts/${prompt.id}`}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/50 hover:bg-muted/30 transition-colors"
+                      className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/40 hover:shadow-sm hover:-translate-y-0.5 hover:bg-card transition-all duration-200"
+                      style={{ animationDelay: `${i * 50}ms` }}
                     >
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
@@ -193,7 +194,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm border-border/50 transition-all duration-200 hover:shadow-md">
             <CardHeader>
               <CardTitle>ภาพรวมหมวดหมู่</CardTitle>
             </CardHeader>
@@ -211,7 +212,7 @@ export default function DashboardPage() {
                     <span className="text-xl font-bold">{stats?.totalTags || 0}</span>
                   </div>
                   {session?.user?.role === 'ADMIN' && (
-                    <Button variant="outline" className="w-full" asChild>
+                    <Button variant="outline" className="w-full transition-transform active:scale-[0.98]" asChild>
                       <Link href="/settings">จัดการ Category / Tag</Link>
                     </Button>
                   )}

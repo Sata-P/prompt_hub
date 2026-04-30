@@ -186,7 +186,7 @@ export async function POST(request: Request) {
           description: data.description ?? null,
           category_id: data.categoryId ?? null,
           recommended_model: data.recommendedModel ?? null,
-          visibility: data.visibility ?? "PRIVATE",
+          visibility: data.visibility ?? "PUBLIC",
           owner_id: userId,
           latest_version_no: 1,
           status: "PUBLISHED",

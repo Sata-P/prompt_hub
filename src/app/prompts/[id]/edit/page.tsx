@@ -14,6 +14,7 @@ import { Textarea } from "@/component/ui/textarea";
 
 type Category = { id: number; name: string };
 type Tag = { id: number; name: string };
+type ModelInfo = { id: string; name: string };
 
 type PromptVariable = {
   id: number;
@@ -28,6 +29,7 @@ type PromptDetail = {
   title: string;
   description: string | null;
   status: string;
+  recommended_model: string | null;
   category: { id: number; name: string } | null;
   tags: Tag[];
   versions: {
@@ -68,25 +70,30 @@ export default function EditPromptPage() {
   // Variables State
   const [variables, setVariables] = useState<VariableConfig[]>([]);
   
-  // Categories lookup
+  // Categories and Models
   const [categories, setCategories] = useState<Category[]>([]);
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [recommendedModel, setRecommendedModel] = useState<string>("");
 
   useEffect(() => {
     if (!id) return;
 
     const fetchInitialData = async () => {
       try {
-        const [catsRes, promptRes] = await Promise.all([
+        const [catsRes, modelsRes, promptRes] = await Promise.all([
           axios.get<Category[]>("/api/categories"),
+          axios.get<{models: ModelInfo[], defaultModel: string}>("/api/llm/models"),
           axios.get<PromptDetail>(`/api/prompts/${id}`)
         ]);
 
         setCategories(catsRes.data || []);
+        setModels(modelsRes.data.models || []);
 
         const prompt = promptRes.data;
         setTitle(prompt.title);
         setDescription(prompt.description || "");
         setCategoryId(prompt.category ? String(prompt.category.id) : "");
+        setRecommendedModel(prompt.recommended_model || "");
         setTags(prompt.tags.map(t => t.name));
         
         if (prompt.versions && prompt.versions.length > 0) {
@@ -177,6 +184,7 @@ export default function EditPromptPage() {
         title,
         description: description || undefined,
         categoryId: categoryId ? Number(categoryId) : undefined,
+        recommendedModel: recommendedModel || undefined,
         tags,
       };
       
@@ -228,14 +236,14 @@ export default function EditPromptPage() {
         </Button>
 
         <form onSubmit={handleSubmit}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">แก้ไข ยกระดับผลลัพธ์</h1>
-              <p className="text-muted-foreground mt-1">อัปเดตรายละเอียด หรือแก้ไข Template Content</p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b pb-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">แก้ไข <span className="text-primary">ยกระดับผลลัพธ์</span></h1>
+              <p className="text-lg text-muted-foreground">อัปเดตรายละเอียด หรือแก้ไข Template Content เพื่อประสิทธิภาพที่ดียิ่งขึ้น</p>
             </div>
-            <Button type="submit" disabled={saving}>
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving..." : "Save Change"}
+            <Button type="submit" disabled={saving} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-transform active:scale-95">
+              <Save className="mr-2 h-5 w-5" />
+              {saving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
             </Button>
           </div>
 
@@ -245,56 +253,79 @@ export default function EditPromptPage() {
              </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>ข้อมูลทั่วไป (General Info)</CardTitle>
-                  <CardDescription>รายละเอียดพื้นฐานที่จะช่วยให้คุณจำได้ว่า Prompt นี้มีไว้ทำอะไร</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">ชื่อ Prompt <span className="text-destructive">*</span></Label>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-8 xl:gap-12 items-start">
+            <div className="space-y-6 lg:sticky lg:top-6">
+              <section className="flex flex-col gap-6">
+                <div className="pb-2 border-b">
+                  <h2 className="text-xl font-bold font-heading flex items-center gap-2">
+                    <span className="bg-primary/10 p-1.5 rounded-md"><Sparkles className="h-4 w-4 text-primary" /></span>
+                    ข้อมูลทั่วไป
+                  </h2>
+                </div>
+                <div className="flex flex-col gap-8">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="title" className="text-base font-semibold">ชื่อ Prompt <span className="text-destructive">*</span></Label>
                     <Input 
                       id="title" 
                       placeholder="เช่น: เขียนเรซูเม่สมัครงาน, สรุปบทความ..." 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
+                      className="h-11"
                       required
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="description">รายละเอียด (Optional)</Label>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="description" className="text-sm font-semibold">รายละเอียด (Optional)</Label>
                     <Textarea 
                       id="description" 
                       placeholder="อธิบายสั้นๆ ว่า Prompt นี้ใช้งานยังไง..." 
                       rows={2}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      className="resize-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="category">หมวดหมู่</Label>
-                      <div className="relative">
-                        <select 
-                          id="category"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          value={categoryId}
-                          onChange={(e) => setCategoryId(e.target.value)}
-                        >
-                          <option value="">-- ไม่ระบุ --</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
-                        </select>
+                  <div className="grid grid-cols-1 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="category" className="text-sm font-semibold">หมวดหมู่</Label>
+                        <div className="relative">
+                          <select 
+                            id="category"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
+                          >
+                            <option value="">-- ไม่ระบุ --</option>
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="model" className="text-sm font-semibold">Model AI แนะนำ</Label>
+                        <div className="relative">
+                          <select 
+                            id="model"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={recommendedModel}
+                            onChange={(e) => setRecommendedModel(e.target.value)}
+                          >
+                            <option value="">-- ไม่ระบุ (ใช้ Default) --</option>
+                            {models.map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="tags">Tags (พิมพ์แล้วกด Enter)</Label>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="tags" className="text-sm font-semibold">Tags (พิมพ์แล้วกด Enter)</Label>
                       <Input 
                         id="tags" 
                         placeholder="เพิ่ม tag..." 
@@ -305,9 +336,9 @@ export default function EditPromptPage() {
                       {tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {tags.map(t => (
-                            <div key={t} className="flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-md">
+                            <div key={t} className="flex items-center gap-1 bg-primary/10 text-primary font-medium text-xs px-2.5 py-1 rounded-full border border-primary/20">
                               {t}
-                              <button type="button" onClick={() => removeTag(t)} className="text-muted-foreground hover:text-foreground">
+                              <button type="button" onClick={() => removeTag(t)} className="text-primary hover:text-primary/70 transition-colors">
                                 &times;
                               </button>
                             </div>
@@ -316,17 +347,19 @@ export default function EditPromptPage() {
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
 
-            <div className="space-y-8">
-              <Card className="flex flex-col h-full">
-                <CardHeader>
-                  <CardTitle>เนื้อหาคำสั่ง (Template Content)</CardTitle>
-                  <CardDescription>เนื้อหา Prompt พร้อมใส่ตัวแปร (เช่น {"{{name}}" }, {"{{topic}}" })</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-6 flex-1">
+            <div className="space-y-6">
+              <section className="flex flex-col h-full gap-6">
+                <div className="pb-2 border-b flex justify-between items-end">
+                  <h2 className="text-xl font-bold font-heading flex items-center gap-2">
+                    <span className="bg-primary/10 p-1.5 rounded-md"><Sparkles className="h-4 w-4 text-primary" /></span>
+                    เนื้อหาคำสั่ง
+                  </h2>
+                </div>
+                <div className="flex flex-col gap-6 flex-1">
                   <Textarea 
                     id="templateContent" 
                     placeholder="พิมพ์ข้อความ prompt ของคุณที่นี่..." 
@@ -337,13 +370,13 @@ export default function EditPromptPage() {
                   />
 
                   {variables.length > 0 && (
-                    <div className="bg-muted/30 rounded-lg border p-4 space-y-4">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <Sparkles className="h-4 w-4 text-primary" /> ตัวแปรที่ตรวจพบ ({variables.length})
+                    <div className="bg-primary/[0.04] rounded-xl border border-primary/20 p-5 flex flex-col gap-5">
+                      <div className="flex items-center gap-2 font-semibold text-base text-primary">
+                        <Sparkles className="h-5 w-5" /> ตัวแปรที่ตรวจพบ ({variables.length})
                       </div>
-                      <div className="space-y-4">
+                      <div className="flex flex-col gap-4">
                         {variables.map((v, idx) => (
-                          <div key={idx} className="grid grid-cols-[1fr_2fr] gap-4 items-start border-l-2 border-primary/50 pl-3">
+                          <div key={idx} className="grid grid-cols-[1fr_2fr] gap-4 items-start bg-background/60 p-3 rounded-lg border border-primary/10 shadow-sm">
                             <div>
                               <div className="font-mono text-sm font-bold text-primary mb-2 truncate" title={v.name}>
                                 {"{{"}{v.name.length > 22 ? v.name.substring(0, 18) + "..." : v.name}{"}}"}
@@ -379,8 +412,8 @@ export default function EditPromptPage() {
                     </div>
                   )}
 
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
           </div>
         </form>

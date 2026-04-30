@@ -48,13 +48,13 @@ export function AppSidebar({ user }: { user: { email?: string | null; name?: str
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="h-14 flex items-center border-b border-sidebar-border px-4 py-2">
         <div className="flex w-full items-center gap-3 overflow-hidden">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <Sparkles className="h-5 w-5" />
           </div>
           {!collapsed && (
             <div className="flex flex-col truncate">
-              <span className="truncate font-bold tracking-tight text-sidebar-foreground">PromptHub</span>
-              <span className="truncate text-[10px] text-sidebar-muted-foreground/70">Internal Prompt Library</span>
+              <span className="truncate text-[15px] font-bold tracking-tight text-sidebar-foreground">PromptHub</span>
+              <span className="truncate text-[11px] font-medium text-sidebar-muted-foreground">Internal Prompt Library</span>
             </div>
           )}
         </div>
@@ -63,7 +63,9 @@ export function AppSidebar({ user }: { user: { email?: string | null; name?: str
       {/* Navigation */}
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[11px] font-semibold text-sidebar-muted-foreground uppercase tracking-wider mb-1">
+            Main Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
@@ -92,17 +94,17 @@ export function AppSidebar({ user }: { user: { email?: string | null; name?: str
       {/* User Footer */}
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="flex items-center gap-3 py-3 px-3 overflow-hidden">
-          <Avatar className="h-8 w-8 shrink-0">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+          <Avatar className="h-9 w-9 shrink-0 border border-sidebar-border shadow-sm">
+            <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs font-bold">
               {user.email?.charAt(0).toUpperCase() ?? "U"}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-medium truncate leading-tight">
+              <span className="text-[14px] font-semibold truncate leading-tight text-sidebar-foreground">
                 {user.name || "User"}
               </span>
-              <span className="text-[10px] text-muted-foreground truncate">{user.email}</span>
+              <span className="text-[11px] font-medium text-sidebar-muted-foreground truncate">{user.email}</span>
             </div>
           )}
         </div>

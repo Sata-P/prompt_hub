@@ -153,7 +153,7 @@ export default function PromptDetailPage() {
             {getStatusBadge(prompt.status)}
           </div>
           <p className="text-sm text-muted-foreground">
-            {prompt.description || "ไม่มีรายละเอียดระบุไว้"}
+            {prompt.description || "No description available"}
           </p>
           {prompt.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
@@ -239,7 +239,7 @@ export default function PromptDetailPage() {
               </Button>
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="bg-secondary p-4 rounded-md border text-sm font-mono whitespace-pre-wrap text-foreground min-h-[120px]">
+              <div className="bg-muted p-4 rounded-md border text-sm font-mono whitespace-pre-wrap text-foreground min-h-[120px]">
                 {selectedVersion?.template_content || "No content"}
               </div>
             </CardContent>
@@ -252,7 +252,7 @@ export default function PromptDetailPage() {
             </CardHeader>
             <CardContent className="pt-2">
               {prompt.versions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ยังไม่มี version</p>
+                <p className="text-sm text-muted-foreground">No version available</p>
               ) : (
                 <ol className="relative border-l border-border ml-3 space-y-0">
                   {prompt.versions.map((v, idx) => {
@@ -373,7 +373,7 @@ export default function PromptDetailPage() {
             </CardHeader>
             <CardContent className="pt-4">
               {!selectedVersion || selectedVersion.promptVariables.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ไม่มีตัวแปร</p>
+                <p className="text-sm text-muted-foreground">No variables available</p>
               ) : (
                 <ul className="space-y-3">
                   {selectedVersion.promptVariables.map(v => (
