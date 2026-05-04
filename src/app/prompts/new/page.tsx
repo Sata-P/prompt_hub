@@ -135,7 +135,7 @@ export default function CreatePromptPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !templateContent) {
-      setError("กรุณากรอกหัวข้อ และเนื้อหาของ Prompt");
+      setError("Title and template content are required.");
       return;
     }
 
@@ -161,7 +161,7 @@ export default function CreatePromptPage() {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
-        setError("ไม่สามารถสร้าง Prompt ได้ เกิดข้อผิดพลาด");
+        setError("Failed to create prompt. Please try again.");
       }
       setLoading(false);
     }
@@ -172,18 +172,18 @@ export default function CreatePromptPage() {
       <main className="py-4">
         {/* ปุ่มย้อนกลับไปหน้า Prompts */}
         <Button variant="ghost" className="mb-6 -ml-4" asChild>
-          <Link href="/prompts"><ArrowLeft className="mr-2 h-4 w-4" /> ย้อนกลับ (Back to Prompts)</Link>
+          <Link href="/prompts"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Prompts</Link>
         </Button>
 
         <form onSubmit={handleSubmit}>
           {/* Header: ชื่อหน้า + ปุ่ม submit */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b pb-6">
             <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">สร้าง <span className="text-primary">Prompt ใหม่</span></h1>
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">Create <span className="text-primary">New Prompt</span></h1>
             </div>
             <Button type="submit" disabled={loading} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-transform active:scale-95">
               <Save className="mr-2 h-5 w-5" />
-              {loading ? "กำลังบันทึก..." : "บันทึก Prompt"}
+              {loading ? "Saving..." : "Save Prompt"}
             </Button>
           </div>
 
@@ -203,17 +203,17 @@ export default function CreatePromptPage() {
                 <div className="pb-2 border-b">
                   <h2 className="text-xl font-bold font-heading flex items-center gap-2">
                     <span className="bg-primary/10 p-1.5 rounded-md"><Sparkles className="h-4 w-4 text-primary" /></span>
-                    ข้อมูลทั่วไป
+                    General Information
                   </h2>
                 </div>
                 
                 <div className="flex flex-col gap-8">
                   {/* ชื่อ Prompt (required) */}
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="title" className="text-base font-semibold">ชื่อ Prompt <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="title" className="text-base font-semibold">Prompt Title <span className="text-destructive">*</span></Label>
                     <Input 
                       id="title" 
-                      placeholder="เช่น: เขียนเรซูเม่สมัครงาน, สรุปบทความ..." 
+                      placeholder="e.g. Write a resume, Summarize an article..." 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       className="h-11"
@@ -223,10 +223,10 @@ export default function CreatePromptPage() {
                   
                   {/* รายละเอียด (optional) */}
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="description" className="text-sm font-semibold">รายละเอียด (Optional)</Label>
+                    <Label htmlFor="description" className="text-sm font-semibold">Description (Optional)</Label>
                     <Textarea 
                       id="description" 
-                      placeholder="อธิบายสั้นๆ ว่า Prompt นี้ใช้งานยังไง..." 
+                      placeholder="Briefly describe what this prompt does..." 
                       rows={2}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
@@ -238,7 +238,7 @@ export default function CreatePromptPage() {
                     {/* Dropdown เลือกหมวดหมู่ */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="category" className="text-sm font-semibold">หมวดหมู่</Label>
+                        <Label htmlFor="category" className="text-sm font-semibold">Category</Label>
                         <div className="relative">
                           <select 
                             id="category"
@@ -246,7 +246,7 @@ export default function CreatePromptPage() {
                             value={categoryId}
                             onChange={(e) => setCategoryId(e.target.value)}
                           >
-                            <option value="">-- ไม่ระบุ --</option>
+                            <option value="">-- None --</option>
                             {/* render ตัวเลือกหมวดหมู่ที่โหลดมา */}
                             {categories.map(cat => (
                               <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -256,7 +256,7 @@ export default function CreatePromptPage() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="model" className="text-sm font-semibold">Model AI แนะนำ</Label>
+                        <Label htmlFor="model" className="text-sm font-semibold">Recommended AI Model</Label>
                         <div className="relative">
                           <select 
                             id="model"
@@ -264,7 +264,7 @@ export default function CreatePromptPage() {
                             value={recommendedModel}
                             onChange={(e) => setRecommendedModel(e.target.value)}
                           >
-                            <option value="">-- ไม่ระบุ (ใช้ Default) --</option>
+                            <option value="">-- None (use Default) --</option>
                             {/* render ตัวเลือกโมเดลที่โหลดมา */}
                             {models.map(m => (
                               <option key={m.id} value={m.id}>{m.name}</option>
@@ -276,10 +276,10 @@ export default function CreatePromptPage() {
 
                     {/* Tags input: กด Enter เพื่อเพิ่ม */}
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="tags" className="text-sm font-semibold">Tags (พิมพ์แล้วกด Enter)</Label>
+                      <Label htmlFor="tags" className="text-sm font-semibold">Tags (press Enter to add)</Label>
                       <Input 
                         id="tags" 
-                        placeholder="เพิ่ม tag..." 
+                        placeholder="Add a tag..." 
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
                         onKeyDown={handleAddTag}
@@ -309,14 +309,14 @@ export default function CreatePromptPage() {
                 <div className="pb-2 border-b flex justify-between items-end">
                   <h2 className="text-xl font-bold font-heading flex items-center gap-2">
                     <span className="bg-primary/10 p-1.5 rounded-md"><Sparkles className="h-4 w-4 text-primary" /></span>
-                    เนื้อหาคำสั่ง
+                    Template Content
                   </h2>
                 </div>
                 <div className="flex flex-col gap-6 flex-1">
                   {/* Textarea สำหรับพิมพ์ template (required) */}
                   <Textarea 
                     id="templateContent" 
-                    placeholder="พิมพ์ข้อความ prompt ของคุณที่นี่..." 
+                    placeholder="Type your prompt template here. Use {{variable}} for dynamic fields..." 
                     className="font-mono text-sm leading-relaxed flex-1 min-h-[250px]"
                     value={templateContent}
                     onChange={(e) => setTemplateContent(e.target.value)}
@@ -327,7 +327,7 @@ export default function CreatePromptPage() {
                   {variables.length > 0 && (
                     <div className="bg-primary/[0.04] rounded-xl border border-primary/20 p-5 flex flex-col gap-5">
                       <div className="flex items-center gap-2 font-semibold text-base text-primary">
-                        <Sparkles className="h-5 w-5" /> ตัวแปรที่ตรวจพบ ({variables.length})
+                        <Sparkles className="h-5 w-5" /> Detected Variables ({variables.length})
                       </div>
                       <div className="flex flex-col gap-4">
                         {/* แสดง config ของแต่ละตัวแปร */}
@@ -343,21 +343,21 @@ export default function CreatePromptPage() {
                                 value={v.type}
                                 onChange={(e) => updateVariable(v.name, "type", e.target.value)}
                               >
-                                <option value="TEXT">ข้อความ (TEXT)</option>
-                                <option value="TEXTAREA">ข้อความยาว (TEXTAREA)</option>
-                                <option value="NUMBER">ตัวเลข (NUMBER)</option>
-                                <option value="BOOLEAN">ใช่/ไม่ใช่ (BOOLEAN)</option>
+                                <option value="TEXT">Text (TEXT)</option>
+                                <option value="TEXTAREA">Long Text (TEXTAREA)</option>
+                                <option value="NUMBER">Number (NUMBER)</option>
+                                <option value="BOOLEAN">Yes/No (BOOLEAN)</option>
                               </select>
                             </div>
                             <div className="space-y-2">
                               <Input 
-                                placeholder="ชื่อที่แสดงและอยู่ใน Template (Label / Variable)" 
+                                placeholder="Label / Variable name in template" 
                                 className="h-8 text-xs font-mono" 
                                 value={v.name} 
                                 onChange={(e) => renameVariable(v.name, e.target.value)} 
                               />
                               <Input 
-                                placeholder="คำอธิบาย (Description)" 
+                                placeholder="Description" 
                                 className="h-8 text-xs" 
                                 value={v.description} 
                                 onChange={(e) => updateVariable(v.name, "description", e.target.value)} 

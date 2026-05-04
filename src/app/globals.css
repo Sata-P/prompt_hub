@@ -21,7 +21,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --font-sans: var(--font-inter);
-  --font-heading: var(--font-manrope);
+  --font-heading: var(--font-inter);
   --font-mono: var(--font-mono);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -39,40 +39,57 @@
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
 }
 
+/* ── Soft'Debut Orange Design System ── */
 :root {
-  --background: #f7f9fb;
-  --foreground: #191c1e;
-  --card: #ffffff;
-  --card-foreground: #191c1e;
-  --popover: #ffffff;
-  --popover-foreground: #191c1e;
-  --primary: #ff7a00;
-  --primary-foreground: #ffffff;
-  --secondary: #545f73;
-  --secondary-foreground: #ffffff;
-  --muted: #f2f4f6;
-  --muted-foreground: #586377;
-  --accent: #d5e0f8;
-  --accent-foreground: #003577;
-  --destructive: #ba1a1a;
-  --destructive-foreground: #ffffff;
-  --border: #e0e3e5;
-  --input: #eceef0;
-  --ring: #ff7a00;
+  /* Background: warm off-white (from Stitch #FFFAF7) */
+  --background: #FFFAF7;
+  --foreground: #1C1410;
+
+  /* Surface / Card */
+  --card: #FFFFFF;
+  --card-foreground: #1C1410;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1410;
+
+  /* Primary: Orange #F97316 */
+  --primary: #F97316;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary: warm medium gray */
+  --secondary: #78716C;
+  --secondary-foreground: #FFFFFF;
+
+  /* Muted: warm light gray */
+  --muted: #F5F0EB;
+  --muted-foreground: #78716C;
+
+  /* Accent: light orange tint */
+  --accent: #FFF3E8;
+  --accent-foreground: #C2410C;
+
+  /* Destructive */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Borders & inputs */
+  --border: #E8E0D8;
+  --input: #F0EBE5;
+  --ring: #F97316;
+
+  /* Radius: 8px (Stitch ROUND_EIGHT) */
   --radius: 0.5rem;
 
-  /* Sidebar uses dark theme even in light mode */
-  --sidebar: #1B2635;
-  /* Premium Deep Navy */
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #ff7a00;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(255, 122, 0, 0.15);
-  --sidebar-accent-foreground: #ff7a00;
-  --sidebar-border: #2D3A4F;
-  --sidebar-ring: #ff7a00;
-  --sidebar-muted: #2D3A4F;
-  --sidebar-muted-foreground: #94A3B8;
+  /* ── Sidebar: deep warm dark (Stitch #1C1410) ── */
+  --sidebar: #1C1410;
+  --sidebar-foreground: #FAF7F5;
+  --sidebar-primary: #F97316;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(249, 115, 22, 0.15);
+  --sidebar-accent-foreground: #FB923C;
+  --sidebar-border: #2D2219;
+  --sidebar-ring: #F97316;
+  --sidebar-muted: #2D2219;
+  --sidebar-muted-foreground: #A8956B;
 }
 
 * {
@@ -84,24 +101,43 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading), var(--font-sans), sans-serif;
   letter-spacing: -0.02em;
+  color: var(--foreground);
 }
 
-/* Ensure monospace has tabular numbers for better alignment */
+/* Monospace for prompt templates */
 code, pre, .font-mono {
   font-family: var(--font-mono), monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* Animations */
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ── Animations ── */
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -109,13 +145,44 @@ code, pre, .font-mono {
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .fade-in-up {
-  animation: fade-in-up 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: fade-in-up 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   opacity: 0;
 }
 
-.stagger-1 { animation-delay: 75ms; }
-.stagger-2 { animation-delay: 150ms; }
-.stagger-3 { animation-delay: 225ms; }
-.stagger-4 { animation-delay: 300ms; }
-.stagger-5 { animation-delay: 375ms; }
+.fade-in {
+  animation: fade-in 0.3s ease forwards;
+  opacity: 0;
+}
+
+.stagger-1 { animation-delay: 60ms; }
+.stagger-2 { animation-delay: 120ms; }
+.stagger-3 { animation-delay: 180ms; }
+.stagger-4 { animation-delay: 240ms; }
+.stagger-5 { animation-delay: 300ms; }
+
+/* ── Prompt code block styling ── */
+.prompt-template {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  background: #FDF8F4;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.prompt-variable {
+  color: #F97316;
+  font-weight: 600;
+  background: rgba(249, 115, 22, 0.08);
+  border-radius: 3px;
+  padding: 0 3px;
+}

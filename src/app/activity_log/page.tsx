@@ -75,7 +75,7 @@ export default function ActivityLogPage() {
   // ──────────────────────────────────────────────
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleString("th-TH", {
+    return d.toLocaleString("en-GB", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -111,7 +111,7 @@ export default function ActivityLogPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {isAdmin ? "ประวัติการดำเนินการของทุกผู้ใช้ในระบบ" : "ประวัติการดำเนินการของคุณ"}
+            {isAdmin ? "All system-wide activity across every user" : "Your personal activity history"}
           </p>
         </div>
       </div>
@@ -119,9 +119,9 @@ export default function ActivityLogPage() {
       {/* Summary badge */}
       {!loading && (
         <p className="mt-3 text-xs text-muted-foreground">
-          ทั้งหมด{" "}
+          Total{" "}
           <span className="font-semibold text-foreground">{pagination.total.toLocaleString()}</span>{" "}
-          รายการ
+          entries
         </p>
       )}
 
@@ -133,11 +133,11 @@ export default function ActivityLogPage() {
               <tr className="border-b bg-muted/20">
                 <th className="px-5 py-3 text-left font-semibold text-foreground">Action</th>
                 {isAdmin && (
-                  <th className="px-5 py-3 text-left font-semibold text-foreground">ผู้ดำเนินการ</th>
+                  <th className="px-5 py-3 text-left font-semibold text-foreground">Actor</th>
                 )}
-                <th className="px-5 py-3 text-left font-semibold text-foreground">รายละเอียด</th>
+                <th className="px-5 py-3 text-left font-semibold text-foreground">Details</th>
                 <th className="px-5 py-3 text-left font-semibold text-foreground whitespace-nowrap">
-                  วันที่/เวลา
+                  Timestamp
                 </th>
               </tr>
             </thead>
@@ -168,7 +168,7 @@ export default function ActivityLogPage() {
                     colSpan={isAdmin ? 4 : 3}
                     className="px-5 py-12 text-center text-muted-foreground"
                   >
-                    ยังไม่มีประวัติการดำเนินการ
+                    No activity recorded yet.
                   </td>
                 </tr>
               ) : (
@@ -227,7 +227,7 @@ export default function ActivityLogPage() {
       {!loading && pagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            หน้า {pagination.page} จาก {pagination.totalPages}
+            Page {pagination.page} of {pagination.totalPages}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -237,7 +237,7 @@ export default function ActivityLogPage() {
               onClick={() => fetchLogs(pagination.page - 1)}
             >
               <ChevronLeft className="h-4 w-4" />
-              ก่อนหน้า
+              Previous
             </Button>
             <Button
               variant="outline"
@@ -245,7 +245,7 @@ export default function ActivityLogPage() {
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => fetchLogs(pagination.page + 1)}
             >
-              ถัดไป
+              Next
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

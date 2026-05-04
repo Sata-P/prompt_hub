@@ -76,12 +76,12 @@ export default function PromptDetailPage() {
     (prompt && userId && Number(userId) === prompt.owner.id);
 
   const handleDelete = async () => {
-    if (!confirm("คุณต้องการลบ Prompt นี้ทิ้งใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
+    if (!confirm("Are you sure you want to delete this prompt? This action cannot be undone.")) return;
     try {
       await axios.delete(`/api/prompts/${id}`);
       router.push("/prompts");
     } catch (err: any) {
-      alert(err.response?.data?.error || "เกิดข้อผิดพลาดในการลบ Prompt");
+      alert(err.response?.data?.error || "Failed to delete prompt.");
     }
   };
 
@@ -135,10 +135,10 @@ export default function PromptDetailPage() {
     return (
       <div className="py-20 text-center max-w-lg mx-auto">
         <div className="bg-destructive/10 text-destructive p-6 rounded-lg mb-6">
-          <h2 className="text-xl font-bold mb-2">ไม่พบข้อมูล Prompt</h2>
+          <h2 className="text-xl font-bold mb-2">Prompt Not Found</h2>
           <p>{error}</p>
         </div>
-        <Button asChild><Link href="/prompts">กลับไปที่คลัง Prompt</Link></Button>
+        <Button asChild><Link href="/prompts">Back to Prompt Library</Link></Button>
       </div>
     );
   }
@@ -292,7 +292,7 @@ export default function PromptDetailPage() {
                           </div>
                           <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {new Date(v.created_at).toLocaleString("th-TH", {
+                            {new Date(v.created_at).toLocaleString("en-GB", {
                               dateStyle: "medium",
                               timeStyle: "short",
                             })}
@@ -342,7 +342,7 @@ export default function PromptDetailPage() {
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Updated</div>
                 <div className="text-xs text-muted-foreground">
-                  {new Date(prompt.updated_at).toLocaleDateString("th-TH")}
+                  {new Date(prompt.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </div>
               </div>
               {prompt.tags.length > 0 && (

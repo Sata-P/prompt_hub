@@ -144,7 +144,7 @@ function PromptCard({
           </div>
           <span className="flex items-center gap-1 shrink-0">
             <Clock className="h-3 w-3" />
-            {new Date(p.updated_at).toLocaleDateString("th-TH")}
+            {new Date(p.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
           </span>
         </div>
       </Link>
@@ -227,7 +227,7 @@ export default function FavoritesPage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            รายการ prompts ที่คุณกด favorite ไว้ทั้งหมด
+            All prompts you&apos;ve marked as favorite
           </p>
         </div>
 
@@ -245,7 +245,7 @@ export default function FavoritesPage() {
         <div className="relative mb-6 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="ค้นหา prompt..."
+            placeholder="Search favorites..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-9 h-9 text-sm"
@@ -276,15 +276,15 @@ export default function FavoritesPage() {
             <Heart className="h-8 w-8 text-muted-foreground/40" />
           </div>
           <h2 className="text-base font-semibold text-foreground mb-1">
-            ยังไม่มี prompt ที่ถูก favorite
+            No favorites yet
           </h2>
           <p className="text-sm text-muted-foreground max-w-xs mb-6">
-            กดปุ่ม Favorite บนหน้า prompt ที่คุณชื่นชอบ แล้วมันจะปรากฏที่นี่
+            Click the Favorite button on any prompt and it will appear here.
           </p>
           <Button asChild size="sm">
             <Link href="/prompts" className="gap-2">
               <ExternalLink className="h-4 w-4" />
-              ไปยังหน้า Prompts
+              Browse Prompts
             </Link>
           </Button>
         </div>
@@ -293,13 +293,13 @@ export default function FavoritesPage() {
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Search className="h-10 w-10 text-muted-foreground/40 mb-3" />
           <p className="text-sm text-muted-foreground">
-            ไม่พบผลลัพธ์สำหรับ &ldquo;{search}&rdquo;
+            No results for &ldquo;{search}&rdquo;
           </p>
           <button
             onClick={() => setSearch("")}
             className="mt-2 text-xs text-primary hover:underline"
           >
-            ล้างการค้นหา
+            Clear search
           </button>
         </div>
       ) : (
