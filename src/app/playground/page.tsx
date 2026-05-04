@@ -15,6 +15,9 @@ import {
   Bot,
   Settings2,
   FlaskConical,
+  Timer,
+  ChevronRight,
+  User as UserIcon,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -57,6 +60,18 @@ type UsageInfo = {
   totalTokens: number;
 };
 
+type PromptRun = {
+  id: number;
+  model: string | null;
+  output_response: string | null;
+  execution_time_ms: number | null;
+  token_used: number;
+  variables_input: Record<string, string> | null;
+  created_at: string;
+  prompt_version: { version_no: number };
+  user: { name: string };
+};
+
 // -------------------------------------------------------
 // PlaygroundContent — Main component
 // -------------------------------------------------------
@@ -96,6 +111,11 @@ function PlaygroundContent() {
   const [isCopiedResponse, setIsCopiedResponse] = useState(false);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const [temperature, setTemperature] = useState(0.7);
+
+  // Usage Examples state
+  const [runs, setRuns] = useState<PromptRun[]>([]);
+  const [runsLoading, setRunsLoading] = useState(false);
+  const [selectedRun, setSelectedRun] = useState<PromptRun | null>(null);
 
   // Refs
   const responseRef = useRef<HTMLDivElement>(null);
@@ -201,6 +221,20 @@ function PlaygroundContent() {
     };
 
     fetchPublicPrompts();
+  }, [promptId]);
+
+  // Fetch successful runs when promptId changes
+  useEffect(() => {
+    if (!promptId) { setRuns([]); setSelectedRun(null); return; }
+    setRunsLoading(true);
+    axios.get<PromptRun[]>(`/api/prompts/${promptId}/runs?limit=5`)
+      .then(res => {
+        setRuns(res.data);
+        if (res.data.length > 0) setSelectedRun(res.data[0]);
+        else setSelectedRun(null);
+      })
+      .catch(() => { setRuns([]); setSelectedRun(null); })
+      .finally(() => setRunsLoading(false));
   }, [promptId]);
 
   // -------------------------------------------------------
@@ -752,6 +786,134 @@ function PlaygroundContent() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Usage Examples (Successful Runs) */}
+      <div className="mt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Usage Examples</h2>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            {runs.length} successful run{runs.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {runsLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4">
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />)}
+            </div>
+            <div className="h-48 rounded-lg bg-muted animate-pulse" />
+          </div>
+        ) : runs.length === 0 ? (
+          <div className="border border-dashed rounded-xl p-8 text-center">
+            <Zap className="h-7 w-7 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm font-medium text-foreground mb-1">No runs yet</p>
+            <p className="text-xs text-muted-foreground">Run this prompt above — successful executions will appear here.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 items-start">
+
+            {/* Left: selector */}
+            <div className="flex flex-col gap-1.5">
+              {runs.map((run, idx) => {
+                const isActive = selectedRun?.id === run.id;
+                return (
+                  <button
+                    key={run.id}
+                    onClick={() => setSelectedRun(run)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
+                      isActive
+                        ? "bg-primary/10 border-primary/40 shadow-sm"
+                        : "bg-card border-border hover:bg-muted/40 hover:border-muted-foreground/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Bot className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-xs font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                        {run.model || "Unknown"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-auto shrink-0">#{idx + 1}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      {run.execution_time_ms != null && (
+                        <span className="flex items-center gap-0.5">
+                          <Timer className="h-3 w-3" />
+                          {run.execution_time_ms < 1000 ? `${run.execution_time_ms}ms` : `${(run.execution_time_ms / 1000).toFixed(1)}s`}
+                        </span>
+                      )}
+                      {run.token_used > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <Coins className="h-3 w-3" />
+                          {Math.round(run.token_used)}
+                        </span>
+                      )}
+                      <span className="ml-auto shrink-0">v{run.prompt_version.version_no}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right: detail */}
+            {selectedRun && (() => {
+              const run = selectedRun;
+              const hasVars = run.variables_input && Object.keys(run.variables_input).length > 0;
+              return (
+                <div className="border rounded-xl bg-card shadow-sm overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b bg-muted/30">
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                      <Bot className="h-3 w-3" />{run.model || "Unknown"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">v{run.prompt_version.version_no}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <UserIcon className="h-3 w-3" />{run.user.name}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {new Date(run.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                    <span className="ml-auto flex items-center gap-3">
+                      {run.execution_time_ms != null && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Timer className="h-3 w-3" />
+                          {run.execution_time_ms < 1000 ? `${run.execution_time_ms}ms` : `${(run.execution_time_ms / 1000).toFixed(2)}s`}
+                        </span>
+                      )}
+                      {run.token_used > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Coins className="h-3 w-3" />{Math.round(run.token_used)} tokens
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {hasVars && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Inputs</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(run.variables_input!).map(([k, v]) => (
+                            <span key={k} className="text-xs bg-muted px-2.5 py-1 rounded-md">
+                              <span className="font-mono text-primary">{`{{${k}}}`}</span>
+                              <span className="text-muted-foreground"> = </span>
+                              <span className="text-foreground">{String(v)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Output</p>
+                      <div className="bg-muted/50 rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto border">
+                        {run.output_response || "—"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
     </div>
   );
