@@ -98,7 +98,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm("คุณต้องการลบ Category นี้ใช่หรือไม่?")) return;
+    if (!confirm("Are you sure you want to delete this category?")) return;
     try {
       await axios.delete(`/api/categories/${id}`);
       setCategories(prev => prev.filter(c => c.id !== id));
@@ -127,7 +127,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteTag = async (id: number) => {
-    if (!confirm("คุณต้องการลบ Tag นี้ใช่หรือไม่?")) return;
+    if (!confirm("Are you sure you want to delete this tag?")) return;
     try {
       await axios.delete(`/api/tags/${id}`);
       setTags(prev => prev.filter(t => t.id !== id));
@@ -146,7 +146,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm("คุณต้องการลบ User นี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
+    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     try {
       await axios.delete(`/api/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
@@ -164,7 +164,7 @@ export default function SettingsPage() {
     <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">ตั้งค่าหมวดหมู่และป้ายกำกับสำหรับ Prompts ทั้งหมด</p>
+        <p className="text-muted-foreground mt-1">Manage categories, tags, and user roles for all prompts in the system.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -173,13 +173,13 @@ export default function SettingsPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Folder className="h-5 w-5 text-blue-500" /> หมวดหมู่ (Categories)
+                <Folder className="h-5 w-5 text-blue-500" /> Categories
               </CardTitle>
-              <CardDescription className="mt-1.5">จัดกลุ่ม Prompt ตามประเภทการใช้งาน</CardDescription>
+              <CardDescription className="mt-1.5">Group prompts by use case or domain</CardDescription>
             </div>
             {!isAddingCategory && (
               <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsAddingCategory(true)}>
-                <Plus className="h-4 w-4 mr-1" /> เพิ่ม
+                <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             )}
           </CardHeader>
@@ -187,7 +187,7 @@ export default function SettingsPage() {
             {isAddingCategory && (
               <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border">
                 <Input 
-                  placeholder="ชื่อหมวดหมู่ใหม่..." 
+                  placeholder="New category name..." 
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   disabled={categorySaving}
@@ -211,7 +211,7 @@ export default function SettingsPage() {
               </div>
             ) : categories.length === 0 && !isAddingCategory ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                ยังไม่ได้สร้าง Category
+                No categories created yet.
               </div>
             ) : (
               <ul className="space-y-2">
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                   <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
                     <div>
                       <div className="font-medium text-sm">{cat.name}</div>
-                      <div className="text-xs text-muted-foreground line-clamp-1">{cat.description || "ไม่มีรายละเอียด"}</div>
+                      <div className="text-xs text-muted-foreground line-clamp-1">{cat.description || "No description"}</div>
                     </div>
                     <Button 
                       variant="ghost" 
@@ -241,13 +241,13 @@ export default function SettingsPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Hash className="h-5 w-5 text-green-500" /> ป้ายกำกับ (Tags)
+                <Hash className="h-5 w-5 text-green-500" /> Tags
               </CardTitle>
-              <CardDescription className="mt-1.5">จัดการ Tag ที่ใช้งานในระบบทั้งหมด</CardDescription>
+              <CardDescription className="mt-1.5">Manage all tags used across prompts</CardDescription>
             </div>
             {!isAddingTag && (
               <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsAddingTag(true)}>
-                <Plus className="h-4 w-4 mr-1" /> เพิ่ม
+                <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             )}
           </CardHeader>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
             {isAddingTag && (
               <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border">
                 <Input 
-                  placeholder="พิมพ์ tag ใหม่..." 
+                  placeholder="New tag name..." 
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   disabled={tagSaving}
@@ -280,7 +280,7 @@ export default function SettingsPage() {
               </div>
             ) : tags.length === 0 && !isAddingTag ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                ยังไม่ได้สร้าง Tag
+                No tags created yet.
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -318,17 +318,17 @@ export default function SettingsPage() {
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                ไม่มีผู้ใช้งาน
+                No users found.
               </div>
             ) : (
               <div className="rounded-md border overflow-hidden">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted/50 border-b">
                     <tr>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">ชื่อผู้ใช้</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">อีเมล</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">ตำแหน่ง (Role)</th>
-                      <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[180px]">จัดการ</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Email</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[180px]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>

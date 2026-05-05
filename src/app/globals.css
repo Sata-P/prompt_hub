@@ -20,8 +20,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-inter);
+  --font-mono: var(--font-mono);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -34,39 +35,61 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
 }
 
+/* ── Soft'Debut Orange Design System ── */
 :root {
-  --background: #f8fafc; /* slightly off-white */
-  --foreground: #333333;
-  --card: #ffffff;
-  --card-foreground: #333333;
-  --popover: #ffffff;
-  --popover-foreground: #333333;
-  --primary: #ea580c; /* Tailwind orange-600 */
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #ea580c;
+  /* Background: warm off-white (from Stitch #FFFAF7) */
+  --background: #FFFAF7;
+  --foreground: #1C1410;
+
+  /* Surface / Card */
+  --card: #FFFFFF;
+  --card-foreground: #1C1410;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1410;
+
+  /* Primary: Orange #F97316 */
+  --primary: #F97316;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary: warm medium gray */
+  --secondary: #78716C;
+  --secondary-foreground: #FFFFFF;
+
+  /* Muted: warm light gray */
+  --muted: #F5F0EB;
+  --muted-foreground: #78716C;
+
+  /* Accent: light orange tint */
+  --accent: #FFF3E8;
+  --accent-foreground: #C2410C;
+
+  /* Destructive */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Borders & inputs */
+  --border: #E8E0D8;
+  --input: #F0EBE5;
+  --ring: #F97316;
+
+  /* Radius: 8px (Stitch ROUND_EIGHT) */
   --radius: 0.5rem;
-  
-  /* Sidebar uses dark theme even in light mode */
-  --sidebar: #27272a; /* Tailwind zinc-800 */
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #ea580c;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ea580c; 
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #27272a; 
-  --sidebar-ring: #ea580c;
+
+  /* ── Sidebar: deep warm dark (Stitch #1C1410) ── */
+  --sidebar: #1C1410;
+  --sidebar-foreground: #FAF7F5;
+  --sidebar-primary: #F97316;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(249, 115, 22, 0.15);
+  --sidebar-accent-foreground: #FB923C;
+  --sidebar-border: #2D2219;
+  --sidebar-ring: #F97316;
+  --sidebar-muted: #2D2219;
+  --sidebar-muted-foreground: #A8956B;
 }
 
 * {
@@ -77,4 +100,89 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), var(--font-sans), sans-serif;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+/* Monospace for prompt templates */
+code, pre, .font-mono {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ── Animations ── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  opacity: 0;
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease forwards;
+  opacity: 0;
+}
+
+.stagger-1 { animation-delay: 60ms; }
+.stagger-2 { animation-delay: 120ms; }
+.stagger-3 { animation-delay: 180ms; }
+.stagger-4 { animation-delay: 240ms; }
+.stagger-5 { animation-delay: 300ms; }
+
+/* ── Prompt code block styling ── */
+.prompt-template {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  background: #FDF8F4;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.prompt-variable {
+  color: #F97316;
+  font-weight: 600;
+  background: rgba(249, 115, 22, 0.08);
+  border-radius: 3px;
+  padding: 0 3px;
 }

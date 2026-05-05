@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Folder, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Folder, Plus, MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/component/ui/card";
 import { Skeleton } from "@/component/ui/skeleton";
@@ -29,12 +29,6 @@ type Collection = {
     prompts: number;
   };
 };
-
-type Prompt = {
-  id: number;
-  name: string;
-  description: string;
-}
 
 function CardSkeleton() {
   return (
@@ -125,6 +119,8 @@ function CollectionCard({
  * หน้าแสดงรายการ Collections ทั้งหมด
  * สำหรับผู้ดูแลระบบสามารถสร้าง แก้ไข หรือลบ Collection ได้
  */
+const ITEMS_PER_PAGE = 9;
+
 export default function CollectionsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
@@ -132,7 +128,12 @@ export default function CollectionsPage() {
 
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(collections.length / ITEMS_PER_PAGE);
+  const pagedCollections = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return collections.slice(start, start + ITEMS_PER_PAGE);
+  }, [collections, page]);
 
   // Dialog States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -150,14 +151,10 @@ export default function CollectionsPage() {
 
   const fetchData = async () => {
     try {
-      const [colRes, promptRes] = await Promise.all([
-        axios.get<Collection[]>("/api/collections"),
-        axios.get<Prompt[]>("/api/prompts")
-      ]);
-      setCollections(colRes.data || []);
-      setPrompts(promptRes.data || []);
+      const res = await axios.get<Collection[]>("/api/collections");
+      setCollections(res.data || []);
     } catch (err) {
-      console.error("Failed to load collections data:", err);
+      console.error("Failed to load collections:", err);
       toast({
         title: "Error",
         description: "Failed to load collections. Please try again.",
@@ -269,7 +266,7 @@ export default function CollectionsPage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            จัดกลุ่ม prompts เพื่อแชร์ให้ทีม
+            Group prompts into themed sets for your team
           </p>
         </div>
         
@@ -294,29 +291,48 @@ export default function CollectionsPage() {
             <Folder className="h-8 w-8 text-primary/40" />
           </div>
           <h2 className="text-lg font-semibold text-foreground mb-1">
-            ยังไม่มี Collection
+            No Collections Yet
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            สร้าง Collection แรกของคุณเพื่อจัดระเบียบ Prompt
+            Create your first collection to start organising your prompts.
           </p>
           {isAdmin && (
              <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} variant="outline">
-               <Plus className="mr-2 h-4 w-4" /> สร้างเลย
+               <Plus className="mr-2 h-4 w-4" /> Create One
              </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {collections.map((col) => (
-            <CollectionCard 
-              key={col.id} 
-              collection={col} 
-              isAdmin={isAdmin}
-              onEdit={openEdit}
-              onDelete={openDelete}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {pagedCollections.map((col) => (
+              <CollectionCard
+                key={col.id}
+                collection={col}
+                isAdmin={isAdmin}
+                onEdit={openEdit}
+                onDelete={openDelete}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Next<ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Dialog */}
@@ -325,32 +341,32 @@ export default function CollectionsPage() {
           <DialogHeader>
             <DialogTitle>Create Collection</DialogTitle>
             <DialogDescription>
-              สร้าง Collection ใหม่สำหรับจัดเก็บ Prompt
+              Create a new collection to organise and share prompts.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">ชื่อ Collection</Label>
+              <Label htmlFor="name">Collection Name</Label>
               <Input 
                 id="name" 
                 value={formData.name} 
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                placeholder="เช่น Marketing Prompts" 
+                placeholder="e.g. Marketing Prompts" 
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">รายละเอียด</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea 
                 id="description" 
                 value={formData.description} 
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="เพิ่มรายละเอียดของ Collection..." 
+                placeholder="Describe what this collection is for..." 
               />
             </div>
             <div className="flex items-center justify-between border rounded-lg p-3">
               <div className="flex flex-col gap-1">
                  <Label className="text-sm">Public Visibility</Label>
-                 <span className="text-[12px] text-muted-foreground">อนุญาตให้ทุกคนมองเห็น Collection นี้</span>
+                 <span className="text-[12px] text-muted-foreground">Allow everyone to see this collection</span>
               </div>
               <Switch 
                 checked={formData.visibility === "PUBLIC"}
@@ -359,9 +375,9 @@ export default function CollectionsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>ยกเลิก</Button>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
             <Button disabled={!formData.name.trim() || isSubmitting} onClick={handleCreateSubmit}>
-              {isSubmitting ? "กำลังบันทึก..." : "สร้าง"}
+              {isSubmitting ? "Saving..." : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -373,12 +389,12 @@ export default function CollectionsPage() {
           <DialogHeader>
             <DialogTitle>Edit Collection</DialogTitle>
             <DialogDescription>
-              แก้ไขข้อมูล Collection
+              Update the details of this collection.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name">ชื่อ Collection</Label>
+              <Label htmlFor="edit-name">Collection Name</Label>
               <Input 
                 id="edit-name" 
                 value={formData.name} 
@@ -386,7 +402,7 @@ export default function CollectionsPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-description">รายละเอียด</Label>
+              <Label htmlFor="edit-description">Description</Label>
               <Textarea 
                 id="edit-description" 
                 value={formData.description} 
@@ -396,7 +412,7 @@ export default function CollectionsPage() {
             <div className="flex items-center justify-between border rounded-lg p-3">
               <div className="flex flex-col gap-1">
                  <Label className="text-sm">Public Visibility</Label>
-                 <span className="text-[12px] text-muted-foreground">อนุญาตให้ทุกคนมองเห็น Collection นี้</span>
+                 <span className="text-[12px] text-muted-foreground">Allow everyone to see this collection</span>
               </div>
               <Switch 
                 checked={formData.visibility === "PUBLIC"}
@@ -405,9 +421,9 @@ export default function CollectionsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>ยกเลิก</Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
             <Button disabled={!formData.name.trim() || isSubmitting} onClick={handleEditSubmit}>
-              {isSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -417,20 +433,20 @@ export default function CollectionsPage() {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>คุณแน่ใจหรือไม่?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              การกระทำนี้ไม่สามารถย้อนกลับได้ Collection '{targetCollection?.name}' 
-              จะถูกลบออกจากระบบอย่างถาวร (Prompts ข้างในจะไม่ถูกลบ แต่จะถูกนำออกจาก Collection นี้)
+              This action cannot be undone. Collection &ldquo;{targetCollection?.name}&rdquo; will be
+              permanently deleted. Prompts inside will not be deleted but will be removed from this collection.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={(e) => { e.preventDefault(); handleDeleteConfirm(); }} 
               disabled={isSubmitting}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {isSubmitting ? "กำลังลบ..." : "ลบ Collection"}
+              {isSubmitting ? "Deleting..." : "Delete Collection"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
