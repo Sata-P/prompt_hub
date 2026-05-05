@@ -15,6 +15,13 @@ import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { Label } from "@/component/ui/label";
 import { Textarea } from "@/component/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/component/ui/select";
 
 // Type สำหรับข้อมูลหมวดหมู่ที่ดึงมาจาก API
 type Category = { id: number; name: string };
@@ -239,38 +246,38 @@ export default function CreatePromptPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="category" className="text-sm font-semibold">Category</Label>
-                        <div className="relative">
-                          <select 
-                            id="category"
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            value={categoryId}
-                            onChange={(e) => setCategoryId(e.target.value)}
-                          >
-                            <option value="">-- None --</option>
-                            {/* render ตัวเลือกหมวดหมู่ที่โหลดมา */}
+                        <Select 
+                          value={categoryId || "none"} 
+                          onValueChange={(val) => setCategoryId(val === "none" ? "" : val)}
+                        >
+                          <SelectTrigger id="category" className="h-10 bg-background">
+                            <SelectValue placeholder="-- None --" />
+                          </SelectTrigger>
+                          <SelectContent position="popper" side="bottom">
+                            <SelectItem value="none">-- None --</SelectItem>
                             {categories.map(cat => (
-                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                              <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
                             ))}
-                          </select>
-                        </div>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="model" className="text-sm font-semibold">Recommended AI Model</Label>
-                        <div className="relative">
-                          <select 
-                            id="model"
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            value={recommendedModel}
-                            onChange={(e) => setRecommendedModel(e.target.value)}
-                          >
-                            <option value="">-- None (use Default) --</option>
-                            {/* render ตัวเลือกโมเดลที่โหลดมา */}
+                        <Select 
+                          value={recommendedModel || "none"} 
+                          onValueChange={(val) => setRecommendedModel(val === "none" ? "" : val)}
+                        >
+                          <SelectTrigger id="model" className="h-10 bg-background">
+                            <SelectValue placeholder="-- None (use Default) --" />
+                          </SelectTrigger>
+                          <SelectContent position="popper">
+                            <SelectItem value="none">-- None (use Default) --</SelectItem>
                             {models.map(m => (
-                              <option key={m.id} value={m.id}>{m.name}</option>
+                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                             ))}
-                          </select>
-                        </div>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -317,7 +324,7 @@ export default function CreatePromptPage() {
                   <Textarea 
                     id="templateContent" 
                     placeholder="Type your prompt template here. Use {{variable}} for dynamic fields..." 
-                    className="font-mono text-sm leading-relaxed flex-1 min-h-[250px]"
+                    className="font-mono text-sm leading-relaxed flex-1 min-h-[450px]"
                     value={templateContent}
                     onChange={(e) => setTemplateContent(e.target.value)}
                     required

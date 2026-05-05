@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Folder, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Folder, Plus, MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/component/ui/card";
 import { Skeleton } from "@/component/ui/skeleton";
@@ -133,6 +133,13 @@ export default function CollectionsPage() {
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
+  const totalPages = Math.ceil(collections.length / ITEMS_PER_PAGE);
+  const pagedCollections = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return collections.slice(start, start + ITEMS_PER_PAGE);
+  }, [collections, page, ITEMS_PER_PAGE]);
 
   // Dialog States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -306,17 +313,36 @@ export default function CollectionsPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {collections.map((col) => (
-            <CollectionCard 
-              key={col.id} 
-              collection={col} 
-              isAdmin={isAdmin}
-              onEdit={openEdit}
-              onDelete={openDelete}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {pagedCollections.map((col) => (
+              <CollectionCard
+                key={col.id}
+                collection={col}
+                isAdmin={isAdmin}
+                onEdit={openEdit}
+                onDelete={openDelete}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Next<ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Dialog */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Check,
@@ -17,7 +17,10 @@ import {
   FlaskConical,
   Timer,
   ChevronRight,
+  ChevronLeft,
   User as UserIcon,
+  Search,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -85,6 +88,9 @@ function PlaygroundContent() {
   // Prompt data
   const [publicPrompts, setPublicPrompts] = useState<any[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [search, setSearch] = useState("");
+  const [listPage, setListPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -222,6 +228,25 @@ function PlaygroundContent() {
 
     fetchPublicPrompts();
   }, [promptId]);
+
+  // Filtered prompts by search query
+  const filteredPrompts = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return publicPrompts;
+    return publicPrompts.filter(p =>
+      (p.title || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q) ||
+      (p.category?.name || "").toLowerCase().includes(q) ||
+      (p.tags || []).some((t: any) => (t.name || "").toLowerCase().includes(q))
+    );
+  }, [publicPrompts, search]);
+
+  // Paginated slice of filtered prompts
+  const totalListPages = Math.ceil(filteredPrompts.length / ITEMS_PER_PAGE);
+  const pagedPrompts = useMemo(() => {
+    const start = (listPage - 1) * ITEMS_PER_PAGE;
+    return filteredPrompts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPrompts, listPage, ITEMS_PER_PAGE]);
 
   // Fetch successful runs when promptId changes
   useEffect(() => {
@@ -400,7 +425,7 @@ function PlaygroundContent() {
   if (!promptId) {
     return (
       <div className="pb-20 max-w-6xl mx-auto space-y-6 pt-4 px-4 fade-in-up">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -414,7 +439,35 @@ function PlaygroundContent() {
               Select a Prompt to test with an AI Model
             </p>
           </div>
+          {!loadingList && publicPrompts.length > 0 && (
+            <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3.5 py-1.5 rounded-full">
+              <FlaskConical className="h-3.5 w-3.5" />
+              {filteredPrompts.length} prompt{filteredPrompts.length !== 1 ? "s" : ""}
+            </div>
+          )}
         </div>
+
+        {/* Search bar */}
+        {!loadingList && publicPrompts.length > 0 && (
+          <div className="relative mb-6 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search prompts..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 pl-9 pr-9 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(""); setListPage(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
 
         {loadingList ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -429,27 +482,71 @@ function PlaygroundContent() {
               No public prompts found at this moment
             </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicPrompts.map((p) => (
-              <Card
-                key={p.id}
-                className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md bg-card group"
-                onClick={() => router.push(`/playground?promptId=${p.id}`)}
-              >
-                <CardHeader>
-                  <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors">
-                    {p.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {p.description || "No description available"}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+        ) : filteredPrompts.length === 0 ? (
+          <div className="text-center py-20 border rounded-xl bg-card/50 border-dashed">
+            <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              No results for &ldquo;{search}&rdquo;
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              className="mt-2 text-xs text-primary hover:underline"
+            >
+              Clear search
+            </button>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {pagedPrompts.map((p) => (
+                <Card
+                  key={p.id}
+                  className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md bg-card group"
+                  onClick={() => router.push(`/playground?promptId=${p.id}`)}
+                >
+                  <CardHeader>
+                    <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors">
+                      {p.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {p.description || "No description available"}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination controls */}
+            {totalListPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Page {listPage} of {totalListPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={listPage <= 1}
+                    onClick={() => setListPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={listPage >= totalListPages}
+                    onClick={() => setListPage(p => p + 1)}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );

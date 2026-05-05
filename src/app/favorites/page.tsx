@@ -13,6 +13,8 @@ import {
   BookOpen,
   Sparkles,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/component/ui/badge";
 import { Button } from "@/component/ui/button";
@@ -186,6 +188,8 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoritePrompt[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
 
   /* Fetch full favorites (with prompt details) */
   useEffect(() => {
@@ -208,6 +212,12 @@ export default function FavoritesPage() {
         (f.prompt.tags || []).some((t) => (t.name || "").toLowerCase().includes(q))
     );
   }, [favorites, search]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paged = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, page, ITEMS_PER_PAGE]);
 
   const isLoading = favLoading || dataLoading;
 
@@ -252,7 +262,7 @@ export default function FavoritesPage() {
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={() => { setSearch(""); setPage(1); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -303,16 +313,35 @@ export default function FavoritesPage() {
           </button>
         </div>
       ) : (
-        /* Card grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((item) => (
-            <PromptCard
-              key={item.id}
-              item={item}
-              onUnfavorite={(id) => toggleFavorite(id)}
-            />
-          ))}
-        </div>
+        <>
+          {/* Card grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {paged.map((item) => (
+              <PromptCard
+                key={item.id}
+                item={item}
+                onUnfavorite={(id) => toggleFavorite(id)}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Next<ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -10,7 +10,7 @@ import { getServerAuthSession } from "@/lib/auth";
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getServerAuthSession();
@@ -18,7 +18,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const promptId = Number(params.id);
+    // Await params for Next.js 15 compatibility
+    const resolvedParams = "then" in params ? await params : params;
+    const promptId = Number(resolvedParams.id);
     if (isNaN(promptId)) {
       return NextResponse.json({ error: "Invalid prompt ID" }, { status: 400 });
     }
