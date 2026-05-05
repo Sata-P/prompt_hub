@@ -32,8 +32,8 @@ type AppUser = {
 };
 
 /**
- * หน้าการตั้งค่า (Settings) สำหรับผู้ดูแลระบบ (ADMIN)
- * ใช้จัดการหมวดหมู่ (Categories), ป้ายกำกับ (Tags), และผู้ใช้งาน (Users)
+ * Settings Page for Administrator (ADMIN)
+ * Used for managing Categories, Tags, and Users
  */
 export default function SettingsPage() {
   const { data: session, status } = useSession();
@@ -146,7 +146,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
     try {
       await axios.delete(`/api/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
@@ -163,8 +163,8 @@ export default function SettingsPage() {
   return (
     <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage categories, tags, and user roles for all prompts in the system.</p>
+        <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
+        <p className="text-muted-foreground mt-1">Manage categories and tags for all prompts</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -175,7 +175,7 @@ export default function SettingsPage() {
               <CardTitle className="flex items-center gap-2">
                 <Folder className="h-5 w-5 text-blue-500" /> Categories
               </CardTitle>
-              <CardDescription className="mt-1.5">Group prompts by use case or domain</CardDescription>
+              <CardDescription className="mt-1.5">Group prompts by usage type</CardDescription>
             </div>
             {!isAddingCategory && (
               <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsAddingCategory(true)}>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
             {isAddingTag && (
               <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border">
                 <Input 
-                  placeholder="New tag name..." 
+                  placeholder="Type new tag..." 
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   disabled={tagSaving}
@@ -305,9 +305,9 @@ export default function SettingsPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-purple-500" /> จัดการผู้ใช้งาน (Users & Roles)
+                <Users className="h-5 w-5 text-purple-500" /> Users & Roles Management
               </CardTitle>
-              <CardDescription className="mt-1.5">เปลี่ยนสิทธิ์การเข้าถึง (Role) ของผู้ใช้งานในระบบ</CardDescription>
+              <CardDescription className="mt-1.5">Change access rights (Role) of users in the system</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
