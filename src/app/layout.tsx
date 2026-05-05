@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 import AuthProvider from "../component/SessionProvider";
 import { AppShell } from "../component/AppShell";
 
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <AppShell>{children}</AppShell>
+          <Toaster richColors closeButton position="top-right" />
         </AuthProvider>
       </body>
     </html>

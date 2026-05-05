@@ -9,7 +9,7 @@ import { Skeleton } from "@/component/ui/skeleton";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { Badge } from "@/component/ui/badge"; 
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/component/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/component/ui/dropdown-menu";
@@ -124,7 +124,6 @@ const ITEMS_PER_PAGE = 9;
 export default function CollectionsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
-  const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -155,11 +154,7 @@ export default function CollectionsPage() {
       setCollections(res.data || []);
     } catch (err) {
       console.error("Failed to load collections:", err);
-      toast({
-        title: "Error",
-        description: "Failed to load collections. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load collections. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -180,16 +175,12 @@ export default function CollectionsPage() {
     setIsSubmitting(true);
     try {
       await axios.post("/api/collections", formData);
-      toast({ title: "Success", description: "Collection created successfully." });
+      toast.success("Collection created successfully.");
       setIsCreateOpen(false);
       resetForm();
       fetchData();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to create collection.",
-        variant: "destructive"
-      });
+      toast.error(error.response?.data?.error || "Failed to create collection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -211,16 +202,12 @@ export default function CollectionsPage() {
     setIsSubmitting(true);
     try {
       await axios.patch(`/api/collections/${targetCollection.id}`, formData);
-      toast({ title: "Success", description: "Collection updated successfully." });
+      toast.success("Collection updated successfully.");
       setIsEditOpen(false);
       resetForm();
       fetchData();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to update collection.",
-        variant: "destructive"
-      });
+      toast.error(error.response?.data?.error || "Failed to update collection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -237,16 +224,12 @@ export default function CollectionsPage() {
     setIsSubmitting(true);
     try {
       await axios.delete(`/api/collections/${targetCollection.id}`);
-      toast({ title: "Success", description: "Collection deleted successfully." });
+      toast.success("Collection deleted successfully.");
       setIsDeleteOpen(false);
       resetForm();
       fetchData();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to delete collection.",
-        variant: "destructive"
-      });
+      toast.error(error.response?.data?.error || "Failed to delete collection.");
     } finally {
       setIsSubmitting(false);
     }

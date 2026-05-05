@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from "@/component/ui/dialog";
 import axios from "axios";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // ─── Types ───────────────────────────────────────────────────
 type CollectionPrompt = {
@@ -191,7 +191,6 @@ export default function CollectionDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
-  const { toast } = useToast();
 
   const collectionId = params?.id as string;
   const isAdmin =
@@ -252,7 +251,7 @@ export default function CollectionDetailsPage() {
       const existingIds = new Set(collection?.prompts.map((cp) => cp.prompt_id));
       setAvailablePrompts((res.data.data ?? res.data).filter((p: any) => !existingIds.has(p.id)));
     } catch {
-      toast({ title: "Error", description: "Failed to load prompts", variant: "destructive" });
+      toast.error("Failed to load prompts");
     } finally {
       setLoadingPrompts(false);
     }
@@ -266,9 +265,9 @@ export default function CollectionDetailsPage() {
         return { ...prev, prompts: [...prev.prompts, { prompt_id: res.data.prompt_id, sort_order: res.data.sort_order, prompt: res.data.prompt }] };
       });
       setAvailablePrompts((prev) => prev.filter((p) => p.id !== promptId));
-      toast({ title: "Prompt added", description: "Successfully added to collection." });
+      toast.success("Successfully added to collection.");
     } catch {
-      toast({ title: "Error", description: "Failed to add prompt", variant: "destructive" });
+      toast.error("Failed to add prompt");
     }
   };
 
@@ -280,9 +279,9 @@ export default function CollectionDetailsPage() {
         if (!prev) return prev;
         return { ...prev, prompts: prev.prompts.filter((cp) => cp.prompt_id !== promptId) };
       });
-      toast({ title: "Removed", description: "Prompt removed from collection." });
+      toast.success("Prompt removed from collection.");
     } catch {
-      toast({ title: "Error", description: "Failed to remove prompt", variant: "destructive" });
+      toast.error("Failed to remove prompt");
     }
   };
 
