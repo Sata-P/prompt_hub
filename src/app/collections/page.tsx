@@ -30,12 +30,6 @@ type Collection = {
   };
 };
 
-type Prompt = {
-  id: number;
-  name: string;
-  description: string;
-}
-
 function CardSkeleton() {
   return (
     <div className="bg-card border border-border rounded-xl p-5 space-y-3">
@@ -125,6 +119,8 @@ function CollectionCard({
  * หน้าแสดงรายการ Collections ทั้งหมด
  * สำหรับผู้ดูแลระบบสามารถสร้าง แก้ไข หรือลบ Collection ได้
  */
+const ITEMS_PER_PAGE = 9;
+
 export default function CollectionsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
@@ -132,14 +128,12 @@ export default function CollectionsPage() {
 
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [page, setPage] = useState(1);
-  const ITEMS_PER_PAGE = 9;
   const totalPages = Math.ceil(collections.length / ITEMS_PER_PAGE);
   const pagedCollections = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return collections.slice(start, start + ITEMS_PER_PAGE);
-  }, [collections, page, ITEMS_PER_PAGE]);
+  }, [collections, page]);
 
   // Dialog States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -157,14 +151,10 @@ export default function CollectionsPage() {
 
   const fetchData = async () => {
     try {
-      const [colRes, promptRes] = await Promise.all([
-        axios.get<Collection[]>("/api/collections"),
-        axios.get<Prompt[]>("/api/prompts")
-      ]);
-      setCollections(colRes.data || []);
-      setPrompts(promptRes.data || []);
+      const res = await axios.get<Collection[]>("/api/collections");
+      setCollections(res.data || []);
     } catch (err) {
-      console.error("Failed to load collections data:", err);
+      console.error("Failed to load collections:", err);
       toast({
         title: "Error",
         description: "Failed to load collections. Please try again.",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useDeferredValue } from "react";
 import Link from "next/link";
 import axios from "axios";
 import {
@@ -179,17 +179,16 @@ function CardSkeleton() {
 }
 
 /* ─── Main Page ──────────────────────────────────────────── */
-/**
- * หน้าแสดงรายการ Prompts ที่ผู้ใช้กดถูกใจ (Favorites) ไว้
- * มีช่องค้นหาสำหรับกรอง Prompts ตามชื่อ รายละเอียด หมวดหมู่ หรือแท็ก
- */
+
+const ITEMS_PER_PAGE = 9;
+
 export default function FavoritesPage() {
   const { favoriteID, loading: favLoading, toggleFavorite } = useFavorites();
   const [favorites, setFavorites] = useState<FavoritePrompt[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
   const [page, setPage] = useState(1);
-  const ITEMS_PER_PAGE = 9;
 
   /* Fetch full favorites (with prompt details) */
   useEffect(() => {
@@ -202,7 +201,7 @@ export default function FavoritesPage() {
   }, [favLoading, favoriteID]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const q = deferredSearch.toLowerCase().trim();
     if (!q) return favorites;
     return favorites.filter(
       (f) =>
@@ -211,7 +210,7 @@ export default function FavoritesPage() {
         (f.prompt.category?.name || "").toLowerCase().includes(q) ||
         (f.prompt.tags || []).some((t) => (t.name || "").toLowerCase().includes(q))
     );
-  }, [favorites, search]);
+  }, [favorites, deferredSearch]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paged = useMemo(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback, useMemo, useDeferredValue } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Check,
@@ -79,6 +79,8 @@ type PromptRun = {
 // PlaygroundContent — Main component
 // -------------------------------------------------------
 
+const ITEMS_PER_PAGE = 9;
+
 function PlaygroundContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -89,8 +91,8 @@ function PlaygroundContent() {
   const [publicPrompts, setPublicPrompts] = useState<any[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
   const [listPage, setListPage] = useState(1);
-  const ITEMS_PER_PAGE = 9;
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -229,9 +231,9 @@ function PlaygroundContent() {
     fetchPublicPrompts();
   }, [promptId]);
 
-  // Filtered prompts by search query
+  // Filtered prompts by search query (uses deferred value for better input responsiveness)
   const filteredPrompts = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const q = deferredSearch.toLowerCase().trim();
     if (!q) return publicPrompts;
     return publicPrompts.filter(p =>
       (p.title || "").toLowerCase().includes(q) ||
@@ -239,7 +241,7 @@ function PlaygroundContent() {
       (p.category?.name || "").toLowerCase().includes(q) ||
       (p.tags || []).some((t: any) => (t.name || "").toLowerCase().includes(q))
     );
-  }, [publicPrompts, search]);
+  }, [publicPrompts, deferredSearch]);
 
   // Paginated slice of filtered prompts
   const totalListPages = Math.ceil(filteredPrompts.length / ITEMS_PER_PAGE);
