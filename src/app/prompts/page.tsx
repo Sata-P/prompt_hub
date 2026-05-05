@@ -121,7 +121,7 @@ export default function PromptsList() {
               Prompt Library
             </h1>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">ค้นหา จัดการ และเปิดใช้งาน prompt ในระบบ</p>
+          <p className="mt-1 text-sm text-muted-foreground">Search, filter and manage prompts in the system</p>
         </div>
         <Link href="/prompts/new">
           <Button>
