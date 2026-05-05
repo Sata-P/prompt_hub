@@ -273,7 +273,7 @@ export async function chatCompletionStream(
           model,
           messages: options.messages,
           temperature: options.temperature ?? 0.7,
-          max_tokens: options.maxTokens ?? 1024,
+          max_tokens: options.maxTokens ?? 4096,
           stream: true,
           stream_options: { include_usage: true },
         },
