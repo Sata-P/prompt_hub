@@ -111,10 +111,10 @@ export default function PromptsList() {
 
   return (
     <div className="pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center">
-            <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8" >
+            <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8 shrink-0" >
             <BookSearch className="h-4 w-4 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-foreground gap-2">
@@ -123,8 +123,8 @@ export default function PromptsList() {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">Search, filter and manage prompts in the system</p>
         </div>
-        <Link href="/prompts/new">
-          <Button>
+        <Link href="/prompts/new" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             New Prompt
           </Button>
