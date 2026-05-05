@@ -116,9 +116,27 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         updateData.visibility = "PUBLIC";
       }
 
-      const updatedPrompt = await prisma.prompts.update({
-        where: { id: promptId },
-        data: updateData,
+      const updatedPrompt = await prisma.$transaction(async (tx) => {
+        const updated = await tx.prompts.update({
+          where: { id: promptId },
+          data: updateData,
+        });
+
+        await tx.activity_log.create({
+          data: {
+            user_id: userId,
+            action: "UPDATE_PROMPT_STATUS",
+            details: {
+              promptId,
+              title: existing.title,
+              previousStatus: existing.status,
+              newStatus: status,
+              ...(status === "PUBLISHED" && { visibility: "PUBLIC" }),
+            },
+          },
+        });
+
+        return updated;
       });
 
       return NextResponse.json(updatedPrompt);
@@ -171,6 +189,20 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           category: { select: { id: true, name: true, color: true } },
           owner: { select: { id: true, name: true, email: true } },
           tags: { include: { tag: { select: { id: true, name: true } } } },
+        },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: userId,
+          action: "UPDATE_PROMPT",
+          details: {
+            promptId,
+            title: updated.title,
+            changedFields: Object.keys(data).filter(
+              (k) => (data as Record<string, unknown>)[k] !== undefined
+            ),
+          },
         },
       });
 
@@ -230,10 +262,25 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Soft delete
-    const deleted = await prisma.prompts.update({
-      where: { id: promptId },
-      data: { deleted_at: new Date() },
+    const deleted = await prisma.$transaction(async (tx) => {
+      const softDeleted = await tx.prompts.update({
+        where: { id: promptId },
+        data: { deleted_at: new Date() },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: userId,
+          action: "DELETE_PROMPT",
+          details: {
+            promptId: softDeleted.id,
+            title: softDeleted.title,
+            deletedByRole: userRole,
+          },
+        },
+      });
+
+      return softDeleted;
     });
 
     return NextResponse.json({ message: "Prompt deleted successfully", id: deleted.id });

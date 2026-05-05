@@ -107,7 +107,7 @@ export async function POST(request: Request, { params }: RouteContext) {
           output_format: data.outputFormat ?? null,
           changelog: data.changelog ?? null,
           created_by: userId,
-          status: "DRAFT",
+          status: "PUBLISHED",
         },
       });
 

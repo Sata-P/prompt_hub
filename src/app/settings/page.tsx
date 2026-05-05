@@ -87,7 +87,7 @@ export default function SettingsPage() {
     setCategorySaving(true);
     try {
       const res = await axios.post("/api/categories", { name: newCategoryName.trim() });
-      setCategories(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+      setCategories(prev => [...prev, res.data.category ?? res.data].sort((a, b) => a.name.localeCompare(b.name)));
       setNewCategoryName("");
       setIsAddingCategory(false);
     } catch (err: any) {
@@ -211,7 +211,7 @@ export default function SettingsPage() {
               </div>
             ) : categories.length === 0 && !isAddingCategory ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                No categories created yet
+                No categories created yet.
               </div>
             ) : (
               <ul className="space-y-2">
@@ -243,7 +243,7 @@ export default function SettingsPage() {
               <CardTitle className="flex items-center gap-2">
                 <Hash className="h-5 w-5 text-green-500" /> Tags
               </CardTitle>
-              <CardDescription className="mt-1.5">Manage all tags used in the system</CardDescription>
+              <CardDescription className="mt-1.5">Manage all tags used across prompts</CardDescription>
             </div>
             {!isAddingTag && (
               <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsAddingTag(true)}>
@@ -280,7 +280,7 @@ export default function SettingsPage() {
               </div>
             ) : tags.length === 0 && !isAddingTag ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                No tags created yet
+                No tags created yet.
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -318,14 +318,14 @@ export default function SettingsPage() {
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                No users found
+                No users found.
               </div>
             ) : (
               <div className="rounded-md border overflow-hidden">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted/50 border-b">
                     <tr>
-                      <th className="px-4 py-3 font-medium text-muted-foreground">Username</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground">Email</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
                       <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[180px]">Actions</th>

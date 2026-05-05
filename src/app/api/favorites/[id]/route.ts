@@ -20,14 +20,28 @@ export async function DELETE(request: Request, { params }: RouteContext) {
         }
 
         // ลบโดยใช้ unique key (user_id + prompt_id) แทน favorites.id
-        await prisma.favorites.deleteMany({
-            where: {
-                user_id: Number(session.user.id),
-                prompt_id: promptId,
-            },
-        });
 
-        return NextResponse.json({ message: "Favorite deleted successfully" });
+        const unfav = await prisma.$transaction(async(tx)=>{
+            
+           const deletefav = await prisma.favorites.deleteMany({
+                where: {
+                    user_id: Number(session.user.id),
+                    prompt_id: promptId,
+                },
+            });
+
+            await tx.activity_log.create({
+                data:{
+                    user_id: Number(session.user.id),
+                    action:"UNFAVORITE_PROMPT",
+                    details:{   
+                        prompt: promptId,
+                    }
+                }
+            })
+            return deletefav; 
+        });
+        return NextResponse.json({ message: "Favorite deleted successfully" ,deletefav : unfav},{ status: 201});
     } catch (error) {
         console.error("Error deleting favorite:", error);
         return NextResponse.json(

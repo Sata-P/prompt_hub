@@ -4,6 +4,7 @@ import { getServerAuthSession } from "@/lib/auth";
 import { CreateCategorySchema } from "@/lib/validations/category";
 import { z } from "zod";
 
+
 /**
  * GET /api/categories
  * List all categories.
@@ -68,18 +69,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const category = await prisma.categories.create({
-      data: {
-        name: data.name,
-        color: data.color ?? null,
-      },
+    const newCategory = await prisma.$transaction(async (tx) => {
+
+      const category = await tx.categories.create({
+        data: {
+          name: data.name,
+          color: data.color ?? null,
+        },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "CREATE_CATEGORY",
+          details: { categoryId: category.id,
+                      name: category.name },
+        },
+      });
+      return category;
     });
 
-    return NextResponse.json(category, { status: 201 });
+   return NextResponse.json({ message: "Category created", category: newCategory }, { status: 201 });
+   
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.issues },
+        { message: "Validation failed", details: error.issues },
         { status: 400 }
       );
     }

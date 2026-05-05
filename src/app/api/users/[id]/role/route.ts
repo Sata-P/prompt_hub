@@ -30,10 +30,38 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    const updatedUser = await prisma.users.update({
+    // Fetch current role for logging
+    const currentUser = await prisma.users.findUnique({
       where: { id: userId },
-      data: { role: newRole },
-      select: { id: true, name: true, email: true, role: true }
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const updated = await tx.users.update({
+        where: { id: userId },
+        data: { role: newRole },
+        select: { id: true, name: true, email: true, role: true },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "UPDATE_USER_ROLE",
+          details: {
+            targetUserId: currentUser.id,
+            targetUserName: currentUser.name,
+            targetUserEmail: currentUser.email,
+            oldRole: currentUser.role,
+            newRole: updated.role,
+          },
+        },
+      });
+
+      return updated;
     });
 
     return NextResponse.json(updatedUser);

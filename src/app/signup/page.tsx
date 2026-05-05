@@ -30,15 +30,15 @@ export default function SignupPage() {
     setError("");
 
     if (!displayName || !email || !password || !confirmPassword) {
-      setError("กรุณากรอกข้อมูลให้ครบทุกช่อง");
+      setError("Please fill in all fields.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("รหัสผ่านไม่ตรงกัน");
+      setError("Passwords do not match.");
       return;
     }
     if (password.length < 8) {
-      setError("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -54,7 +54,7 @@ export default function SignupPage() {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
-        setError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+        setError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -68,8 +68,8 @@ export default function SignupPage() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <UserPlus className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">สมัครสมาชิก</CardTitle>
-          <CardDescription>สร้างบัญชีเพื่อเริ่มใช้งาน Prompt Hub</CardDescription>
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>Sign up to start using Prompt Hub</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -85,49 +85,49 @@ export default function SignupPage() {
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">หรือ</span>
+              <span className="bg-card px-2 text-muted-foreground">or</span>
             </div>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="displayName">ชื่อแสดงผล</Label>
+              <Label htmlFor="displayName">Display Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="displayName" placeholder="ชื่อของคุณ" className="pl-9" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+                <Input id="displayName" placeholder="Your name" className="pl-9" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">อีเมล</Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input id="email" type="email" placeholder="you@example.com" className="pl-9" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">รหัสผ่าน</Label>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input id="password" type="password" placeholder="••••••••" className="pl-9" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input id="confirmPassword" type="password" placeholder="••••••••" className="pl-9" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
         </CardContent>
 
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            มีบัญชีอยู่แล้ว?{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">เข้าสู่ระบบ</Link>
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-primary hover:underline">Sign in</Link>
           </p>
         </CardFooter>
       </Card>

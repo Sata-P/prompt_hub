@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback, useMemo, useDeferredValue } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Check,
@@ -14,6 +14,13 @@ import {
   Sparkles,
   Bot,
   Settings2,
+  FlaskConical,
+  Timer,
+  ChevronRight,
+  ChevronLeft,
+  User as UserIcon,
+  Search,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -56,9 +63,23 @@ type UsageInfo = {
   totalTokens: number;
 };
 
+type PromptRun = {
+  id: number;
+  model: string | null;
+  output_response: string | null;
+  execution_time_ms: number | null;
+  token_used: number;
+  variables_input: Record<string, string> | null;
+  created_at: string;
+  prompt_version: { version_no: number };
+  user: { name: string };
+};
+
 // -------------------------------------------------------
 // PlaygroundContent — Main component
 // -------------------------------------------------------
+
+const ITEMS_PER_PAGE = 9;
 
 function PlaygroundContent() {
   const searchParams = useSearchParams();
@@ -69,6 +90,9 @@ function PlaygroundContent() {
   // Prompt data
   const [publicPrompts, setPublicPrompts] = useState<any[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
+  const [listPage, setListPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -95,6 +119,11 @@ function PlaygroundContent() {
   const [isCopiedResponse, setIsCopiedResponse] = useState(false);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const [temperature, setTemperature] = useState(0.7);
+
+  // Usage Examples state
+  const [runs, setRuns] = useState<PromptRun[]>([]);
+  const [runsLoading, setRunsLoading] = useState(false);
+  const [selectedRun, setSelectedRun] = useState<PromptRun | null>(null);
 
   // Refs
   const responseRef = useRef<HTMLDivElement>(null);
@@ -170,7 +199,7 @@ function PlaygroundContent() {
         }
       } catch (error) {
         console.error("Error loading prompt:", error);
-        toast.error("ไม่สามารถโหลด Prompt ได้");
+        toast.error("Failed to load prompt");
       } finally {
         setLoading(false);
       }
@@ -200,6 +229,39 @@ function PlaygroundContent() {
     };
 
     fetchPublicPrompts();
+  }, [promptId]);
+
+  // Filtered prompts by search query (uses deferred value for better input responsiveness)
+  const filteredPrompts = useMemo(() => {
+    const q = deferredSearch.toLowerCase().trim();
+    if (!q) return publicPrompts;
+    return publicPrompts.filter(p =>
+      (p.title || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q) ||
+      (p.category?.name || "").toLowerCase().includes(q) ||
+      (p.tags || []).some((t: any) => (t.name || "").toLowerCase().includes(q))
+    );
+  }, [publicPrompts, deferredSearch]);
+
+  // Paginated slice of filtered prompts
+  const totalListPages = Math.ceil(filteredPrompts.length / ITEMS_PER_PAGE);
+  const pagedPrompts = useMemo(() => {
+    const start = (listPage - 1) * ITEMS_PER_PAGE;
+    return filteredPrompts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPrompts, listPage, ITEMS_PER_PAGE]);
+
+  // Fetch successful runs when promptId changes
+  useEffect(() => {
+    if (!promptId) { setRuns([]); setSelectedRun(null); return; }
+    setRunsLoading(true);
+    axios.get<PromptRun[]>(`/api/prompts/${promptId}/runs?limit=5`)
+      .then(res => {
+        setRuns(res.data);
+        if (res.data.length > 0) setSelectedRun(res.data[0]);
+        else setSelectedRun(null);
+      })
+      .catch(() => { setRuns([]); setSelectedRun(null); })
+      .finally(() => setRunsLoading(false));
   }, [promptId]);
 
   // -------------------------------------------------------
@@ -234,14 +296,14 @@ function PlaygroundContent() {
   const handleCopy = () => {
     navigator.clipboard.writeText(renderedPrompt);
     setIsCopied(true);
-    toast.success("คัดลอก Prompt แล้ว");
+    toast.success("Prompt copied");
     setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleCopyResponse = () => {
     navigator.clipboard.writeText(llmResponse);
     setIsCopiedResponse(true);
-    toast.success("คัดลอก Response แล้ว");
+    toast.success("Response copied");
     setTimeout(() => setIsCopiedResponse(false), 2000);
   };
 
@@ -344,14 +406,14 @@ function PlaygroundContent() {
       }
 
       setExecutionTime(Date.now() - startTime);
-      toast.success("รัน Prompt สำเร็จ");
+      toast.success("Prompt run successfully");
     } catch (error: any) {
       if (error.name === "AbortError") {
-        toast.info("หยุดการทำงานแล้ว");
+        toast.info("Execution stopped");
         setExecutionTime(Date.now() - startTime);
       } else {
         console.error("Run prompt error:", error);
-        toast.error(error.message || "เกิดข้อผิดพลาดในการรัน Prompt");
+        toast.error(error.message || "An error occurred while running the prompt");
       }
     } finally {
       setIsRunning(false);
@@ -365,19 +427,49 @@ function PlaygroundContent() {
   if (!promptId) {
     return (
       <div className="pb-20 max-w-6xl mx-auto space-y-6 pt-4 px-4 fade-in-up">
-        <div className="text-center mb-10 pt-10">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20">
-              <Sparkles className="h-7 w-7" />
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FlaskConical className="h-4 w-4 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+                Prompt Playground
+              </h1>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Select a Prompt to test with an AI Model
+            </p>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">
-            Prompt Playground
-          </h1>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            เลือก Prompt เพื่อทดสอบกับ AI Model
-          </p>
+          {!loadingList && publicPrompts.length > 0 && (
+            <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3.5 py-1.5 rounded-full">
+              <FlaskConical className="h-3.5 w-3.5" />
+              {filteredPrompts.length} prompt{filteredPrompts.length !== 1 ? "s" : ""}
+            </div>
+          )}
         </div>
+
+        {/* Search bar */}
+        {!loadingList && publicPrompts.length > 0 && (
+          <div className="relative mb-6 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search prompts..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 pl-9 pr-9 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(""); setListPage(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
 
         {loadingList ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -389,30 +481,74 @@ function PlaygroundContent() {
           <div className="text-center py-20 border rounded-xl bg-card/50 border-dashed">
             <Bot className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
             <p className="text-muted-foreground">
-              ไม่พบ Public Prompt ในขณะนี้
+              No public prompts found at this moment
             </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicPrompts.map((p) => (
-              <Card
-                key={p.id}
-                className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md bg-card group"
-                onClick={() => router.push(`/playground?promptId=${p.id}`)}
-              >
-                <CardHeader>
-                  <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors">
-                    {p.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {p.description || "ไม่มีรายละเอียด"}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+        ) : filteredPrompts.length === 0 ? (
+          <div className="text-center py-20 border rounded-xl bg-card/50 border-dashed">
+            <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              No results for &ldquo;{search}&rdquo;
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              className="mt-2 text-xs text-primary hover:underline"
+            >
+              Clear search
+            </button>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {pagedPrompts.map((p) => (
+                <Card
+                  key={p.id}
+                  className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md bg-card group"
+                  onClick={() => router.push(`/playground?promptId=${p.id}`)}
+                >
+                  <CardHeader>
+                    <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors">
+                      {p.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {p.description || "No description available"}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination controls */}
+            {totalListPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Page {listPage} of {totalListPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={listPage <= 1}
+                    onClick={() => setListPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={listPage >= totalListPages}
+                    onClick={() => setListPage(p => p + 1)}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -424,16 +560,18 @@ function PlaygroundContent() {
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-5 pt-4 px-4 fade-in-up">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <div>
-          <h1
-            className="text-2xl font-bold tracking-tight mb-1"
-            style={{ color: "#000000ff" }}
-          >
-            {promptTitle || "Prompt Playground"}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            กรอกตัวแปร เลือก Model แล้วกด Run เพื่อทดสอบกับ AI
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+              {promptTitle || "Prompt Playground"}
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Enter variables, select a model, and click Run to test with AI
           </p>
         </div>
 
@@ -443,7 +581,7 @@ function PlaygroundContent() {
             <Bot className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-[200px] h-9 bg-background">
-                <SelectValue placeholder="เลือก Model" />
+                <SelectValue placeholder="Select Model" />
               </SelectTrigger>
               <SelectContent>
                 {models.length > 0 ? (
@@ -485,16 +623,16 @@ function PlaygroundContent() {
 
       {/* System Prompt (collapsible) */}
       {showSystemPrompt && (
-        <Card className="shadow-sm border-dashed border-orange-200 bg-orange-50/30">
+        <Card className="shadow-sm border border-primary/20 bg-primary/[0.02]">
           <CardHeader className="pb-2 pt-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5" />
+            <CardTitle className="text-sm font-semibold text-primary flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
               System Prompt
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
             <Textarea
-              placeholder="กำหนด System Prompt สำหรับ AI (เช่น 'คุณเป็นผู้เชี่ยวชาญด้าน...')"
+              placeholder="Set System Prompt for AI (e.g., 'You are an expert in...')"
               className="min-h-[80px] resize-y bg-white text-sm"
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
@@ -511,7 +649,7 @@ function PlaygroundContent() {
                 step="0.1"
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className="flex-1 h-1.5 accent-orange-500"
+                className="flex-1 h-1.5 accent-primary"
               />
               <span className="text-xs font-mono text-muted-foreground w-8 text-right">
                 {temperature.toFixed(1)}
@@ -537,7 +675,7 @@ function PlaygroundContent() {
               </div>
             ) : variables.length === 0 ? (
               <div className="bg-muted/50 border border-border border-dashed rounded-lg flex items-center justify-center h-32 text-muted-foreground text-xs text-center px-4">
-                ไม่มีตัวแปรสำหรับ Prompt นี้
+                No variables for this prompt
               </div>
             ) : (
               <div className="space-y-2.5 flex-1 overflow-auto px-0.5">
@@ -593,7 +731,7 @@ function PlaygroundContent() {
             <div className="pt-3 mt-auto">
               {isRunning ? (
                 <Button
-                  className="w-full h-11 font-semibold"
+                  className="w-full h-11 font-semibold transition-transform active:scale-95"
                   variant="destructive"
                   onClick={handleStop}
                 >
@@ -602,7 +740,7 @@ function PlaygroundContent() {
                 </Button>
               ) : (
                 <Button
-                  className="w-full h-11 font-semibold"
+                  className="w-full h-11 font-semibold shadow-lg shadow-primary/20 transition-transform active:scale-95"
                   onClick={handleRunPrompt}
                   disabled={!selectedModel}
                 >
@@ -645,7 +783,7 @@ function PlaygroundContent() {
                 <Skeleton className="h-4 w-3/4" />
               </div>
             ) : (
-              <div className="absolute inset-x-4 top-0 bottom-4 overflow-auto rounded-lg bg-muted/50 border px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed font-mono">
+              <div className="absolute inset-x-4 top-0 bottom-4 overflow-auto rounded-lg bg-muted/30 shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed font-mono text-muted-foreground">
                 {renderedPrompt || (
                   <span className="text-muted-foreground italic text-xs">
                     prompt preview...
@@ -666,8 +804,8 @@ function PlaygroundContent() {
                 </CardTitle>
                 {isRunning && (
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                    <span className="text-xs text-muted-foreground animate-pulse">
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-xs text-primary animate-pulse font-medium">
                       generating...
                     </span>
                   </div>
@@ -694,7 +832,7 @@ function PlaygroundContent() {
             {/* Response Content */}
             <div
               ref={responseRef}
-              className="absolute inset-x-4 top-0 bottom-16 overflow-auto rounded-lg bg-gradient-to-b from-slate-50 to-white border px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed"
+              className="absolute inset-x-4 top-0 bottom-16 overflow-auto rounded-lg bg-gradient-to-b from-primary/[0.02] to-transparent shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed text-foreground"
             >
               {llmResponse ? (
                 llmResponse
@@ -702,7 +840,7 @@ function PlaygroundContent() {
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground/50">
                   <Bot className="h-10 w-10 mb-3 opacity-30" />
                   <span className="text-xs">
-                    กด Run Prompt เพื่อดูผลลัพธ์จาก AI
+                    Click Run Prompt to see the AI response
                   </span>
                 </div>
               )}
@@ -748,13 +886,141 @@ function PlaygroundContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Usage Examples (Successful Runs) */}
+      <div className="mt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Usage Examples</h2>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            {runs.length} successful run{runs.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {runsLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4">
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />)}
+            </div>
+            <div className="h-48 rounded-lg bg-muted animate-pulse" />
+          </div>
+        ) : runs.length === 0 ? (
+          <div className="border border-dashed rounded-xl p-8 text-center">
+            <Zap className="h-7 w-7 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm font-medium text-foreground mb-1">No runs yet</p>
+            <p className="text-xs text-muted-foreground">Run this prompt above — successful executions will appear here.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 items-start">
+
+            {/* Left: selector */}
+            <div className="flex flex-col gap-1.5">
+              {runs.map((run, idx) => {
+                const isActive = selectedRun?.id === run.id;
+                return (
+                  <button
+                    key={run.id}
+                    onClick={() => setSelectedRun(run)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
+                      isActive
+                        ? "bg-primary/10 border-primary/40 shadow-sm"
+                        : "bg-card border-border hover:bg-muted/40 hover:border-muted-foreground/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Bot className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-xs font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                        {run.model || "Unknown"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-auto shrink-0">#{idx + 1}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      {run.execution_time_ms != null && (
+                        <span className="flex items-center gap-0.5">
+                          <Timer className="h-3 w-3" />
+                          {run.execution_time_ms < 1000 ? `${run.execution_time_ms}ms` : `${(run.execution_time_ms / 1000).toFixed(1)}s`}
+                        </span>
+                      )}
+                      {run.token_used > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <Coins className="h-3 w-3" />
+                          {Math.round(run.token_used)}
+                        </span>
+                      )}
+                      <span className="ml-auto shrink-0">v{run.prompt_version.version_no}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right: detail */}
+            {selectedRun && (() => {
+              const run = selectedRun;
+              const hasVars = run.variables_input && Object.keys(run.variables_input).length > 0;
+              return (
+                <div className="border rounded-xl bg-card shadow-sm overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b bg-muted/30">
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                      <Bot className="h-3 w-3" />{run.model || "Unknown"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">v{run.prompt_version.version_no}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <UserIcon className="h-3 w-3" />{run.user.name}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {new Date(run.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                    <span className="ml-auto flex items-center gap-3">
+                      {run.execution_time_ms != null && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Timer className="h-3 w-3" />
+                          {run.execution_time_ms < 1000 ? `${run.execution_time_ms}ms` : `${(run.execution_time_ms / 1000).toFixed(2)}s`}
+                        </span>
+                      )}
+                      {run.token_used > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Coins className="h-3 w-3" />{Math.round(run.token_used)} tokens
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {hasVars && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Inputs</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(run.variables_input!).map(([k, v]) => (
+                            <span key={k} className="text-xs bg-muted px-2.5 py-1 rounded-md">
+                              <span className="font-mono text-primary">{`{{${k}}}`}</span>
+                              <span className="text-muted-foreground"> = </span>
+                              <span className="text-foreground">{String(v)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Output</p>
+                      <div className="bg-muted/50 rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto border">
+                        {run.output_response || "—"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 /**
- * หน้า Playground
- * โค้ดส่วนหลักหุ้มด้วย Suspense เพื่อรองรับการอ่านค่าจาก searchParams
+ * Playground Page
+ * Main content is wrapped in Suspense to support searchParams reading
  */
 export default function PlaygroundPage() {
   return (

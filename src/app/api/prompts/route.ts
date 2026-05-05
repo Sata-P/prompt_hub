@@ -186,9 +186,10 @@ export async function POST(request: Request) {
           description: data.description ?? null,
           category_id: data.categoryId ?? null,
           recommended_model: data.recommendedModel ?? null,
-          visibility: data.visibility ?? "PRIVATE",
+          visibility: data.visibility ?? "PUBLIC",
           owner_id: userId,
           latest_version_no: 1,
+          status: "PUBLISHED",
           tags: {
             create: tagRecords.map((t) => ({
               tag_id: t.id,
@@ -207,7 +208,7 @@ export async function POST(request: Request) {
           output_format: data.outputFormat ?? null,
           changelog: "Initial version",
           created_by: userId,
-          status: "DRAFT",
+          status: "PUBLISHED",
         },
       });
 
@@ -229,6 +230,18 @@ export async function POST(request: Request) {
           })),
         });
       }
+
+      //activity log
+        await tx.activity_log.create({
+        data: {
+          user_id: Number(session.user.id),
+          action: "CREATE_PROMPT",
+          details: { promptId: prompt.id,
+                      name: prompt.title,
+                      version: prompt.latest_version_no
+                    },
+        },
+      });
 
       return { prompt, version };
     });
