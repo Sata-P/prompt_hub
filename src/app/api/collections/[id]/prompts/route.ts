@@ -33,12 +33,24 @@ export async function POST(request: Request, { params }: RouteContext) {
         });
         const nextSort = maxSort ? maxSort.sort_order + 1 : 0;
 
-        const newEntry = await prisma.collections_prompts.create({
-            data: {
-                collection_id: collectionId,
-                prompt_id: promptId,
-                sort_order: nextSort
-            }
+        const result = await prisma.$transaction(async (tx) => {
+            const newEntry = await tx.collections_prompts.create({
+                data: {
+                    collection_id: collectionId,
+                    prompt_id: promptId,
+                    sort_order: nextSort,
+                },
+            });
+
+            await tx.activity_log.create({
+                data: {
+                    user_id: Number(session.user.id),
+                    action: "ADD_PROMPT_TO_COLLECTION",
+                    details: { collectionId, promptId, sort_order: nextSort },
+                },
+            });
+
+            return newEntry;
         });
 
         // Fetch prompt details to return for UI update

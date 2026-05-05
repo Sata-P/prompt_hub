@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useDeferredValue } from "react";
 import Link from "next/link";
 import axios from "axios";
 import {
@@ -13,6 +13,8 @@ import {
   BookOpen,
   Sparkles,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/component/ui/badge";
 import { Button } from "@/component/ui/button";
@@ -144,7 +146,7 @@ function PromptCard({
           </div>
           <span className="flex items-center gap-1 shrink-0">
             <Clock className="h-3 w-3" />
-            {new Date(p.updated_at).toLocaleDateString("th-TH")}
+            {new Date(p.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
           </span>
         </div>
       </Link>
@@ -177,15 +179,16 @@ function CardSkeleton() {
 }
 
 /* ─── Main Page ──────────────────────────────────────────── */
-/**
- * หน้าแสดงรายการ Prompts ที่ผู้ใช้กดถูกใจ (Favorites) ไว้
- * มีช่องค้นหาสำหรับกรอง Prompts ตามชื่อ รายละเอียด หมวดหมู่ หรือแท็ก
- */
+
+const ITEMS_PER_PAGE = 9;
+
 export default function FavoritesPage() {
   const { favoriteID, loading: favLoading, toggleFavorite } = useFavorites();
   const [favorites, setFavorites] = useState<FavoritePrompt[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
+  const [page, setPage] = useState(1);
 
   /* Fetch full favorites (with prompt details) */
   useEffect(() => {
@@ -198,16 +201,22 @@ export default function FavoritesPage() {
   }, [favLoading, favoriteID]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const q = deferredSearch.toLowerCase().trim();
     if (!q) return favorites;
     return favorites.filter(
       (f) =>
-        f.prompt.title.toLowerCase().includes(q) ||
-        f.prompt.description?.toLowerCase().includes(q) ||
-        f.prompt.category?.name.toLowerCase().includes(q) ||
-        f.prompt.tags.some((t) => t.name.toLowerCase().includes(q))
+        (f.prompt.title || "").toLowerCase().includes(q) ||
+        (f.prompt.description || "").toLowerCase().includes(q) ||
+        (f.prompt.category?.name || "").toLowerCase().includes(q) ||
+        (f.prompt.tags || []).some((t) => (t.name || "").toLowerCase().includes(q))
     );
-  }, [favorites, search]);
+  }, [favorites, deferredSearch]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paged = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, page, ITEMS_PER_PAGE]);
 
   const isLoading = favLoading || dataLoading;
 
@@ -227,7 +236,7 @@ export default function FavoritesPage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            รายการ prompts ที่คุณกด favorite ไว้ทั้งหมด
+            All prompts you&apos;ve marked as favorite
           </p>
         </div>
 
@@ -245,14 +254,14 @@ export default function FavoritesPage() {
         <div className="relative mb-6 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="ค้นหา prompt..."
+            placeholder="Search favorites..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-9 h-9 text-sm"
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={() => { setSearch(""); setPage(1); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -276,15 +285,15 @@ export default function FavoritesPage() {
             <Heart className="h-8 w-8 text-muted-foreground/40" />
           </div>
           <h2 className="text-base font-semibold text-foreground mb-1">
-            ยังไม่มี prompt ที่ถูก favorite
+            No favorites yet
           </h2>
           <p className="text-sm text-muted-foreground max-w-xs mb-6">
-            กดปุ่ม Favorite บนหน้า prompt ที่คุณชื่นชอบ แล้วมันจะปรากฏที่นี่
+            Click the Favorite button on any prompt and it will appear here.
           </p>
           <Button asChild size="sm">
             <Link href="/prompts" className="gap-2">
               <ExternalLink className="h-4 w-4" />
-              ไปยังหน้า Prompts
+              Browse Prompts
             </Link>
           </Button>
         </div>
@@ -293,26 +302,45 @@ export default function FavoritesPage() {
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Search className="h-10 w-10 text-muted-foreground/40 mb-3" />
           <p className="text-sm text-muted-foreground">
-            ไม่พบผลลัพธ์สำหรับ &ldquo;{search}&rdquo;
+            No results for &ldquo;{search}&rdquo;
           </p>
           <button
             onClick={() => setSearch("")}
             className="mt-2 text-xs text-primary hover:underline"
           >
-            ล้างการค้นหา
+            Clear search
           </button>
         </div>
       ) : (
-        /* Card grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((item) => (
-            <PromptCard
-              key={item.id}
-              item={item}
-              onUnfavorite={(id) => toggleFavorite(id)}
-            />
-          ))}
-        </div>
+        <>
+          {/* Card grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {paged.map((item) => (
+              <PromptCard
+                key={item.id}
+                item={item}
+                onUnfavorite={(id) => toggleFavorite(id)}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Next<ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

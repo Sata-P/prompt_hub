@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     const { email, password, name } = SignUpSchema.parse(body);
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hashSync(password, 10);
 
     // const isValidEmail = typeof email === "string" && email.includes("@");
     // const isValidPassword = typeof password === "string" && password.length >= 6;
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     // if (!isValidEmail || !isValidPassword || !isValidName) {
     //   return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     // }
+    
     const existingUser = await prisma.users.findUnique({
       where: { email },
     });
@@ -51,16 +52,29 @@ export async function POST(request: Request) {
     //   return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     // }
 
-    const user = await prisma.users.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-      },
+    const newUser = await prisma.$transaction(async (tx) => {
+ 
+      const user = await tx.users.create({
+        data: {
+          email,
+          name,
+          password: hashedPassword,
+        },
+      });
+
+      await tx.activity_log.create({
+        data: {
+          user_id: user.id, 
+          action: "REGISTER",
+          details: { email: user.email } 
+        }
+      });
+
+      return user;
     });
 
-    return NextResponse.json({ message: "User created", user });
-
+    return NextResponse.json({ message: "User created", user: newUser }, { status: 201 });
+    
   } catch (error) {
     return NextResponse.json({ error: "User could not be created" }, { status: 500 });
   }

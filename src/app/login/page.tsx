@@ -68,7 +68,7 @@ function LoginForm() {
         router.push("/dashboard");
       }
     } catch {
-      setError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -81,15 +81,15 @@ function LoginForm() {
         <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <LogIn className="h-6 w-6" />
         </div>
-        <CardTitle className="text-2xl">เข้าสู่ระบบ</CardTitle>
-        <CardDescription>ลงชื่อเข้าใช้ Prompt Hub</CardDescription>
+        <CardTitle className="text-2xl">Sign In</CardTitle>
+        <CardDescription>Sign in to your Prompt Hub account</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
         {/* แจ้งเตือนสีเขียว: แสดงเฉพาะเมื่อมี ?registered=true */}
         {registered && (
           <div className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-700">
-            สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ
+            Registration successful! Please sign in.
           </div>
         )}
 
@@ -104,7 +104,7 @@ function LoginForm() {
         <form onSubmit={handleLogin} className="space-y-4">
           {/* ช่องอีเมล */}
           <div className="space-y-2">
-            <Label htmlFor="email">อีเมล</Label>
+            <Label htmlFor="email">Email</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input id="email" type="email" placeholder="you@example.com" className="pl-9" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -113,7 +113,7 @@ function LoginForm() {
 
           {/* ช่องรหัสผ่าน */}
           <div className="space-y-2">
-            <Label htmlFor="password">รหัสผ่าน</Label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input id="password" type="password" placeholder="••••••••" className="pl-9" value={password} onChange={(e) => setPassword(e.target.value)} required />
@@ -122,7 +122,7 @@ function LoginForm() {
 
           {/* ปุ่ม submit — disable ตอนกำลังโหลด */}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
       </CardContent>
@@ -130,8 +130,8 @@ function LoginForm() {
       {/* Footer: ลิงก์ไปหน้าสมัครสมาชิก */}
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          ยังไม่มีบัญชี?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">สมัครสมาชิก</Link>
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="font-medium text-primary hover:underline">Sign up</Link>
         </p>
       </CardFooter>
     </Card>

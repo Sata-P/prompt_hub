@@ -13,6 +13,7 @@ import { Badge } from "@/component/ui/badge";
 import { Skeleton } from "@/component/ui/skeleton";
 import { useFavorites } from "@/hooks/useFavorite";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
+import CommentSection from "@/component/comments/CommentSection";
 
 type Version = {
   id: number;
@@ -67,13 +68,7 @@ export default function PromptDetailPage() {
     userRole === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
 
-  const canApprove = 
-    (userRole === "ADMIN" || userRole === "EDITOR") && 
-    (prompt?.status !== "PUBLISHED");
 
-  const canSendReview = 
-    (prompt && userId && Number(userId) === prompt.owner.id) && 
-    prompt?.status === "DRAFT";
 
   const canDelete = 
     userRole === "ADMIN" || 
@@ -81,34 +76,16 @@ export default function PromptDetailPage() {
     (prompt && userId && Number(userId) === prompt.owner.id);
 
   const handleDelete = async () => {
-    if (!confirm("คุณต้องการลบ Prompt นี้ทิ้งใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
+    if (!confirm("Are you sure you want to delete this prompt? This action cannot be undone.")) return;
     try {
       await axios.delete(`/api/prompts/${id}`);
       router.push("/prompts");
     } catch (err: any) {
-      alert(err.response?.data?.error || "เกิดข้อผิดพลาดในการลบ Prompt");
+      alert(err.response?.data?.error || "Failed to delete prompt.");
     }
   };
 
-  const handleApprove = async () => {
-    if (!confirm("คุณต้องการอนุมัติ (Approve) Prompt นี้ให้สถานะเป็น PUBLISHED หรือไม่?")) return;
-    try {
-      await axios.patch(`/api/prompts/${id}`, { status: "PUBLISHED" });
-      setPrompt(prev => prev ? { ...prev, status: "PUBLISHED" } : null);
-    } catch (err: any) {
-      alert(err.response?.data?.error || "เกิดข้อผิดพลาดในการอนุมัติ Prompt");
-    }
-  };
 
-  const handleSendReview = async () => {
-    if (!confirm("คุณต้องการส่ง Prompt นี้ไปให้ผู้ดูแลระบบตรวจสอบ (Review) หรือไม่?")) return;
-    try {
-      await axios.patch(`/api/prompts/${id}`, { status: "REVIEW" });
-      setPrompt(prev => prev ? { ...prev, status: "REVIEW" } : null);
-    } catch (err: any) {
-      alert(err.response?.data?.error || "เกิดข้อผิดพลาดในการส่ง Review");
-    }
-  };
 
   useEffect(() => {
     if (!id) return;
@@ -158,10 +135,10 @@ export default function PromptDetailPage() {
     return (
       <div className="py-20 text-center max-w-lg mx-auto">
         <div className="bg-destructive/10 text-destructive p-6 rounded-lg mb-6">
-          <h2 className="text-xl font-bold mb-2">ไม่พบข้อมูล Prompt</h2>
+          <h2 className="text-xl font-bold mb-2">Prompt Not Found</h2>
           <p>{error}</p>
         </div>
-        <Button asChild><Link href="/prompts">กลับไปที่คลัง Prompt</Link></Button>
+        <Button asChild><Link href="/prompts">Back to Prompt Library</Link></Button>
       </div>
     );
   }
@@ -176,7 +153,7 @@ export default function PromptDetailPage() {
             {getStatusBadge(prompt.status)}
           </div>
           <p className="text-sm text-muted-foreground">
-            {prompt.description || "ไม่มีรายละเอียดระบุไว้"}
+            {prompt.description || "No description available"}
           </p>
           {prompt.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
@@ -197,16 +174,7 @@ export default function PromptDetailPage() {
           <Button variant="outline" size="sm" asChild>
             <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>Use Prompt</Link>
           </Button>
-          {canSendReview && (
-            <Button size="sm" variant="secondary" onClick={handleSendReview}>
-              <Clock className="mr-1 h-4 w-4" /> Send for Review
-            </Button>
-          )}
-          {canApprove && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleApprove}>
-              <Check className="mr-1 h-4 w-4" /> Approve
-            </Button>
-          )}
+
           {canEdit && (
             <Button size="sm" asChild>
               <Link href={`/prompts/${id}/edit`}>Edit</Link>
@@ -271,7 +239,7 @@ export default function PromptDetailPage() {
               </Button>
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="bg-secondary p-4 rounded-md border text-sm font-mono whitespace-pre-wrap text-foreground min-h-[120px]">
+              <div className="bg-muted p-4 rounded-md border text-sm font-mono whitespace-pre-wrap text-foreground min-h-[120px]">
                 {selectedVersion?.template_content || "No content"}
               </div>
             </CardContent>
@@ -284,7 +252,7 @@ export default function PromptDetailPage() {
             </CardHeader>
             <CardContent className="pt-2">
               {prompt.versions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ยังไม่มี version</p>
+                <p className="text-sm text-muted-foreground">No version available</p>
               ) : (
                 <ol className="relative border-l border-border ml-3 space-y-0">
                   {prompt.versions.map((v, idx) => {
@@ -324,7 +292,7 @@ export default function PromptDetailPage() {
                           </div>
                           <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {new Date(v.created_at).toLocaleString("th-TH", {
+                            {new Date(v.created_at).toLocaleString("en-GB", {
                               dateStyle: "medium",
                               timeStyle: "short",
                             })}
@@ -374,7 +342,7 @@ export default function PromptDetailPage() {
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Updated</div>
                 <div className="text-xs text-muted-foreground">
-                  {new Date(prompt.updated_at).toLocaleDateString("th-TH")}
+                  {new Date(prompt.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </div>
               </div>
               {prompt.tags.length > 0 && (
@@ -405,7 +373,7 @@ export default function PromptDetailPage() {
             </CardHeader>
             <CardContent className="pt-4">
               {!selectedVersion || selectedVersion.promptVariables.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ไม่มีตัวแปร</p>
+                <p className="text-sm text-muted-foreground">No variables available</p>
               ) : (
                 <ul className="space-y-3">
                   {selectedVersion.promptVariables.map(v => (
@@ -423,6 +391,11 @@ export default function PromptDetailPage() {
           </Card>
 
         </div>
+      </div>
+
+      {/* ─── Comments Section ─── */}
+      <div className="mt-8">
+        <CommentSection promptId={prompt.id} />
       </div>
     </div>
   );

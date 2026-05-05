@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Plus, Search, X } from "lucide-react";
-
+import { Plus, Search, X, BookSearch } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { Badge } from "@/component/ui/badge";
@@ -55,7 +54,7 @@ export default function PromptsList() {
   const [filterTag, setFilterTag] = useState("all");
 
   // Load categories and tags once
-  useEffect(() => {
+  useEffect(() => { 
     Promise.all([
       axios.get<Category[]>("/api/categories"),
       axios.get<Tag[]>("/api/tags"),
@@ -114,7 +113,14 @@ export default function PromptsList() {
     <div className="pb-20">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Prompts</h1>
+          <div className="flex items-center">
+            <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8" >
+            <BookSearch className="h-4 w-4 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground gap-2">
+              Prompt Library
+            </h1>
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">ค้นหา จัดการ และเปิดใช้งาน prompt ในระบบ</p>
         </div>
         <Link href="/prompts/new">
@@ -251,7 +257,7 @@ export default function PromptsList() {
               ) : prompts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground border-dashed">
-                    ไม่พบ prompt ที่ตรงกับเงื่อนไข
+                    No prompts found matching your criteria
                   </td>
                 </tr>
               ) : (
