@@ -87,9 +87,9 @@ export default function ActivityLogPage() {
   // แปลง action string เป็นสีและ label ให้อ่านง่าย
   const actionBadge = (action: string) => {
     const upper = action.toUpperCase();
-    if (upper.includes("CREATE"))
+    if (upper.includes("CREATE") || upper.includes("ADD"))
       return { color: "text-green-700 bg-green-50 border-green-200", label: action };
-    if (upper.includes("UPDATE") || upper.includes("EDIT"))
+    if (upper.includes("UPDATE") || upper.includes("EDIT") || upper.includes("CHANGE"))
       return { color: "text-blue-700 bg-blue-50 border-blue-200", label: action };
     if (upper.includes("DELETE") || upper.includes("REMOVE"))
       return { color: "text-red-700 bg-red-50 border-red-200", label: action };
@@ -97,6 +97,17 @@ export default function ActivityLogPage() {
       return { color: "text-purple-700 bg-purple-50 border-purple-200", label: action };
     if (upper.includes("REJECT"))
       return { color: "text-orange-700 bg-orange-50 border-orange-200", label: action };
+      
+    // Additional actions
+    if (upper.includes("UNFAVORITE"))
+      return { color: "text-slate-700 bg-slate-100 border-slate-300", label: action };
+    if (upper.includes("FAVORITE"))
+      return { color: "text-pink-700 bg-pink-50 border-pink-200", label: action };
+    if (upper.includes("REPLY"))
+      return { color: "text-teal-700 bg-teal-50 border-teal-200", label: action };
+    if (upper.includes("REGISTER"))
+      return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: action };
+
     return { color: "text-muted-foreground bg-muted border-border", label: action };
   };
 
