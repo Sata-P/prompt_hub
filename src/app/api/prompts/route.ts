@@ -78,6 +78,11 @@ export async function GET(request: Request) {
       andConditions.push({ status });
     }
 
+    const model = searchParams.get("model")?.trim() || undefined;
+    if (model) {
+      andConditions.push({ recommended_model: model });
+    }
+
     if (categoryId) {
       andConditions.push({ category_id: categoryId });
     }

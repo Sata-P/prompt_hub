@@ -90,7 +90,7 @@ function PromptCard({
               <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                 {p.title}
               </h3>
-              <StatusBadge status={p.status} />
+              {/* <StatusBadge status={p.status} /> */}
             </div>
             {p.category && (
               <p className="text-xs text-muted-foreground">{p.category.name}</p>

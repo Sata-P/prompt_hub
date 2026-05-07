@@ -29,6 +29,7 @@ type AppUser = {
   name: string;
   email: string;
   role: string;
+  status: string;
 };
 
 /**
@@ -146,12 +147,12 @@ export default function SettingsPage() {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    if (!confirm("Are you sure you want to deactivate this user? They will no longer be able to log in.")) return;
     try {
       await axios.delete(`/api/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete user");
+      alert(err.response?.data?.error || "Failed to deactivate user");
     }
   };
 
@@ -219,7 +220,6 @@ export default function SettingsPage() {
                   <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
                     <div>
                       <div className="font-medium text-sm">{cat.name}</div>
-                      <div className="text-xs text-muted-foreground line-clamp-1">{cat.description || "No description"}</div>
                     </div>
                     <Button 
                       variant="ghost" 
@@ -337,16 +337,23 @@ export default function SettingsPage() {
                         <td className="px-4 py-3 font-medium">{user.name}</td>
                         <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                         <td className="px-4 py-3">
-                          <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'EDITOR' ? 'default' : 'secondary'}>
-                            {user.role}
-                          </Badge>
+                          <div className="flex gap-2">
+                            <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'EDITOR' ? 'default' : 'secondary'}>
+                              {user.role}
+                            </Badge>
+                            {user.status === 'deactivated' && (
+                              <Badge variant="outline" className="text-muted-foreground bg-muted">
+                                Deactivated
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-right flex items-center justify-end gap-2">
                           <select 
                             className="text-sm rounded-md border border-input bg-background px-2 py-1.5 w-24 focus:ring-1 focus:ring-primary focus:outline-none"
                             value={user.role}
                             onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                            disabled={user.id === Number(session?.user?.id)}
+                            disabled={user.id === Number(session?.user?.id) || user.status === 'deactivated'}
                           >
                             <option value="VIEWER">VIEWER</option>
                             <option value="EDITOR">EDITOR</option>
@@ -356,8 +363,9 @@ export default function SettingsPage() {
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleDeleteUser(user.id)}
-                            disabled={user.id === Number(session?.user?.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            disabled={user.id === Number(session?.user?.id) || user.status === 'deactivated'}
+                            className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-30 disabled:pointer-events-none"
+                            title={user.status === 'deactivated' ? "User already deactivated" : "Deactivate user"}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

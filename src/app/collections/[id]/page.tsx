@@ -119,7 +119,7 @@ function PromptCard({
               </h3>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={p.status} />
+              {/* <StatusBadge status={p.status} /> */}
               {p.category && (
                 <span className="text-xs text-muted-foreground">{p.category.name}</span>
               )}

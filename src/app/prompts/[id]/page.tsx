@@ -150,7 +150,7 @@ export default function PromptDetailPage() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold tracking-tight">{prompt.title}</h1>
-            {getStatusBadge(prompt.status)}
+            {/* {getStatusBadge(prompt.status)} */}
           </div>
           <p className="text-sm text-muted-foreground">
             {prompt.description || "No description available"}
@@ -327,10 +327,12 @@ export default function PromptDetailPage() {
                 <div className="text-sm font-semibold text-muted-foreground">Category</div>
                 <div className="text-sm">{prompt.category ? prompt.category.name : "—"}</div>
               </div>
-              <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
+              
+              {/* <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Status</div>
                 <div>{getStatusBadge(prompt.status)}</div>
-              </div>
+              </div> */}
+
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Model</div>
                 <div className="text-sm">{prompt.recommended_model || "gpt-4.1"}</div>

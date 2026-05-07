@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Star,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
@@ -43,6 +44,10 @@ type DashboardStats = {
   }[];
   totalCategories: number;
   totalTags: number;
+  totalFavorites: number;
+  systemTotalPrompts: number;
+  popularCategories: { id: number; name: string; color?: string | null; _count: { prompts: number }; prompts: { id: number; title: string; status: string }[] }[];
+  popularTags: { id: number; name: string; _count: { prompts: number }; prompts: { prompt: { id: number; title: string; status: string } }[] }[];
 };
 
 const STATUS_CONFIG: Record<
@@ -102,32 +107,25 @@ export default function DashboardPage() {
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
         <StatCard
-          label="Total Prompts"
+          label="My Prompts"
           icon={<FileText className="h-4 w-4" />}
           value={stats?.totalPrompts}
           loading={loading}
           accent="orange"
         />
         <StatCard
-          label="Published"
+          label="Total Prompts"
           icon={<CheckCircle2 className="h-4 w-4" />}
-          value={stats?.byStatus.PUBLISHED}
+          value={stats?.systemTotalPrompts}
           loading={loading}
           accent="green"
         />
         <StatCard
-          label="In Draft"
-          icon={<AlertCircle className="h-4 w-4" />}
-          value={stats?.byStatus.DRAFT}
+          label="Favorite Prompts"
+          icon={<Star className="h-4 w-4" />}
+          value={stats?.totalFavorites}
           loading={loading}
           accent="yellow"
-        />
-        <StatCard
-          label="Archived"
-          icon={<Archive className="h-4 w-4" />}
-          value={stats?.byStatus.ARCHIVED}
-          loading={loading}
-          accent="neutral"
         />
       </div>
 
@@ -197,9 +195,9 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <Badge variant={cfg.variant} className="shrink-0 ml-2 text-[10px]">
+                        {/* <Badge variant={cfg.variant} className="shrink-0 ml-2 text-[10px]">
                           {cfg.label}
-                        </Badge>
+                        </Badge> */}
                       </Link>
                     );
                   })}
@@ -211,72 +209,63 @@ export default function DashboardPage() {
 
         {/* Right column: stats + quick actions */}
         <div className="flex flex-col gap-4">
-          {/* Overview card */}
+          {/* Popular Tags card */}
           <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Overview</CardTitle>
+                <Tag className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-semibold">Tags</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              <OverviewRow
-                icon={<Tag className="h-3.5 w-3.5" />}
-                label="Categories"
-                value={stats?.totalCategories}
-                loading={loading}
-                href="/settings"
-              />
-              <OverviewRow
-                icon={<Star className="h-3.5 w-3.5" />}
-                label="Tags"
-                value={stats?.totalTags}
-                loading={loading}
-                href="/settings"
-              />
-              <OverviewRow
-                icon={<AlertCircle className="h-3.5 w-3.5 text-yellow-500" />}
-                label="In Review"
-                value={stats?.byStatus.REVIEW}
-                loading={loading}
-                href="/prompts"
-              />
-
-              {session?.user?.role === "ADMIN" && (
-                <div className="pt-1">
-                  <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-                    <Link href="/settings">Manage Categories & Tags</Link>
-                  </Button>
+            <CardContent className="pt-0 space-y-3 pb-4">
+              {loading ? (
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-14" />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {stats?.popularTags?.map((tag) => (
+                    <Badge key={tag.id} variant="outline" className="flex items-center gap-1 hover:bg-accent/50 cursor-default bg-card">
+                      <Tag className="h-3 w-3 text-muted-foreground mr-0.5" />
+                      <span className="text-xs font-medium">{tag.name}</span>
+                      <span className="text-[10px] text-muted-foreground ml-1">({tag._count.prompts})</span>
+                    </Badge>
+                  ))}
+                  {stats?.popularTags?.length === 0 && (
+                     <p className="text-xs text-muted-foreground text-center py-2 w-full">No tags found</p>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Quick actions */}
+          {/* Popular Categories */}
           <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+              <div className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-semibold">Categories</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              <QuickAction
-                href="/prompts/new"
-                icon={<Plus className="h-4 w-4" />}
-                label="New Prompt"
-                description="Start from a blank template"
-                primary
-              />
-              <QuickAction
-                href="/playground"
-                icon={<PlayCircle className="h-4 w-4" />}
-                label="Open Playground"
-                description="Test prompts with AI models"
-              />
-              <QuickAction
-                href="/collections"
-                icon={<FolderOpen className="h-4 w-4" />}
-                label="Browse Collections"
-                description="Grouped prompt libraries"
-              />
+            <CardContent className="pt-0 space-y-3">
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {stats?.popularCategories?.map((cat) => (
+                    <CategoryToggleItem key={cat.id} category={cat} />
+                  ))}
+                  {stats?.popularCategories?.length === 0 && (
+                     <p className="text-xs text-muted-foreground text-center py-2">No categories found</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -334,76 +323,47 @@ function StatCard({
   );
 }
 
-function OverviewRow({
-  icon,
-  label,
-  value,
-  loading,
-  href,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: number;
-  loading: boolean;
-  href?: string;
-}) {
+function CategoryToggleItem({ category }: { category: NonNullable<DashboardStats["popularCategories"]>[number] }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
-      <div className="flex items-center gap-2 text-muted-foreground text-sm">
-        {icon}
-        <span>{label}</span>
-      </div>
-      {loading ? (
-        <Skeleton className="h-4 w-8" />
-      ) : (
-        <Link href={href ?? "#"} className="text-sm font-bold text-foreground hover:text-primary transition-colors">
-          {value ?? 0}
-        </Link>
+    <div className="flex flex-col rounded-lg border border-border/60 bg-card overflow-hidden">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between p-2 hover:bg-accent/50 transition-colors w-full text-left"
+      >
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-sm font-medium">{category.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-[10px]">
+            {category._count.prompts} prompts
+          </Badge>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        </div>
+      </button>
+      
+      {isOpen && category.prompts && category.prompts.length > 0 && (
+        <div className="border-t border-border/50 bg-muted/20 p-2 space-y-1">
+          {category.prompts.map((prompt) => {
+  
+            return (
+              <Link key={prompt.id} href={`/prompts/${prompt.id}`} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent/50 transition-colors group">
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate pr-2">
+                  {prompt.title}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+      {isOpen && (!category.prompts || category.prompts.length === 0) && (
+        <div className="border-t border-border/50 bg-muted/20 p-2">
+          <p className="text-xs text-muted-foreground text-center">No recent prompts</p>
+        </div>
       )}
     </div>
   );
 }
 
-function QuickAction({
-  href,
-  icon,
-  label,
-  description,
-  primary,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  description: string;
-  primary?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={[
-        "flex items-center gap-3 p-3 rounded-lg border transition-all duration-150 group",
-        primary
-          ? "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
-          : "border-border/60 hover:border-primary/20 hover:bg-accent/60",
-      ].join(" ")}
-    >
-      <div
-        className={[
-          "h-8 w-8 shrink-0 rounded-md flex items-center justify-center transition-colors",
-          primary
-            ? "bg-primary text-white"
-            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary",
-        ].join(" ")}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className={`text-sm font-medium ${primary ? "text-primary" : "text-foreground"}`}>
-          {label}
-        </p>
-        <p className="text-[11px] text-muted-foreground truncate">{description}</p>
-      </div>
-      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0 group-hover:text-primary transition-colors" />
-    </Link>
-  );
-}

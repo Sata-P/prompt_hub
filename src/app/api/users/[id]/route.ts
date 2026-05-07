@@ -37,10 +37,11 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Since we cascade on relations like Prompts/Favorites/Versions, deleting a user will delete their data
+    // Soft delete: set status to 'deactivated'
     await prisma.$transaction(async (tx) => {
-      await tx.users.delete({
+      await tx.users.update({
         where: { id: userId },
+        data: { status: 'deactivated' }
       });
 
       await tx.activity_log.create({

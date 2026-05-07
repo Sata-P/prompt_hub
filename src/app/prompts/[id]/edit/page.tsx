@@ -18,6 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/component/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/component/ui/dropdown-menu";
+import { ScrollArea } from "@/component/ui/scroll-area";
+import { ChevronDown, Tag as TagIcon, X } from "lucide-react";
 
 type Category = { id: number; name: string };
 type Tag = { id: number; name: string };
@@ -81,20 +91,23 @@ export default function EditPromptPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [recommendedModel, setRecommendedModel] = useState<string>("");
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
 
   useEffect(() => {
     if (!id) return;
 
     const fetchInitialData = async () => {
       try {
-        const [catsRes, modelsRes, promptRes] = await Promise.all([
+        const [catsRes, modelsRes, tagsRes, promptRes] = await Promise.all([
           axios.get<Category[]>("/api/categories"),
           axios.get<{models: ModelInfo[], defaultModel: string}>("/api/llm/models"),
+          axios.get<Tag[]>("/api/tags"),
           axios.get<PromptDetail>(`/api/prompts/${id}`)
         ]);
 
         setCategories(catsRes.data || []);
         setModels(modelsRes.data.models || []);
+        setAvailableTags(tagsRes.data || []);
 
         const prompt = promptRes.data;
         setTitle(prompt.title);
@@ -333,22 +346,90 @@ export default function EditPromptPage() {
                       </div>
                     </div>
 
+                    {/* Tags Multi-select Dropdown */}
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="tags" className="text-sm font-semibold">Tags (press Enter to add)</Label>
-                      <Input 
-                        id="tags" 
-                        placeholder="Add a tag..." 
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={handleAddTag}
-                      />
+                      <Label htmlFor="tags" className="text-sm font-semibold flex items-center gap-2">
+                        <TagIcon className="h-3.5 w-3.5" /> Tags
+                      </Label>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-between h-10 px-3 bg-background border-input font-normal hover:bg-background/80 transition-colors"
+                          >
+                            <span className="truncate">
+                              {tags.length > 0 ? `Selected ${tags.length} tags` : "Select or add tags..."}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[300px] p-0" align="start">
+                          <div className="p-2 border-b bg-muted/30">
+                            <Input 
+                              placeholder="Search or type new tag..." 
+                              value={tagInput}
+                              onChange={(e) => setTagInput(e.target.value)}
+                              onKeyDown={handleAddTag}
+                              className="h-8 text-xs border-none bg-transparent focus-visible:ring-0 shadow-none"
+                            />
+                          </div>
+                          <ScrollArea className="h-60 p-1">
+                            {availableTags
+                              .filter(t => t.name.toLowerCase().includes(tagInput.toLowerCase()))
+                              .map(tag => (
+                                <DropdownMenuCheckboxItem
+                                  key={tag.id}
+                                  checked={tags.includes(tag.name)}
+                                  onCheckedChange={() => {
+                                    if (tags.includes(tag.name)) {
+                                      setTags(tags.filter(t => t !== tag.name));
+                                    } else {
+                                      setTags([...tags, tag.name]);
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="focus:bg-primary/10 focus:text-primary data-[state=checked]:text-primary"
+                                >
+                                  {tag.name}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            
+                            {tagInput && !availableTags.some(t => t.name.toLowerCase() === tagInput.toLowerCase()) && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    if (!tags.includes(tagInput.trim())) {
+                                      setTags([...tags, tagInput.trim()]);
+                                    }
+                                    setTagInput("");
+                                  }}
+                                  className="text-primary font-medium focus:bg-primary/10 focus:text-primary"
+                                >
+                                  + Add new tag: "{tagInput}"
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </ScrollArea>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Display selected tags as removable badges */}
                       {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-1">
                           {tags.map(t => (
-                            <div key={t} className="flex items-center gap-1 bg-primary/10 text-primary font-medium text-xs px-2.5 py-1 rounded-full border border-primary/20">
+                            <div 
+                              key={t} 
+                              className="group flex items-center gap-1 bg-primary/5 text-primary/80 hover:bg-primary/10 hover:text-primary font-medium text-[11px] px-2 py-0.5 rounded-md border border-primary/10 transition-all"
+                            >
                               {t}
-                              <button type="button" onClick={() => removeTag(t)} className="text-primary hover:text-primary/70 transition-colors">
-                                &times;
+                              <button 
+                                type="button" 
+                                onClick={() => removeTag(t)} 
+                                className="text-primary/40 group-hover:text-primary/70 transition-colors"
+                              >
+                                <X className="h-3 w-3" />
                               </button>
                             </div>
                           ))}

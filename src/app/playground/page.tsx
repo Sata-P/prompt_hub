@@ -659,10 +659,11 @@ function PlaygroundContent() {
         </Card>
       )}
 
-      {/* Main Layout: 3-column */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* Left: Variables */}
-        <Card className="shadow-sm flex flex-col lg:col-span-3">
+      {/* Main Layout: Top 2, Bottom 1 */}
+      <div className="flex flex-col gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          {/* Left: Variables */}
+          <Card className="shadow-sm flex flex-col lg:col-span-4 min-h-[350px]">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Variables</CardTitle>
           </CardHeader>
@@ -752,8 +753,8 @@ function PlaygroundContent() {
           </CardContent>
         </Card>
 
-        {/* Center: Rendered Prompt */}
-        <Card className="shadow-sm flex flex-col lg:col-span-4 min-h-[450px]">
+        {/* Right: Rendered Prompt */}
+        <Card className="shadow-sm flex flex-col lg:col-span-8 min-h-[350px]">
           <CardHeader className="pb-3">
             <div className="flex flex-row items-center justify-between w-full">
               <CardTitle className="text-sm font-medium">
@@ -794,8 +795,10 @@ function PlaygroundContent() {
           </CardContent>
         </Card>
 
-        {/* Right: LLM Response */}
-        <Card className="shadow-sm flex flex-col lg:col-span-5 min-h-[450px]">
+        </div>
+
+        {/* Bottom: LLM Response */}
+        <Card className="shadow-sm flex flex-col min-h-[400px] w-full">
           <CardHeader className="pb-3">
             <div className="flex flex-row items-center justify-between w-full">
               <div className="flex items-center gap-2">

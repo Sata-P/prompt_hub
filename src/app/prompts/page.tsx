@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Plus, Search, X, BookSearch } from "lucide-react";
+import { Plus, Search, X, BookSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { Badge } from "@/component/ui/badge";
@@ -44,7 +44,15 @@ export default function PromptsList() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 20,
+    totalPages: 1,
+  });
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,9 +66,11 @@ export default function PromptsList() {
     Promise.all([
       axios.get<Category[]>("/api/categories"),
       axios.get<Tag[]>("/api/tags"),
-    ]).then(([catsRes, tagsRes]) => {
+      axios.get("/api/llm/models"),
+    ]).then(([catsRes, tagsRes, modelsRes]) => {
       setCategories(catsRes.data || []);
       setTags(tagsRes.data || []);
+      setAvailableModels(modelsRes.data?.models || []);
     }).catch(console.error);
   }, []);
 
@@ -68,6 +78,9 @@ export default function PromptsList() {
     try {
       setLoading(true);
       const searchParams = new URLSearchParams();
+      searchParams.append("page", String(page));
+      searchParams.append("limit", "20");
+      
       if (searchQuery) searchParams.append("q", searchQuery);
       if (filterCategory !== "all") searchParams.append("categoryId", filterCategory);
       if (filterStatus !== "all") searchParams.append("status", filterStatus.toUpperCase());
@@ -76,6 +89,7 @@ export default function PromptsList() {
 
       const promptsRes = await axios.get<ApiResponse>(`/api/prompts?${searchParams.toString()}`);
       setPrompts(promptsRes.data.data);
+      setPagination(promptsRes.data.pagination);
     } catch (err) {
       console.error("Failed to load prompts", err);
     } finally {
@@ -85,6 +99,11 @@ export default function PromptsList() {
 
   useEffect(() => {
     fetchData();
+  }, [searchQuery, filterCategory, filterStatus, filterModel, filterTag, page]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
   }, [searchQuery, filterCategory, filterStatus, filterModel, filterTag]);
 
   const getStatusText = (status: Prompt["status"]) => {
@@ -133,7 +152,7 @@ export default function PromptsList() {
 
       {/* แถบตัวกรอง */}
       <div className="mt-6 rounded-lg border bg-card p-4 shadow-sm space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Search */}
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -159,7 +178,7 @@ export default function PromptsList() {
           </Select>
 
           {/* Status */}
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          {/* <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="h-10 bg-background">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -170,7 +189,7 @@ export default function PromptsList() {
               <SelectItem value="published">APPROVED</SelectItem>
               <SelectItem value="archived">ARCHIVED</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
 
           {/* Model */}
           <Select value={filterModel} onValueChange={setFilterModel}>
@@ -179,9 +198,11 @@ export default function PromptsList() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Models</SelectItem>
-              <SelectItem value="gpt-4.1">gpt-4.1</SelectItem>
-              <SelectItem value="gpt-4.1-mini">gpt-4.1-mini</SelectItem>
-              <SelectItem value="claude-3.5-sonnet">claude-3.5-sonnet</SelectItem>
+              {availableModels.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  {model.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -234,12 +255,12 @@ export default function PromptsList() {
           <table className="w-full text-sm font-medium">
             <thead>
               <tr className="border-b bg-muted/20">
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Title</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Category</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Tags</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Status</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Model</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Updated</th>
+                <th className="w-[35%] px-5 py-4 text-left font-bold text-foreground capitalize">Title</th>
+                <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Category</th>
+                <th className="w-[20%] px-5 py-4 text-left font-bold text-foreground capitalize">Tags</th>
+                {/* <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Status</th> */}
+                <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Model</th>
+                <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -249,14 +270,14 @@ export default function PromptsList() {
                     <td className="px-5 py-5"><Skeleton className="h-5 w-48" /></td>
                     <td className="px-5 py-5"><Skeleton className="h-5 w-24" /></td>
                     <td className="px-5 py-5"><Skeleton className="h-5 w-28" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-20" /></td>
+                    {/* <td className="px-5 py-5"><Skeleton className="h-5 w-20" /></td> */}
                     <td className="px-5 py-5"><Skeleton className="h-5 w-24" /></td>
                     <td className="px-5 py-5"><Skeleton className="h-5 w-32" /></td>
                   </tr>
                 ))
               ) : prompts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground border-dashed">
+                  <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground border-dashed">
                     No prompts found matching your criteria
                   </td>
                 </tr>
@@ -288,13 +309,13 @@ export default function PromptsList() {
                           : <span className="text-muted-foreground">-</span>}
                       </div>
                     </td>
-                    <td className={`px-5 py-4 text-xs uppercase tracking-wider font-semibold ${
+                    {/* <td className={`px-5 py-4 text-xs uppercase tracking-wider font-semibold ${
                       p.status === 'PUBLISHED' ? 'text-green-600' :
                       p.status === 'REVIEW' ? 'text-orange-500' :
                       'text-muted-foreground'
                     }`}>
                       {getStatusText(p.status)}
-                    </td>
+                    </td> */}
                     <td className="px-5 py-4 text-muted-foreground text-sm">
                       {p.recommended_model || "-"}
                     </td>
@@ -308,6 +329,38 @@ export default function PromptsList() {
           </table>
         </div>
       </div>
+
+
+      {/* Pagination Controls */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages} (Total {pagination.total} prompts)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="h-8"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= pagination.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="h-8"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

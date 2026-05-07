@@ -41,6 +41,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("No user found with that email");
         }
 
+        if (user.status === "deactivated") {
+          throw new Error("Your account has been deactivated. Please contact an administrator.");
+        }
+
         // เปรียบเทียบรหัสผ่านที่กรอกกับ hash ที่เก็บใน DB
         const checkIsValid = await bcrypt.compare(
           credentials.password,
