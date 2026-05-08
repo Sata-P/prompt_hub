@@ -10,7 +10,7 @@ import {
   PlayCircle,
   Star,
   ClipboardClock,
-  Zap,
+  Leaf,
   ChevronRight,
 } from "lucide-react";
 
@@ -67,7 +67,7 @@ export function AppSidebar({
         <div className="flex w-full items-center gap-3 overflow-hidden">
           {/* Icon mark */}
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary shadow-sm">
-            <Zap className="h-4 w-4 text-white" fill="white" />
+            <Leaf className="h-4 w-4 text-white" fill="white" />
           </div>
 
           {!collapsed && (
@@ -76,7 +76,7 @@ export function AppSidebar({
                 Prompt Hub
               </span>
               <span className="truncate text-[10px] font-medium text-sidebar-muted-foreground mt-0.5">
-                Soft&apos;Debut
+                Sage Edition
               </span>
             </div>
           )}

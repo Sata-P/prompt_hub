@@ -7,14 +7,10 @@ import {
   FileText,
   Plus,
   Clock,
-  CheckCircle2,
-  AlertCircle,
-  Archive,
-  PlayCircle,
+  Leaf,
+  Sprout,
   FolderOpen,
   Tag,
-  TrendingUp,
-  Star,
   ArrowRight,
   ChevronDown,
 } from "lucide-react";
@@ -107,23 +103,23 @@ export default function DashboardPage() {
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
         <StatCard
-          label="My Prompts"
-          icon={<FileText className="h-4 w-4" />}
+          label="Total Prompts"
+          icon={<Leaf className="h-4 w-4" />}
           value={stats?.totalPrompts}
           loading={loading}
           accent="orange"
         />
         <StatCard
-          label="Total Prompts"
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          value={stats?.systemTotalPrompts}
+          label="Published"
+          icon={<Sprout className="h-4 w-4" />}
+          value={stats?.byStatus?.PUBLISHED}
           loading={loading}
           accent="green"
         />
         <StatCard
-          label="Favorite Prompts"
-          icon={<Star className="h-4 w-4" />}
-          value={stats?.totalFavorites}
+          label="In Draft"
+          icon={<Clock className="h-4 w-4" />}
+          value={(stats?.byStatus?.DRAFT ?? 0) + (stats?.byStatus?.REVIEW ?? 0)}
           loading={loading}
           accent="yellow"
         />
@@ -136,7 +132,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm border-border/60 h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
+                <Leaf className="h-4 w-4 text-primary" />
                 <CardTitle className="text-sm font-semibold">Recently Updated</CardTitle>
               </div>
               <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-7 px-2">
@@ -289,16 +285,17 @@ function StatCard({
   loading: boolean;
   accent: "orange" | "green" | "yellow" | "neutral";
 }) {
+  // Sage palette — แมป accent เดิมไปสีในธีมใหม่ (ไม่ต้องแก้ที่เรียกใช้)
   const accentClasses = {
-    orange:  "bg-orange-50 text-primary border-orange-100",
-    green:   "bg-green-50  text-green-600  border-green-100",
-    yellow:  "bg-yellow-50 text-yellow-600 border-yellow-100",
+    orange:  "bg-[#d4e8d8] text-[#2c5e38] border-[#c5d9c6]",        // sage primary
+    green:   "bg-[#c5d9c6] text-[#2c5e38] border-[#b8ccba]",        // forest
+    yellow:  "bg-[#f0e6d0] text-[#8a6d3b] border-[#e3d4ad]",        // gold (สอดคล้อง palette)
     neutral: "bg-muted     text-muted-foreground border-border",
   };
   const valueClasses = {
-    orange:  "text-primary",
-    green:   "text-green-600",
-    yellow:  "text-yellow-600",
+    orange:  "text-[#3e8a42]",
+    green:   "text-[#2c5e38]",
+    yellow:  "text-[#8a6d3b]",
     neutral: "text-foreground",
   };
 

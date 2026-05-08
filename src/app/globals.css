@@ -39,57 +39,57 @@
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
 }
 
-/* ── Soft'Debut Orange Design System ── */
+/* ── Sage Green Design System ── */
 :root {
-  /* Background: warm off-white (from Stitch #FFFAF7) */
-  --background: #FFFAF7;
-  --foreground: #1C1410;
+  /* Background: soft sage off-white */
+  --background: #e9eeea;
+  --foreground: #1e2a1f;
 
   /* Surface / Card */
-  --card: #FFFFFF;
-  --card-foreground: #1C1410;
-  --popover: #FFFFFF;
-  --popover-foreground: #1C1410;
+  --card: #f5f8f5;
+  --card-foreground: #1e2a1f;
+  --popover: #f5f8f5;
+  --popover-foreground: #1e2a1f;
 
-  /* Primary: Orange #F97316 */
-  --primary: #F97316;
-  --primary-foreground: #FFFFFF;
+  /* Primary: Forest sage green */
+  --primary: #4a7c59;
+  --primary-foreground: #ffffff;
 
-  /* Secondary: warm medium gray */
-  --secondary: #78716C;
-  --secondary-foreground: #FFFFFF;
+  /* Secondary: muted ink */
+  --secondary: #6b8a6e;
+  --secondary-foreground: #ffffff;
 
-  /* Muted: warm light gray */
-  --muted: #F5F0EB;
-  --muted-foreground: #78716C;
+  /* Muted: pale sage */
+  --muted: #dde5de;
+  --muted-foreground: #3d5240;
 
-  /* Accent: light orange tint */
-  --accent: #FFF3E8;
-  --accent-foreground: #C2410C;
+  /* Accent: light sage tint */
+  --accent: #d4e8d8;
+  --accent-foreground: #2c5e38;
 
-  /* Destructive */
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  /* Destructive: muted rose (สอดคล้องกับ palette) */
+  --destructive: #8b4a52;
+  --destructive-foreground: #ffffff;
 
   /* Borders & inputs */
-  --border: #E8E0D8;
-  --input: #F0EBE5;
-  --ring: #F97316;
+  --border: #c8d8ca;
+  --input: #dde5de;
+  --ring: #4a7c59;
 
-  /* Radius: 8px (Stitch ROUND_EIGHT) */
+  /* Radius: 8px */
   --radius: 0.5rem;
 
-  /* ── Sidebar: deep warm dark (Stitch #1C1410) ── */
-  --sidebar: #1C1410;
-  --sidebar-foreground: #FAF7F5;
-  --sidebar-primary: #F97316;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(249, 115, 22, 0.15);
-  --sidebar-accent-foreground: #FB923C;
-  --sidebar-border: #2D2219;
-  --sidebar-ring: #F97316;
-  --sidebar-muted: #2D2219;
-  --sidebar-muted-foreground: #A8956B;
+  /* ── Sidebar: deep forest green ── */
+  --sidebar: #2c3d2e;
+  --sidebar-foreground: #d8eeda;
+  --sidebar-primary: #7ec882;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(126, 200, 130, 0.15);
+  --sidebar-accent-foreground: #a8d8aa;
+  --sidebar-border: #364838;
+  --sidebar-ring: #7ec882;
+  --sidebar-muted: #364838;
+  --sidebar-muted-foreground: rgba(160, 200, 165, 0.55);
 }
 
 * {
@@ -171,7 +171,7 @@ code, pre, .font-mono {
   font-family: var(--font-mono), monospace;
   font-size: 0.875rem;
   line-height: 1.7;
-  background: #FDF8F4;
+  background: #f0f5f1;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
@@ -180,9 +180,9 @@ code, pre, .font-mono {
 }
 
 .prompt-variable {
-  color: #F97316;
+  color: #2c5e38;
   font-weight: 600;
-  background: rgba(249, 115, 22, 0.08);
+  background: rgba(74, 124, 89, 0.1);
   border-radius: 3px;
   padding: 0 3px;
 }
