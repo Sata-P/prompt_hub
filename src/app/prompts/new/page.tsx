@@ -42,9 +42,10 @@ type ModelInfo = { id: string; name: string };
 // Type สำหรับ config ของตัวแปรแต่ละตัวที่ตรวจพบใน template
 type VariableConfig = {
   name: string;        // ชื่อตัวแปร (เช่น "topic")
-  type: string;        // ประเภท input (TEXT, TEXTAREA, NUMBER, BOOLEAN)
+  type: string;        // ประเภท input (TEXT, TEXTAREA, NUMBER, BOOLEAN, SELECT)
   label: string;       // ชื่อที่แสดงให้ผู้ใช้เห็น
   description: string; // คำอธิบายเพิ่มเติม
+  options: string[];   // ใช้เฉพาะเมื่อ type === "SELECT"
 };
 
 export default function CreatePromptPage() {
@@ -110,7 +111,7 @@ export default function CreatePromptPage() {
       const nextVars = detectedNames.map(name => {
         const existing = prev.find(v => v.name === name);
         if (existing) return existing;
-        return { name, type: "TEXT", label: name, description: "" };
+        return { name, type: "TEXT", label: name, description: "", options: [] };
       });
       return nextVars;
     });
@@ -119,6 +120,32 @@ export default function CreatePromptPage() {
   // อัปเดต field ของตัวแปรตัวใดตัวหนึ่ง (type / label / description)
   const updateVariable = (name: string, field: keyof VariableConfig, value: string) => {
     setVariables(prev => prev.map(v => v.name === name ? { ...v, [field]: value } : v));
+  };
+
+  // เพิ่ม option ให้ตัวแปร SELECT
+  // — รองรับ comma-separated input (เช่น "TH, EN, JP") แยกอัตโนมัติ
+  // — trim, ตัดค่าว่าง, กัน duplicate (ของเดิม + ของชุดใหม่)
+  const addVariableOption = (varName: string, optRaw: string) => {
+    const newOpts = optRaw
+      .split(",")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    if (newOpts.length === 0) return;
+    setVariables(prev => prev.map(v => {
+      if (v.name !== varName) return v;
+      const merged = [...v.options];
+      for (const o of newOpts) {
+        if (!merged.includes(o)) merged.push(o);
+      }
+      return { ...v, options: merged };
+    }));
+  };
+
+  // ลบ option ออกจากตัวแปร SELECT
+  const removeVariableOption = (varName: string, opt: string) => {
+    setVariables(prev => prev.map(v =>
+      v.name === varName ? { ...v, options: v.options.filter(o => o !== opt) } : v
+    ));
   };
 
   const renameVariable = (oldName: string, newNameRaw: string) => {
@@ -174,7 +201,16 @@ export default function CreatePromptPage() {
         recommendedModel: recommendedModel || undefined,            // optional
         tags,
         templateContent,
-        variables: variables.length > 0 ? variables : undefined     // ส่งเฉพาะถ้ามีตัวแปร
+        // ส่งตัวแปรพร้อม optionsJson (เฉพาะเมื่อ type === SELECT)
+        variables: variables.length > 0
+          ? variables.map(v => ({
+              name: v.name,
+              label: v.label || v.name,
+              type: v.type,
+              description: v.description || undefined,
+              optionsJson: v.type === "SELECT" ? v.options : undefined,
+            }))
+          : undefined
       };
 
       const res = await axios.post("/api/prompts", payload);
@@ -422,37 +458,90 @@ export default function CreatePromptPage() {
                       <div className="flex flex-col gap-4">
                         {/* แสดง config ของแต่ละตัวแปร */}
                         {variables.map((v, idx) => (
-                          <div key={idx} className="grid grid-cols-[1fr_2fr] gap-4 items-start bg-background/60 p-3 rounded-lg border border-primary/10 shadow-sm">
-                            <div>
-                              <div className="font-mono text-sm font-bold text-primary mb-2 truncate" title={v.name}>
-                                {"{{"}{v.name.length > 22 ? v.name.substring(0, 18) + "..." : v.name}{"}}"}
+                          <div key={idx} className="bg-background/60 p-3 rounded-lg border border-primary/10 shadow-sm">
+                            <div className="grid grid-cols-[1fr_2fr] gap-4 items-start">
+                              <div>
+                                <div className="font-mono text-sm font-bold text-primary mb-2 truncate" title={v.name}>
+                                  {"{{"}{v.name.length > 22 ? v.name.substring(0, 18) + "..." : v.name}{"}}"}
+                                </div>
+                                {/* Dropdown เลือก type ของตัวแปร */}
+                                <select
+                                  className="w-full text-xs h-8 rounded-md border border-input bg-background px-2"
+                                  value={v.type}
+                                  onChange={(e) => updateVariable(v.name, "type", e.target.value)}
+                                >
+                                  <option value="TEXT">Text (TEXT)</option>
+                                  <option value="TEXTAREA">Long Text (TEXTAREA)</option>
+                                  <option value="SELECT">Select / Dropdown (SELECT)</option>
+                                  <option value="NUMBER">Number (NUMBER)</option>
+                                  <option value="BOOLEAN">Yes/No (BOOLEAN)</option>
+                                </select>
                               </div>
-                              {/* Dropdown เลือก type ของตัวแปร */}
-                              <select 
-                                className="w-full text-xs h-8 rounded-md border border-input bg-background px-2"
-                                value={v.type}
-                                onChange={(e) => updateVariable(v.name, "type", e.target.value)}
-                              >
-                                <option value="TEXT">Text (TEXT)</option>
-                                <option value="TEXTAREA">Long Text (TEXTAREA)</option>
-                                <option value="NUMBER">Number (NUMBER)</option>
-                                <option value="BOOLEAN">Yes/No (BOOLEAN)</option>
-                              </select>
+                              <div className="space-y-2">
+                                <Input
+                                  placeholder="Label / Variable name in template"
+                                  className="h-8 text-xs font-mono"
+                                  value={v.name}
+                                  onChange={(e) => renameVariable(v.name, e.target.value)}
+                                />
+                                <Input
+                                  placeholder="Description"
+                                  className="h-8 text-xs"
+                                  value={v.description}
+                                  onChange={(e) => updateVariable(v.name, "description", e.target.value)}
+                                />
+                              </div>
                             </div>
-                            <div className="space-y-2">
-                              <Input 
-                                placeholder="Label / Variable name in template" 
-                                className="h-8 text-xs font-mono" 
-                                value={v.name} 
-                                onChange={(e) => renameVariable(v.name, e.target.value)} 
-                              />
-                              <Input 
-                                placeholder="Description" 
-                                className="h-8 text-xs" 
-                                value={v.description} 
-                                onChange={(e) => updateVariable(v.name, "description", e.target.value)} 
-                              />
-                            </div>
+
+                            {/* Options editor (เฉพาะ type === "SELECT") */}
+                            {v.type === "SELECT" && (
+                              <div className="mt-3 pt-3 border-t border-primary/10">
+                                <div className="flex items-center justify-between mb-2">
+                                  <Label className="text-xs font-semibold text-foreground/80">
+                                    Options <span className="text-muted-foreground font-normal">(คั่นด้วย , หรือกด Enter)</span>
+                                  </Label>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {v.options.length} item{v.options.length !== 1 ? "s" : ""}
+                                  </span>
+                                </div>
+                                <Input
+                                  placeholder="พิมพ์ตัวเลือก แล้วกด Enter (เช่น TH, EN, JP)"
+                                  className="h-8 text-xs"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      const target = e.currentTarget;
+                                      addVariableOption(v.name, target.value);
+                                      target.value = "";
+                                    }
+                                  }}
+                                />
+                                {v.options.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {v.options.map((opt) => (
+                                      <span
+                                        key={opt}
+                                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary"
+                                      >
+                                        {opt}
+                                        <button
+                                          type="button"
+                                          aria-label={`Remove ${opt}`}
+                                          onClick={() => removeVariableOption(v.name, opt)}
+                                          className="hover:bg-primary/20 rounded-sm p-0.5 transition-colors"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] text-muted-foreground mt-2 italic">
+                                    ยังไม่มีตัวเลือก — เพิ่มอย่างน้อย 1 ตัวเลือก
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

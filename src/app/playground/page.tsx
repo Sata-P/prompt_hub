@@ -48,6 +48,7 @@ type VariableInfo = {
   id: number;
   name: string;
   type: string;
+  options_json?: string[] | string | null;
   description: string | null;
 };
 
@@ -681,9 +682,23 @@ function PlaygroundContent() {
             ) : (
               <div className="space-y-2.5 flex-1 overflow-auto px-0.5">
                 {variables.map((v) => {
+                  const typeUpper = (v.type || "").toUpperCase();
+                  const isSelect = typeUpper === "SELECT";
                   const isMultiline =
-                    v.type?.toLowerCase() === "textarea" ||
+                    typeUpper === "TEXTAREA" ||
                     v.name.toLowerCase().includes("content");
+                  // รองรับทั้งกรณีที่ Prisma คืน array, string-encoded JSON, หรือ null
+                  let options: string[] = [];
+                  if (Array.isArray(v.options_json)) {
+                    options = v.options_json as string[];
+                  } else if (typeof v.options_json === "string") {
+                    try {
+                      const parsed = JSON.parse(v.options_json);
+                      if (Array.isArray(parsed)) options = parsed;
+                    } catch {
+                      /* ignore */
+                    }
+                  }
                   return (
                     <div key={v.id} className="flex flex-col gap-1">
                       <label className="text-xs font-medium text-muted-foreground">
@@ -697,7 +712,25 @@ function PlaygroundContent() {
                           </span>
                         )}
                       </label>
-                      {isMultiline ? (
+                      {isSelect ? (
+                        <select
+                          className="h-9 bg-background text-sm rounded-md border border-input px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={variableValues[v.name] || ""}
+                          onChange={(e) =>
+                            setVariableValues((prev) => ({
+                              ...prev,
+                              [v.name]: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- Select --</option>
+                          {options.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : isMultiline ? (
                         <Textarea
                           placeholder={v.name}
                           className="min-h-[120px] resize-y bg-background text-sm"

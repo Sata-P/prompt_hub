@@ -132,7 +132,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm border-border/60 h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div className="flex items-center gap-2">
-                <Leaf className="h-4 w-4 text-primary" />
+                <FileText className="h-4 w-4 text-primary" />
                 <CardTitle className="text-sm font-semibold">Recently Updated</CardTitle>
               </div>
               <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-7 px-2">
