@@ -21,7 +21,7 @@ model Users {
   role       String   @default("VIEWER") @db.VarChar(30)
   created_at DateTime @default(now()) @db.Timestamptz
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
-  status     String   @default("activated") @db.VarChar(20)
+  status     UserStatus @default(ACTIVATED)
 
   // Relations
   prompts          Prompts[]         @relation("UserPrompts")
@@ -263,3 +263,9 @@ enum Visibility {
   PRIVATE
   PUBLIC
 }
+
+enum UserStatus {
+  ACTIVATED
+  DEACTIVATED
+}
+

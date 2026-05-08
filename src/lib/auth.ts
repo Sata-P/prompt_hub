@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("No user found with that email");
         }
 
-        if (user.status === "deactivated") {
+        if (user.status === "DEACTIVATED") {
           throw new Error("Your account has been deactivated. Please contact an administrator.");
         }
 

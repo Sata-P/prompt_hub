@@ -41,7 +41,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     await prisma.$transaction(async (tx) => {
       await tx.users.update({
         where: { id: userId },
-        data: { status: 'deactivated' }
+        data: { status: 'DEACTIVATED' }
       });
 
       await tx.activity_log.create({
