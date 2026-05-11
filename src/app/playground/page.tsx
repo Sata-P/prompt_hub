@@ -40,6 +40,7 @@ import {
 } from "@/component/ui/select";
 import { Badge } from "@/component/ui/badge";
 import { Separator } from "@/component/ui/separator";
+import { PROVIDERS, PROVIDER_MODELS, type LLMProvider } from "@/lib/llm";
 
 // -------------------------------------------------------
 // Types
@@ -106,10 +107,11 @@ function PlaygroundContent() {
   const [currentVersionId, setCurrentVersionId] = useState<number | null>(null);
   const [promptTitle, setPromptTitle] = useState("");
 
-  // LLM state
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [selectedModel, setSelectedModel] = useState("");
-  const [defaultModel, setDefaultModel] = useState("");
+  // LLM state — BYOK (Bring Your Own Key)
+  const [provider, setProvider] = useState<LLMProvider>("openai");
+  const [apiKey, setApiKey] = useState("");
+  const models: ModelInfo[] = useMemo(() => PROVIDER_MODELS[provider], [provider]);
+  const [selectedModel, setSelectedModel] = useState<string>(PROVIDER_MODELS.openai[0].id);
   const [isRunning, setIsRunning] = useState(false);
   const [llmResponse, setLlmResponse] = useState("");
   const [usage, setUsage] = useState<UsageInfo | null>(null);
@@ -132,26 +134,14 @@ function PlaygroundContent() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // -------------------------------------------------------
-  // Fetch models on mount
+  // Reset selected model when provider changes (if current not in list)
   // -------------------------------------------------------
   useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        const res = await axios.get("/api/llm/models");
-        setModels(res.data.models || []);
-        setDefaultModel(res.data.defaultModel || "");
-        if (!selectedModel) {
-          setSelectedModel(res.data.defaultModel || "");
-        }
-      } catch (err) {
-        console.error("Failed to fetch models:", err);
-        // Fallback
-        setSelectedModel("qwen-model");
-      }
-    };
-    fetchModels();
+    if (!models.some((m) => m.id === selectedModel)) {
+      setSelectedModel(models[0].id);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [provider]);
 
   // -------------------------------------------------------
   // Fetch prompt data
@@ -205,8 +195,14 @@ function PlaygroundContent() {
           setRunValues(initialVals);
         }
 
-        // Use prompt's recommended model if available
-        if (promptData.recommended_model) {
+        // Use prompt's recommended model if available AND it matches a model
+        // in the currently selected provider's list
+        if (
+          promptData.recommended_model &&
+          PROVIDER_MODELS[provider].some(
+            (m) => m.id === promptData.recommended_model
+          )
+        ) {
           setSelectedModel(promptData.recommended_model);
         }
       } catch (error: any) {
@@ -375,6 +371,14 @@ function PlaygroundContent() {
   // Run Prompt — เรียก LLM API พร้อม streaming
   // -------------------------------------------------------
   const handleRunPrompt = async () => {
+    if (!apiKey.trim()) {
+      toast.error("Please enter your API key to run the prompt");
+      return;
+    }
+    // Capture key locally and IMMEDIATELY clear from state — never persist anywhere
+    const keyForThisRun = apiKey;
+    setApiKey("");
+
     setIsRunning(true);
     setLlmResponse("");
     setUsage(null);
@@ -402,6 +406,8 @@ function PlaygroundContent() {
           rendered_prompt: newRenderedPrompt,
           system_prompt: systemPrompt,
           variables_input: currentValues,
+          provider,
+          apiKey: keyForThisRun,
           model: selectedModel,
           temperature,
         }),
@@ -465,7 +471,11 @@ function PlaygroundContent() {
         toast.info("Execution stopped");
         setExecutionTime(Date.now() - startTime);
       } else {
-        console.error("Run prompt error:", error);
+        // Use console.warn (not console.error) to avoid the Next.js dev
+        // error overlay popping up for expected user-fixable issues
+        // (wrong API key, quota exceeded, invalid model, etc.).
+        // The toast already surfaces the message clearly to the user.
+        console.warn("Run prompt error:", error?.message || error);
         toast.error(error.message || "An error occurred while running the prompt");
       }
     } finally {
@@ -628,8 +638,21 @@ function PlaygroundContent() {
           </p>
         </div>
 
-        {/* Model Selector & Settings */}
-        <div className="flex items-center gap-3">
+        {/* Provider + Model + Settings */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={provider} onValueChange={(v) => setProvider(v as LLMProvider)}>
+            <SelectTrigger className="w-[160px] h-9 bg-background">
+              <SelectValue placeholder="Provider" />
+            </SelectTrigger>
+            <SelectContent>
+              {PROVIDERS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className="flex items-center gap-2">
             <Bot className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -637,27 +660,11 @@ function PlaygroundContent() {
                 <SelectValue placeholder="Select Model" />
               </SelectTrigger>
               <SelectContent>
-                {models.length > 0 ? (
-                  models.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{m.name}</span>
-                        {m.id === defaultModel && (
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] px-1 py-0"
-                          >
-                            default
-                          </Badge>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value={selectedModel || "qwen-model"}>
-                    {selectedModel || "qwen-model"}
+                {models.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
                   </SelectItem>
-                )}
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -673,6 +680,42 @@ function PlaygroundContent() {
           </Button>
         </div>
       </div>
+
+      {/* BYOK API Key Input */}
+      <Card className="shadow-sm border border-amber-300/60 bg-amber-50/40 dark:bg-amber-950/10">
+        <CardContent className="py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              {PROVIDERS.find((p) => p.id === provider)?.name} API Key
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Your key is sent only for this single request and is never stored on our servers or in the browser. It is also cleared from this field after every Run.
+            </p>
+          </div>
+          <Input
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={
+              PROVIDERS.find((p) => p.id === provider)?.keyHint ?? "API Key"
+            }
+            value={apiKey}
+            onChange={(e) => {
+              // Normalize smart-quotes / em dashes that some editors insert
+              // on copy-paste, and strip any remaining non-ASCII character
+              // so the value can always be put in the Authorization header.
+              const sanitized = e.target.value
+                .replace(/[\u2012\u2013\u2014\u2015]/g, "-")
+                .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+                .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+                .replace(/[^\x20-\x7E]/g, "");
+              setApiKey(sanitized);
+            }}
+            className="sm:w-[320px] h-9 bg-background font-mono text-xs"
+          />
+        </CardContent>
+      </Card>
 
       {/* System Prompt (collapsible) */}
       {showSystemPrompt && (
@@ -828,7 +871,8 @@ function PlaygroundContent() {
                 <Button
                   className="w-full h-11 font-semibold shadow-lg shadow-primary/20 transition-transform active:scale-95"
                   onClick={handleRunPrompt}
-                  disabled={!selectedModel}
+                  disabled={!selectedModel || !apiKey.trim()}
+                  title={!apiKey.trim() ? "Enter your API key first" : undefined}
                 >
                   <Play className="h-4 w-4 mr-2" />
                   Run Prompt

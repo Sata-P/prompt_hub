@@ -9,6 +9,7 @@ import { Input } from "@/component/ui/input";
 import { Badge } from "@/component/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/component/ui/select";
 import { Skeleton } from "@/component/ui/skeleton";
+import { PROVIDER_MODELS } from "@/lib/llm";
 
 type Category = { id: number; name: string };
 type Tag = { id: number; name: string };
@@ -66,11 +67,11 @@ export default function PromptsList() {
     Promise.all([
       axios.get<Category[]>("/api/categories"),
       axios.get<Tag[]>("/api/tags"),
-      axios.get("/api/llm/models"),
-    ]).then(([catsRes, tagsRes, modelsRes]) => {
+    ]).then(([catsRes, tagsRes]) => {
       setCategories(catsRes.data || []);
       setTags(tagsRes.data || []);
-      setAvailableModels(modelsRes.data?.models || []);
+      // Static union of supported provider models (no API call — no key needed)
+      setAvailableModels([...PROVIDER_MODELS.openai, ...PROVIDER_MODELS.gemini]);
     }).catch(console.error);
   }, []);
 

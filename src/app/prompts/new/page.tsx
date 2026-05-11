@@ -32,6 +32,7 @@ import {
 } from "@/component/ui/dropdown-menu";
 import { ScrollArea } from "@/component/ui/scroll-area";
 import { ChevronDown, Tag as TagIcon, X } from "lucide-react";
+import { PROVIDER_MODELS } from "@/lib/llm";
 
 // Type สำหรับข้อมูลหมวดหมู่ที่ดึงมาจาก API
 type Category = { id: number; name: string };
@@ -80,14 +81,8 @@ export default function CreatePromptPage() {
       .then(res => setCategories(res.data || []))
       .catch(err => console.error("Failed to load categories:", err));
 
-    axios.get<{models: ModelInfo[], defaultModel: string}>("/api/llm/models")
-      .then(res => {
-        setModels(res.data.models || []);
-        if (res.data.defaultModel) {
-          setRecommendedModel(res.data.defaultModel);
-        }
-      })
-      .catch(err => console.error("Failed to load models:", err));
+    // Static model list (BYOK — no API key needed at this stage)
+    setModels([...PROVIDER_MODELS.openai, ...PROVIDER_MODELS.gemini]);
 
     axios.get<{ id: number; name: string }[]>("/api/tags")
       .then(res => setAvailableTags(res.data || []))

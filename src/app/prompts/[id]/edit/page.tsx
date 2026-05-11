@@ -28,6 +28,7 @@ import {
 } from "@/component/ui/dropdown-menu";
 import { ScrollArea } from "@/component/ui/scroll-area";
 import { ChevronDown, Tag as TagIcon, X } from "lucide-react";
+import { PROVIDER_MODELS } from "@/lib/llm";
 
 type Category = { id: number; name: string };
 type Tag = { id: number; name: string };
@@ -100,15 +101,15 @@ export default function EditPromptPage() {
 
     const fetchInitialData = async () => {
       try {
-        const [catsRes, modelsRes, tagsRes, promptRes] = await Promise.all([
+        const [catsRes, tagsRes, promptRes] = await Promise.all([
           axios.get<Category[]>("/api/categories"),
-          axios.get<{models: ModelInfo[], defaultModel: string}>("/api/llm/models"),
           axios.get<Tag[]>("/api/tags"),
           axios.get<PromptDetail>(`/api/prompts/${id}`)
         ]);
 
         setCategories(catsRes.data || []);
-        setModels(modelsRes.data.models || []);
+        // Static model list (BYOK — no API key needed at this stage)
+        setModels([...PROVIDER_MODELS.openai, ...PROVIDER_MODELS.gemini]);
         setAvailableTags(tagsRes.data || []);
 
         const prompt = promptRes.data;
