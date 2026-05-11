@@ -7,12 +7,18 @@ import {
   FileText,
   Plus,
   Clock,
-  Leaf,
-  Sprout,
+  CheckCircle2,
+  AlertCircle,
+  Archive,
+  PlayCircle,
   FolderOpen,
   Tag,
+  TrendingUp,
+  Star,
   ArrowRight,
   ChevronDown,
+  X,
+  ExternalLink,
 } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
@@ -61,6 +67,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
+  const [viewingCategoryPrompts, setViewingCategoryPrompts] = useState<NonNullable<DashboardStats["popularCategories"]>[number] | null>(null);
 
   useEffect(() => {
     axios
@@ -74,18 +81,18 @@ export default function DashboardPage() {
     <div className="min-h-full">
       {/* ── Page header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 fade-in-up">
-        <div>
+        {/* <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          {/* <p className="text-sm text-white mt-1">
             Welcome back,{" "}
             <span className="font-medium text-foreground">
               {session?.user?.name?.split(" ")[0] || "there"}
             </span>
             . Here&apos;s what&apos;s happening.
-          </p>
-        </div>
+          </p> 
+         </div> */}
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+          {/* <Button variant="outline" size="sm" asChild>
             <Link href="/prompts">
               <FileText className="h-4 w-4" />
               View All
@@ -96,30 +103,30 @@ export default function DashboardPage() {
               <Plus className="h-4 w-4" />
               New Prompt
             </Link>
-          </Button>
+          </Button> */}
         </div>
       </div>
 
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
         <StatCard
-          label="Total Prompts"
-          icon={<Leaf className="h-4 w-4" />}
+          label="My Prompts"
+          icon={<FileText className="h-4 w-4" />}
           value={stats?.totalPrompts}
           loading={loading}
           accent="orange"
         />
         <StatCard
-          label="Published"
-          icon={<Sprout className="h-4 w-4" />}
-          value={stats?.byStatus?.PUBLISHED}
+          label="Total Prompts"
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          value={stats?.systemTotalPrompts}
           loading={loading}
           accent="green"
         />
         <StatCard
-          label="In Draft"
-          icon={<Clock className="h-4 w-4" />}
-          value={(stats?.byStatus?.DRAFT ?? 0) + (stats?.byStatus?.REVIEW ?? 0)}
+          label="Favorite Prompts"
+          icon={<Star className="h-4 w-4" />}
+          value={stats?.totalFavorites}
           loading={loading}
           accent="yellow"
         />
@@ -132,7 +139,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm border-border/60 h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
+                <Clock className="h-4 w-4 text-primary" />
                 <CardTitle className="text-sm font-semibold">Recently Updated</CardTitle>
               </div>
               <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-7 px-2">
@@ -255,7 +262,19 @@ export default function DashboardPage() {
               ) : (
                 <div className="flex flex-col gap-2">
                   {stats?.popularCategories?.map((cat) => (
-                    <CategoryToggleItem key={cat.id} category={cat} />
+                    <div 
+                      key={cat.id} 
+                      className="flex items-center justify-between p-2 hover:bg-accent/50 transition-colors w-full text-left rounded-lg border border-border/60 bg-card cursor-pointer"
+                      onClick={() => setViewingCategoryPrompts(cat)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium">{cat.name}</span>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {cat.prompts.length} prompts
+                      </Badge>
+                    </div>
                   ))}
                   {stats?.popularCategories?.length === 0 && (
                      <p className="text-xs text-muted-foreground text-center py-2">No categories found</p>
@@ -266,6 +285,40 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Pop up showing prompts for a category */}
+      {viewingCategoryPrompts && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card p-6 rounded-lg max-w-md w-full border shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-foreground">
+                Prompts in &ldquo;{viewingCategoryPrompts.name}&rdquo;
+              </h3>
+              <Button size="icon" variant="ghost" onClick={() => setViewingCategoryPrompts(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            {viewingCategoryPrompts.prompts && viewingCategoryPrompts.prompts.length > 0 ? (
+              <ul className="space-y-2 max-h-60 overflow-y-auto">
+                {viewingCategoryPrompts.prompts.map(p => (
+                  <li key={p.id} className="text-sm border-b border-border pb-1.5 last:border-0 last:pb-0">
+                    <Link 
+                      href={`/prompts/${p.id}`} 
+                      className="text-muted-foreground hover:text-primary transition-colors flex items-center justify-between"
+                      onClick={() => setViewingCategoryPrompts(null)}
+                    >
+                      <span className="truncate">{p.title}</span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 ml-2 opacity-50" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No prompts linked to this category.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -285,17 +338,16 @@ function StatCard({
   loading: boolean;
   accent: "orange" | "green" | "yellow" | "neutral";
 }) {
-  // Sage palette — แมป accent เดิมไปสีในธีมใหม่ (ไม่ต้องแก้ที่เรียกใช้)
   const accentClasses = {
-    orange:  "bg-[#d4e8d8] text-[#2c5e38] border-[#c5d9c6]",        // sage primary
-    green:   "bg-[#c5d9c6] text-[#2c5e38] border-[#b8ccba]",        // forest
-    yellow:  "bg-[#f0e6d0] text-[#8a6d3b] border-[#e3d4ad]",        // gold (สอดคล้อง palette)
-    neutral: "bg-muted     text-muted-foreground border-border",
+    orange:  "bg-orange-500/15 text-orange-400 border-orange-500/25",
+    green:   "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+    yellow:  "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
+    neutral: "bg-white/8       text-muted-foreground border-border",
   };
   const valueClasses = {
-    orange:  "text-[#3e8a42]",
-    green:   "text-[#2c5e38]",
-    yellow:  "text-[#8a6d3b]",
+    orange:  "text-orange-400",
+    green:   "text-emerald-400",
+    yellow:  "text-yellow-400",
     neutral: "text-foreground",
   };
 
@@ -318,49 +370,6 @@ function StatCard({
       </CardContent>
     </Card>
   );
-}
+};
 
-function CategoryToggleItem({ category }: { category: NonNullable<DashboardStats["popularCategories"]>[number] }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="flex flex-col rounded-lg border border-border/60 bg-card overflow-hidden">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between p-2 hover:bg-accent/50 transition-colors w-full text-left"
-      >
-        <div className="flex items-center gap-2">
-          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm font-medium">{category.name}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-[10px]">
-            {category._count.prompts} prompts
-          </Badge>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-        </div>
-      </button>
-      
-      {isOpen && category.prompts && category.prompts.length > 0 && (
-        <div className="border-t border-border/50 bg-muted/20 p-2 space-y-1">
-          {category.prompts.map((prompt) => {
-  
-            return (
-              <Link key={prompt.id} href={`/prompts/${prompt.id}`} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent/50 transition-colors group">
-                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate pr-2">
-                  {prompt.title}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-      )}
-      {isOpen && (!category.prompts || category.prompts.length === 0) && (
-        <div className="border-t border-border/50 bg-muted/20 p-2">
-          <p className="text-xs text-muted-foreground text-center">No recent prompts</p>
-        </div>
-      )}
-    </div>
-  );
-}
 

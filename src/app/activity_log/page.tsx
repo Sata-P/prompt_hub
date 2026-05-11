@@ -137,7 +137,7 @@ export default function ActivityLogPage() {
       )}
 
       {/* Table */}
-      <div className="mt-4 rounded-lg border bg-card overflow-hidden shadow-sm">
+      <div data-slot="card" className="mt-4 rounded-lg overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

@@ -167,7 +167,7 @@ export default function PromptDetailPage() {
         </div>
         <div className="flex gap-3 shrink-0">
           <Button variant="outline" size="sm" onClick={() => toggleFavorite(prompt.id)}
-            style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: 'black' }}>
+            style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: 'white' }}>
             {isFavorite(prompt.id) ? <FaHeart /> : <FaRegHeart />}
             {isFavorite(prompt.id) ? "Unfavorite" : "Favorite"}
           </Button>

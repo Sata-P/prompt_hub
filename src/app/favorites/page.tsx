@@ -63,7 +63,7 @@ function PromptCard({
   const totalVars = p?.versions?.reduce((sum, version) => sum + version.promptVariables.length , 0);
 
   return (
-    <div className="group relative bg-card border border-border rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+    <div data-slot="card" className="group relative rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
       {/* Unfavorite button */}
       <button
         onClick={(e) => {
@@ -257,7 +257,7 @@ export default function FavoritesPage() {
             placeholder="Search favorites..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-9 h-9 text-sm"
+            className="pl-9 pr-9 h-9 text-sm bg-background"
           />
           {search && (
             <button

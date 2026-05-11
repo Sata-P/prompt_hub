@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert } from "lucide-react";
+import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -11,12 +12,16 @@ import { Button } from "@/component/ui/button";
 import { Skeleton } from "@/component/ui/skeleton";
 import { Badge } from "@/component/ui/badge";
 import { Input } from "@/component/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/component/ui/alert-dialog";
 
 type Category = {
   id: number;
   name: string;
   description: string | null;
   color: string | null;
+  prompts?: { id: number; title: string }[];
+  _count?: { prompts: number };
+  array_count?: number;
 };
 
 type Tag = {
@@ -53,6 +58,10 @@ export default function SettingsPage() {
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [tagSaving, setTagSaving] = useState(false);
+
+  const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [viewingCategoryPrompts, setViewingCategoryPrompts] = useState<Category | null>(null);
 
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role !== "ADMIN") {
@@ -147,7 +156,6 @@ export default function SettingsPage() {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm("Are you sure you want to deactivate this user? They will no longer be able to log in.")) return;
     try {
       await axios.delete(`/api/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
@@ -162,6 +170,7 @@ export default function SettingsPage() {
 
   // We omit the outer div wrapper so it takes the structure of AppLayout
   return (
+    <>
     <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
@@ -218,14 +227,35 @@ export default function SettingsPage() {
               <ul className="space-y-2">
                 {categories.map(cat => (
                   <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
-                    <div>
-                      <div className="font-medium text-sm">{cat.name}</div>
+                    <div className="min-w-0 flex-1 pr-4">
+                      <div className="font-medium text-sm">
+                        {cat.name}
+                        {(cat.array_count ?? 0) > 0 && (
+                          <span 
+                            className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground cursor-pointer hover:bg-primary/20 hover:text-primary transition-colors"
+                            onClick={() => setViewingCategoryPrompts(cat)}
+                          >
+                            {cat.array_count}
+                          </span>
+                        )}
+                      </div>
+                      {cat.prompts && cat.prompts.length > 0 ? (
+                        <div 
+                          className="text-xs text-muted-foreground mt-1 truncate cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => setViewingCategoryPrompts(cat)}
+                        >
+                          Prompts: {cat.prompts.slice(0, 3).map(p => p.title).join(", ")}
+                          {cat.prompts.length > 3 && ` +${cat.prompts.length - 3} more`}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground/50 mt-1">No prompts linked</div>
+                      )}
                     </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => handleDeleteCategory(cat.id)}
-                      className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -362,7 +392,10 @@ export default function SettingsPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => {
+                              setUserToDelete(user);
+                              setIsDeleteOpen(true);
+                            }}
                             disabled={user.id === Number(session?.user?.id) || user.status === 'deactivated'}
                             className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-30 disabled:pointer-events-none"
                             title={user.status === 'deactivated' ? "User already deactivated" : "Deactivate user"}
@@ -379,6 +412,66 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate <strong>{userToDelete?.name}</strong>? They will no longer be able to log in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (userToDelete) {
+                  handleDeleteUser(userToDelete.id);
+                  setIsDeleteOpen(false);
+                }
+              }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
+      {/* Pop up showing prompts for a category - outside fade-in-up to fix fixed positioning */}
+      {viewingCategoryPrompts && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card p-6 rounded-lg max-w-md w-full border shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-foreground">
+                Prompts in &ldquo;{viewingCategoryPrompts.name}&rdquo;
+              </h3>
+              <Button size="icon" variant="ghost" onClick={() => setViewingCategoryPrompts(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            {viewingCategoryPrompts.prompts && viewingCategoryPrompts.prompts.length > 0 ? (
+              <ul className="space-y-2 max-h-60 overflow-y-auto">
+                {viewingCategoryPrompts.prompts.map(p => (
+                  <li key={p.id} className="text-sm border-b border-border pb-1.5 last:border-0 last:pb-0">
+                    <Link 
+                      href={`/prompts/${p.id}`} 
+                      className="text-muted-foreground hover:text-primary transition-colors flex items-center justify-between"
+                      onClick={() => setViewingCategoryPrompts(null)}
+                    >
+                      <span className="truncate">{p.title}</span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 ml-2 opacity-50" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No prompts linked to this category.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

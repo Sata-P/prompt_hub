@@ -81,7 +81,7 @@ export async function GET() {
         include: { 
           _count: { select: { prompts: true } },
           prompts: {
-            take: 3,
+            where: { deleted_at: null },
             select: { id: true, title: true, status: true },
             orderBy: { updated_at: 'desc' }
           }

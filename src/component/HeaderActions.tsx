@@ -11,9 +11,9 @@ export function HeaderActions() {
       size="icon"
       title="Sign out"
       onClick={() => signOut({ callbackUrl: "/login" })}
-      className="text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+      className="text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
     >
-      <LogOut className="h-4 w-4" />
+      <LogOut className="h-4 w-4" strokeWidth={3} />
     </Button>
   );
 }

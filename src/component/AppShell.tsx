@@ -51,41 +51,39 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex flex-col min-h-screen w-full">
-        {/* ── Top bar: Header (Full Width) ── */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#3D2410]/40 bg-[#2C1A0E] px-4 md:px-6 z-20 shadow-sm">
-          <div className="flex items-center gap-3 min-w-0">
-            <SidebarTrigger className="shrink-0 text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-colors" />
-            <div className="shrink-0 h-4 w-px bg-white/15" />
-            <span className="truncate text-sm font-semibold text-white/90">
-              {pageTitle}
-            </span>
-          </div>
+      <div className="flex h-screen w-full overflow-hidden">
+        {/* ── Sidebar (Full Height, Left) ── */}
+        <AppSidebar user={session.user} />
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* User name */}
-            <span className="text-sm font-medium text-white/60 hidden md:block max-w-[150px] truncate">
-              {session.user.name || session.user.email}
-            </span>
-            <div className="h-4 w-px bg-white/15 hidden md:block" />
-            <HeaderActions />
-          </div>
-        </header>
-
-        <div className="flex flex-1 overflow-hidden">
-          {/* ── Sidebar (Below Header) ── */}
-          <AppSidebar user={session.user} />
-
-          {/* ── Main content (Below Header, Next to Sidebar) ── */}
-          <SidebarInset className="overflow-hidden transition-all duration-200 ease-linear">
-            {/* ── Page content ── */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              <div className="mx-auto max-w-6xl w-full p-4 md:p-6 lg:p-8">
-                {children}
-              </div>
+        {/* ── Right side: header + content stacked ── */}
+        <SidebarInset className="flex flex-col overflow-hidden min-h-0 h-full flex-1">
+          {/* ── Top bar ── */}
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#2e1f5e]/60 bg-[#08011a] px-4 md:px-6 z-20 shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
+              <SidebarTrigger className="shrink-0 text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-colors" />
+              <div className="shrink-0 h-4 w-px bg-white/15" />
+              <span className="truncate text-base font-bold text-white/90">
+                {pageTitle}
+              </span>
             </div>
-          </SidebarInset>
-        </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {/* User name */}
+              <span className="text-sm font-medium text-white/60 hidden md:block max-w-[150px] truncate">
+                {session.user.name || session.user.email}
+              </span>
+              <div className="h-4 w-px bg-white/15 hidden md:block" />
+              <HeaderActions />
+            </div>
+          </header>
+
+          {/* ── Page content ── */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="mx-auto max-w-6xl w-full p-4 md:p-6 lg:p-8">
+              {children}
+            </div>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

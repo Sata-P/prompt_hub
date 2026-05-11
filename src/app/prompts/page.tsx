@@ -151,7 +151,7 @@ export default function PromptsList() {
       </div>
 
       {/* แถบตัวกรอง */}
-      <div className="mt-6 rounded-lg border bg-card p-4 shadow-sm space-y-3">
+      <div data-slot="card" className="mt-6 rounded-lg p-4 shadow-sm space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Search */}
           <div className="relative md:col-span-2">
@@ -250,7 +250,7 @@ export default function PromptsList() {
       </div>
 
       {/* ตารางแสดงรายการ prompts */}
-      <div className="mt-6 rounded-lg border bg-card overflow-hidden shadow-sm">
+      <div data-slot="card" className="mt-6 rounded-lg overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-medium">
             <thead>

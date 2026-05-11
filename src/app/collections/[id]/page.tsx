@@ -66,11 +66,11 @@ const ITEMS_PER_PAGE = 9;
 // ─── Status Badge ────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    PUBLISHED: { label: "Published", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    APPROVED:  { label: "Approved",  cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    DRAFT:     { label: "Draft",     cls: "bg-slate-100 text-slate-600 border-slate-200" },
-    REVIEW:    { label: "Review",    cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    ARCHIVED:  { label: "Archived",  cls: "bg-zinc-100 text-zinc-500 border-zinc-200" },
+    PUBLISHED: { label: "Published", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+    APPROVED:  { label: "Approved",  cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+    DRAFT:     { label: "Draft",     cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" },
+    REVIEW:    { label: "Review",    cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+    ARCHIVED:  { label: "Archived",  cls: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
   };
   const s = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
   return (
@@ -92,7 +92,7 @@ function PromptCard({
 }) {
   const p = item.prompt;
   return (
-    <div className="group relative flex flex-col bg-white border border-border rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+    <div data-slot="card" className="group relative flex flex-col rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
       {/* Remove button (admin) */}
       {isAdmin && (
         <button
@@ -167,7 +167,7 @@ function PromptCard({
 
 function PromptCardSkeleton() {
   return (
-    <div className="bg-white border border-border rounded-xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
       <div className="flex items-start gap-3">
         <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
         <div className="flex-1 space-y-1.5">
@@ -290,7 +290,7 @@ export default function CollectionDetailsPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-4 w-40" />
-        <div className="bg-white border border-border rounded-2xl p-6 space-y-3">
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
           <div className="flex gap-4">
             <Skeleton className="h-14 w-14 rounded-2xl shrink-0" />
             <div className="flex-1 space-y-2">
@@ -341,7 +341,7 @@ export default function CollectionDetailsPage() {
       </nav>
 
       {/* ── Hero header ── */}
-      <div className="bg-white border border-border rounded-2xl p-6 shadow-sm">
+      <div data-slot="card" className="rounded-2xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           {/* Icon */}
           <div className="shrink-0 h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm border border-primary/10">
@@ -357,8 +357,8 @@ export default function CollectionDetailsPage() {
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
                   collection.visibility === "PUBLIC"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-slate-100 text-slate-600 border-slate-200"
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : "bg-slate-500/10 text-slate-400 border-slate-500/20"
                 }`}
               >
                 {collection.visibility === "PUBLIC" ? (
@@ -425,7 +425,7 @@ export default function CollectionDetailsPage() {
                 placeholder="Search prompts..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 pr-8 h-9 text-sm"
+                className="pl-8 pr-8 h-9 text-sm bg-background"
               />
               {search && (
                 <button
@@ -441,7 +441,7 @@ export default function CollectionDetailsPage() {
 
         {/* Empty — no prompts at all */}
         {promptCount === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-border rounded-2xl">
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-dashed border-border rounded-2xl">
             <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-3">
               <BookOpen className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -457,7 +457,7 @@ export default function CollectionDetailsPage() {
           </div>
         ) : filteredPrompts.length === 0 ? (
           /* Empty — search no match */
-          <div className="flex flex-col items-center justify-center py-14 text-center bg-white border border-border rounded-2xl">
+          <div className="flex flex-col items-center justify-center py-14 text-center bg-card border border-border rounded-2xl">
             <Search className="h-8 w-8 text-muted-foreground/40 mb-3" />
             <p className="text-sm font-medium text-muted-foreground">
               No prompts match &ldquo;{search}&rdquo;

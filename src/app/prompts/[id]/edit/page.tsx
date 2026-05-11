@@ -232,7 +232,7 @@ export default function EditPromptPage() {
       const promptPayload = {
         title,
         description: description || undefined,
-        categoryId: categoryId ? Number(categoryId) : undefined,
+        categoryId: categoryId ? Number(categoryId) : null,
         recommendedModel: recommendedModel || undefined,
         tags,
       };

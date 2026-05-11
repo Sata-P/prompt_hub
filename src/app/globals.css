@@ -39,61 +39,89 @@
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
 }
 
-/* ── Sage Green Design System ── */
+/* ── Dark Navy + Orange Design System ── */
 :root {
-  /* Background: soft sage off-white */
-  --background: #e9eeea;
-  --foreground: #1e2a1f;
+  /* Background: deep navy-purple */
+  --background: #08011a;
+  --foreground: #EEE9FF;
 
-  /* Surface / Card */
-  --card: #f5f8f5;
-  --card-foreground: #1e2a1f;
-  --popover: #f5f8f5;
-  --popover-foreground: #1e2a1f;
+  /* Surface / Card: dark purple with subtle transparency */
+  --card: #130a2e;
+  --card-foreground: #EEE9FF;
+  --popover: #160d33;
+  --popover-foreground: #EEE9FF;
 
-  /* Primary: Forest sage green */
-  --primary: #4a7c59;
+  /* Primary: vibrant orange */
+  --primary: #F97316;
   --primary-foreground: #ffffff;
 
-  /* Secondary: muted ink */
-  --secondary: #6b8a6e;
-  --secondary-foreground: #ffffff;
+  /* Secondary: muted purple */
+  --secondary: #2a1f4e;
+  --secondary-foreground: #c4b5fd;
 
-  /* Muted: pale sage */
-  --muted: #dde5de;
-  --muted-foreground: #3d5240;
+  /* Muted: deep purple */
+  --muted: #1c1040;
+  --muted-foreground: #9d8ec4;
 
-  /* Accent: light sage tint */
-  --accent: #d4e8d8;
-  --accent-foreground: #2c5e38;
+  /* Accent: violet-purple */
+  --accent: #2d1b5e;
+  --accent-foreground: #c4b5fd;
 
-  /* Destructive: muted rose (สอดคล้องกับ palette) */
-  --destructive: #8b4a52;
+  /* Destructive: rose */
+  --destructive: #e53e3e;
   --destructive-foreground: #ffffff;
 
-  /* Borders & inputs */
-  --border: #c8d8ca;
-  --input: #dde5de;
-  --ring: #4a7c59;
+  /* Borders & inputs: purple-tinted */
+  --border: #2e1f5e;
+  --input: #1e1245;
+  --ring: #F97316;
 
-  /* Radius: 8px */
-  --radius: 0.5rem;
+  /* Radius: 10px */
+  --radius: 0.625rem;
 
-  /* ── Sidebar: deep forest green ── */
-  --sidebar: #2c3d2e;
-  --sidebar-foreground: #d8eeda;
-  --sidebar-primary: #7ec882;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(126, 200, 130, 0.15);
-  --sidebar-accent-foreground: #a8d8aa;
-  --sidebar-border: #364838;
-  --sidebar-ring: #7ec882;
-  --sidebar-muted: #364838;
-  --sidebar-muted-foreground: rgba(160, 200, 165, 0.55);
+  /* ── Sidebar: deep navy-purple gradient with orange bottom ── */
+  --sidebar: linear-gradient(-310deg, #AC270B 0%, #5F1321 10%, #130a2e 45%, #0d0829 100%);
+  --sidebar-foreground: #F0ECFF;
+  --sidebar-primary: #F97316;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(249, 115, 22, 0.12);
+  --sidebar-accent-foreground: #FB923C;
+  --sidebar-border: rgba(88, 28, 135, 0.35);
+  --sidebar-ring: rgba(249, 115, 22, 0.4);
+  --sidebar-muted: rgba(255, 255, 255, 0.04);
+  --sidebar-muted-foreground: #9d8ec4;
 }
 
 * {
   border-color: var(--border);
+}
+
+/* ── Gradient border + glow for cards ── */
+[data-slot="card"] {
+  /* Solid gradient border: orange → purple → violet */
+  background:
+    linear-gradient(#130a2e, #130a2e) padding-box,
+    linear-gradient(135deg,
+      #F97316 0%,
+      #a855f7 55%,
+      #7c3aed 100%) border-box !important;
+  border: 1px solid transparent !important;
+  color: var(--card-foreground) !important;
+  /* Outer glow: orange + violet emit light outward */
+  box-shadow:
+    0 0 8px rgba(249, 115, 22, 0.35),
+    0 0 20px rgba(249, 115, 22, 0.15),
+    0 0 40px rgba(168, 85, 247, 0.12),
+    inset 20px 20px 50px rgba(249, 115, 22, 0.05),
+    0 4px 20px rgba(0, 0, 0, 0.55) !important;
+}
+
+[data-radix-popper-content-wrapper] [role="listbox"],
+[data-radix-popper-content-wrapper] [role="dialog"],
+[data-radix-popper-content-wrapper] {
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border-color: var(--border) !important;
 }
 
 body {
@@ -105,14 +133,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading), var(--font-sans), sans-serif;
   letter-spacing: -0.02em;
   color: var(--foreground);
 }
 
 /* Monospace for prompt templates */
-code, pre, .font-mono {
+code,
+pre,
+.font-mono {
   font-family: var(--font-mono), monospace;
   font-variant-numeric: tabular-nums;
 }
@@ -122,15 +157,18 @@ code, pre, .font-mono {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(88, 28, 135, 0.4);
   border-radius: 99px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: rgba(139, 92, 246, 0.6);
 }
 
 /* ── Animations ── */
@@ -139,6 +177,7 @@ code, pre, .font-mono {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -146,8 +185,13 @@ code, pre, .font-mono {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .fade-in-up {
@@ -160,29 +204,55 @@ code, pre, .font-mono {
   opacity: 0;
 }
 
-.stagger-1 { animation-delay: 60ms; }
-.stagger-2 { animation-delay: 120ms; }
-.stagger-3 { animation-delay: 180ms; }
-.stagger-4 { animation-delay: 240ms; }
-.stagger-5 { animation-delay: 300ms; }
+.stagger-1 {
+  animation-delay: 60ms;
+}
+
+.stagger-2 {
+  animation-delay: 120ms;
+}
+
+.stagger-3 {
+  animation-delay: 180ms;
+}
+
+.stagger-4 {
+  animation-delay: 240ms;
+}
+
+.stagger-5 {
+  animation-delay: 300ms;
+}
 
 /* ── Prompt code block styling ── */
 .prompt-template {
   font-family: var(--font-mono), monospace;
   font-size: 0.875rem;
   line-height: 1.7;
-  background: #f0f5f1;
-  border: 1px solid var(--border);
+  background: #130a2e;
+  border: 1px solid rgba(88, 28, 135, 0.5);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
   white-space: pre-wrap;
   word-break: break-word;
+  color: #EEE9FF;
 }
 
 .prompt-variable {
-  color: #2c5e38;
+  color: #FB923C;
   font-weight: 600;
-  background: rgba(74, 124, 89, 0.1);
+  background: rgba(249, 115, 22, 0.12);
   border-radius: 3px;
   padding: 0 3px;
+}
+
+.sidebar-custom-bg {
+  background: var(--sidebar) !important;
+}
+
+.glow-orange {
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35),
+    0 0 18px 3px rgba(249, 115, 22, 0.2),
+    0 0 6px 1px rgba(249, 115, 22, 0.35);
+  background-image: radial-gradient(ellipse at 90% 50%, rgba(180, 40, 20, 0.85) 0%, rgba(80, 10, 40, 0.6) 60%, transparent 100%);
 }
