@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Folder, Plus, MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Folder, FolderOpen, Plus, MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/component/ui/card";
 import { Skeleton } from "@/component/ui/skeleton";
@@ -244,7 +244,7 @@ export default function CollectionsPage() {
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Folder className="h-4 w-4 text-primary" />
+              <FolderOpen className="h-4 w-4 text-primary" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Collections

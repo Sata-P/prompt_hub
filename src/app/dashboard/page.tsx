@@ -19,6 +19,7 @@ import {
   ChevronDown,
   X,
   ExternalLink,
+  House,
 } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
@@ -80,30 +81,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-full">
       {/* ── Page header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 fade-in-up">
-        {/* <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          {/* <p className="text-sm text-white mt-1">
-            Welcome back,{" "}
-            <span className="font-medium text-foreground">
-              {session?.user?.name?.split(" ")[0] || "there"}
-            </span>
-            . Here&apos;s what&apos;s happening.
-          </p> 
-         </div> */}
-        <div className="flex items-center gap-2">
-          {/* <Button variant="outline" size="sm" asChild>
-            <Link href="/prompts">
-              <FileText className="h-4 w-4" />
-              View All
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/prompts/new">
-              <Plus className="h-4 w-4" />
-              New Prompt
-            </Link>
-          </Button> */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8 shrink-0">
+            <House className="h-4 w-4 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         </div>
       </div>
 
@@ -111,21 +94,21 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
         <StatCard
           label="My Prompts"
-          icon={<FileText className="h-4 w-4" />}
+          icon={<FileText className="h-5 w-5" />}
           value={stats?.totalPrompts}
           loading={loading}
           accent="orange"
         />
         <StatCard
           label="Total Prompts"
-          icon={<CheckCircle2 className="h-4 w-4" />}
+          icon={<CheckCircle2 className="h-5 w-5" />}
           value={stats?.systemTotalPrompts}
           loading={loading}
           accent="green"
         />
         <StatCard
           label="Favorite Prompts"
-          icon={<Star className="h-4 w-4" />}
+          icon={<Star className="h-5 w-5" />}
           value={stats?.totalFavorites}
           loading={loading}
           accent="yellow"
@@ -139,10 +122,10 @@ export default function DashboardPage() {
           <Card className="shadow-sm border-border/60 h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Recently Updated</CardTitle>
+                <Clock className="h-5 w-5 text-primary" />
+                <CardTitle className="text-xl font-bold">Recently Updated</CardTitle>
               </div>
-              <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-7 px-2">
+              <Button variant="ghost" size="sm" asChild className="text-xs text-orange-500 h-7 px-2 hover:text-orange-600 hover:bg-orange-500/10">
                 <Link href="/prompts">
                   View all <ArrowRight className="h-3 w-3 ml-1" />
                 </Link>
@@ -175,8 +158,8 @@ export default function DashboardPage() {
                         style={{ animationDelay: `${i * 40}ms` }}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 shrink-0 rounded-md bg-primary/10 flex items-center justify-center">
-                            <FileText className="h-3.5 w-3.5 text-primary" />
+                          <div className="h-10 w-10 shrink-0 rounded-lg bg-orange-500/15 flex items-center justify-center text-orange-500">
+                            <FileText className="h-5 w-5" />
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
@@ -216,8 +199,8 @@ export default function DashboardPage() {
           <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Tags</CardTitle>
+                <Tag className="h-5 w-5 text-primary" />
+                <CardTitle className="text-xl font-bold">Tags</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="pt-0 space-y-3 pb-4">
@@ -248,8 +231,8 @@ export default function DashboardPage() {
           <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Categories</CardTitle>
+                <FolderOpen className="h-5 w-5 text-primary" />
+                <CardTitle className="text-xl font-bold">Categories</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
@@ -339,16 +322,10 @@ function StatCard({
   accent: "orange" | "green" | "yellow" | "neutral";
 }) {
   const accentClasses = {
-    orange:  "bg-orange-500/15 text-orange-400 border-orange-500/25",
-    green:   "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
-    yellow:  "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
-    neutral: "bg-white/8       text-muted-foreground border-border",
-  };
-  const valueClasses = {
-    orange:  "text-orange-400",
-    green:   "text-emerald-400",
-    yellow:  "text-yellow-400",
-    neutral: "text-foreground",
+    orange:  "bg-orange-500/15 text-orange-400",
+    green:   "bg-emerald-500/15 text-emerald-400",
+    yellow:  "bg-yellow-500/15 text-yellow-400",
+    neutral: "bg-white/8 text-muted-foreground",
   };
 
   return (
@@ -360,10 +337,10 @@ function StatCard({
             {loading ? (
               <Skeleton className="h-7 w-14 mt-1" />
             ) : (
-              <p className={`text-2xl font-bold ${valueClasses[accent]}`}>{value ?? 0}</p>
+              <p className="text-2xl font-bold text-foreground">{value ?? 0}</p>
             )}
           </div>
-          <div className={`p-2 rounded-lg border ${accentClasses[accent]}`}>
+          <div className={`p-2 rounded-lg ${accentClasses[accent]}`}>
             {icon}
           </div>
         </div>

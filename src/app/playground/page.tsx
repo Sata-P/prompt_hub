@@ -14,13 +14,14 @@ import {
   Sparkles,
   Bot,
   Settings2,
-  FlaskConical,
+  PlayCircle,
   Timer,
   ChevronRight,
   ChevronLeft,
   User as UserIcon,
   Search,
   X,
+  FlaskConical,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -158,11 +159,21 @@ function PlaygroundContent() {
   useEffect(() => {
     if (!promptId) return;
 
+    const controller = new AbortController();
+    let ignored = false;
+
     const fetchPrompt = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`/api/prompts/${promptId}`);
-        const promptData = res.data;
+        const res = await fetch(`/api/prompts/${promptId}`, {
+          signal: controller.signal,
+        });
+        
+        if (!res.ok) throw new Error("Failed to load prompt");
+        
+        const promptData = await res.json();
+        
+        if (ignored) return;
 
         setPromptTitle(promptData.title || "");
 
@@ -198,15 +209,23 @@ function PlaygroundContent() {
         if (promptData.recommended_model) {
           setSelectedModel(promptData.recommended_model);
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === "AbortError") return;
         console.error("Error loading prompt:", error);
         toast.error("Failed to load prompt");
       } finally {
-        setLoading(false);
+        if (!ignored) {
+          setLoading(false);
+        }
       }
     };
 
     fetchPrompt();
+    
+    return () => {
+      ignored = true;
+      controller.abort();
+    };
   }, [promptId, versionId]);
 
   // -------------------------------------------------------
@@ -215,21 +234,33 @@ function PlaygroundContent() {
   useEffect(() => {
     if (promptId) return;
 
+    const controller = new AbortController();
+
     const fetchPublicPrompts = async () => {
       setLoadingList(true);
       try {
-        const res = await axios.get(
-          "/api/prompts?visibility=PUBLIC&status=PUBLISHED&limit=20"
+        const res = await fetch(
+          "/api/prompts?visibility=PUBLIC&status=PUBLISHED&limit=20",
+          { signal: controller.signal }
         );
-        setPublicPrompts(res.data.data || []);
-      } catch (err) {
+        if (!res.ok) throw new Error("Failed to fetch public prompts");
+        const data = await res.json();
+        setPublicPrompts(data.data || []);
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
         console.error("Failed to fetch public prompts:", err);
       } finally {
-        setLoadingList(false);
+        if (!controller.signal.aborted) {
+          setLoadingList(false);
+        }
       }
     };
 
     fetchPublicPrompts();
+
+    return () => {
+      controller.abort();
+    };
   }, [promptId]);
 
   // Filtered prompts by search query (uses deferred value for better input responsiveness)
@@ -254,15 +285,36 @@ function PlaygroundContent() {
   // Fetch successful runs when promptId changes
   useEffect(() => {
     if (!promptId) { setRuns([]); setSelectedRun(null); return; }
+    
+    let ignored = false;
     setRunsLoading(true);
-    axios.get<PromptRun[]>(`/api/prompts/${promptId}/runs?limit=5`)
+    
+    fetch(`/api/prompts/${promptId}/runs?limit=5`)
       .then(res => {
-        setRuns(res.data);
-        if (res.data.length > 0) setSelectedRun(res.data[0]);
+        if (!res.ok) throw new Error("Failed to fetch runs");
+        return res.json();
+      })
+      .then((data: PromptRun[]) => {
+        if (ignored) return;
+        setRuns(data);
+        if (data.length > 0) setSelectedRun(data[0]);
         else setSelectedRun(null);
       })
-      .catch(() => { setRuns([]); setSelectedRun(null); })
-      .finally(() => setRunsLoading(false));
+      .catch(() => { 
+        if (!ignored) {
+          setRuns([]); 
+          setSelectedRun(null); 
+        }
+      })
+      .finally(() => {
+        if (!ignored) {
+          setRunsLoading(false);
+        }
+      });
+      
+    return () => {
+      ignored = true;
+    };
   }, [promptId]);
 
   // -------------------------------------------------------
@@ -432,7 +484,7 @@ function PlaygroundContent() {
           <div>
             <div className="flex items-center gap-2.5 mb-1">
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FlaskConical className="h-4 w-4 text-primary" />
+                <PlayCircle className="h-4 w-4 text-primary" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
                 Prompt Playground
@@ -817,7 +869,7 @@ function PlaygroundContent() {
                 <Skeleton className="h-4 w-3/4" />
               </div>
             ) : (
-              <div className="absolute inset-x-4 top-0 bottom-4 overflow-auto rounded-lg bg-muted/30 shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed font-mono text-muted-foreground">
+              <div className="absolute inset-x-4 top-0 bottom-4 overflow-auto rounded-lg bg-muted/30 shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed font-mono text-white">
                 {renderedPrompt || (
                   <span className="text-muted-foreground italic text-xs">
                     prompt preview...
@@ -868,7 +920,7 @@ function PlaygroundContent() {
             {/* Response Content */}
             <div
               ref={responseRef}
-              className="absolute inset-x-4 top-0 bottom-16 overflow-auto rounded-lg bg-gradient-to-b from-primary/[0.02] to-transparent shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed text-foreground"
+              className="absolute inset-x-4 top-0 bottom-16 overflow-auto rounded-lg bg-gradient-to-b from-primary/[0.02] to-transparent shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed text-white"
             >
               {llmResponse ? (
                 llmResponse

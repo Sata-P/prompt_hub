@@ -507,7 +507,7 @@ export default function CollectionDetailsPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Add Prompts to Collection</DialogTitle>
+            <DialogTitle className="text-white">Add Prompts to Collection</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 pt-2">
             {loadingPrompts ? (
@@ -525,12 +525,12 @@ export default function CollectionDetailsPage() {
                   className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex flex-col gap-0.5 pr-4 min-w-0">
-                    <span className="font-semibold text-sm truncate">{p.title}</span>
-                    <span className="text-xs text-muted-foreground truncate">
+                    <span className="font-semibold text-sm truncate text-white">{p.title}</span>
+                    <span className="text-xs text-slate-300 truncate">
                       {p.description || "No description"}
                     </span>
                   </div>
-                  <Button size="sm" variant="secondary" className="shrink-0" onClick={() => handleAddPrompt(p.id)}>
+                  <Button size="sm" variant="outline" className="shrink-0 border-primary/50 text-primary hover:bg-primary/10" onClick={() => handleAddPrompt(p.id)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add
                   </Button>
                 </div>

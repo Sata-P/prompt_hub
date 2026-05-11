@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Plus, Search, X, BookSearch, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, X, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { Badge } from "@/component/ui/badge";
@@ -74,31 +74,45 @@ export default function PromptsList() {
     }).catch(console.error);
   }, []);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const searchParams = new URLSearchParams();
-      searchParams.append("page", String(page));
-      searchParams.append("limit", "20");
-      
-      if (searchQuery) searchParams.append("q", searchQuery);
-      if (filterCategory !== "all") searchParams.append("categoryId", filterCategory);
-      if (filterStatus !== "all") searchParams.append("status", filterStatus.toUpperCase());
-      if (filterModel !== "all") searchParams.append("model", filterModel);
-      if (filterTag !== "all") searchParams.append("tag", filterTag);
-
-      const promptsRes = await axios.get<ApiResponse>(`/api/prompts?${searchParams.toString()}`);
-      setPrompts(promptsRes.data.data);
-      setPagination(promptsRes.data.pagination);
-    } catch (err) {
-      console.error("Failed to load prompts", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const searchParams = new URLSearchParams();
+        searchParams.append("page", String(page));
+        searchParams.append("limit", "20");
+        
+        if (searchQuery) searchParams.append("q", searchQuery);
+        if (filterCategory !== "all") searchParams.append("categoryId", filterCategory);
+        if (filterStatus !== "all") searchParams.append("status", filterStatus.toUpperCase());
+        if (filterModel !== "all") searchParams.append("model", filterModel);
+        if (filterTag !== "all") searchParams.append("tag", filterTag);
+
+        const res = await fetch(`/api/prompts?${searchParams.toString()}`, {
+          signal: controller.signal,
+        });
+        
+        if (!res.ok) throw new Error("Failed to load prompts");
+        
+        const data = await res.json();
+        
+        setPrompts(data.data);
+        setPagination(data.pagination);
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        console.error("Failed to load prompts", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
+
+    return () => {
+      controller.abort();
+    };
   }, [searchQuery, filterCategory, filterStatus, filterModel, filterTag, page]);
 
   // Reset page when filters change
@@ -134,7 +148,7 @@ export default function PromptsList() {
         <div>
           <div className="flex items-center">
             <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8 shrink-0" >
-            <BookSearch className="h-4 w-4 text-primary" />
+            <FileText className="h-4 w-4 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-foreground gap-2">
               Prompt Library

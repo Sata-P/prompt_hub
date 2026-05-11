@@ -15,6 +15,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Star,
 } from "lucide-react";
 import { Badge } from "@/component/ui/badge";
 import { Button } from "@/component/ui/button";
@@ -229,7 +230,7 @@ export default function FavoritesPage() {
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Heart className="h-4 w-4 text-primary fill-primary" />
+              <Star className="h-4 w-4 text-primary" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Favorites

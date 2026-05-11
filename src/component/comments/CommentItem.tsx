@@ -69,7 +69,7 @@ export default function CommentItem({
       <div className="flex-1 space-y-1">
         {/* Name and Date */}
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-gray-900">
+          <span className="font-semibold text-sm text-white">
             {comment.user.name}
           </span>
           <span className="text-xs text-gray-500">
@@ -96,7 +96,7 @@ export default function CommentItem({
             </div>
           </div>
         ) : (
-          <div className="bg-gray-100 rounded-2xl px-4 py-2 text-sm text-gray-800 inline-block whitespace-pre-wrap">
+          <div className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block whitespace-pre-wrap">
             {comment.content}
           </div>
         )}

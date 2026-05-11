@@ -18,22 +18,32 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
 
   // ดึงคอมเมนต์เมื่อเปิดหน้า
   useEffect(() => {
-    fetchComments();
-  }, [promptId]);
+    const controller = new AbortController();
 
-  const fetchComments = async () => {
-    try {
-      const res = await fetch(`/api/prompts/${promptId}/comments`);
-      if (res.ok) {
-        const data = await res.json();
-        setComments(data);
+    const fetchComments = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/prompts/${promptId}/comments`, {
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setComments(data);
+        }
+      } catch (error: any) {
+        if (error.name === "AbortError") return;
+        console.error("Error fetching comments:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    fetchComments();
+    
+    return () => {
+      controller.abort();
+    };
+  }, [promptId]);
 
   const handleCreateComment = async () => {
     if (!newComment.trim()) return;

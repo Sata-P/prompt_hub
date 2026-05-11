@@ -9,7 +9,7 @@ import {
   Settings,
   PlayCircle,
   Star,
-  ClipboardClock,
+  Activity,
   ChevronRight,
   House,
 } from "lucide-react";
@@ -34,7 +34,7 @@ const navItems = [
   { label: "Playground",   icon: PlayCircle,     path: "/playground" },
   { label: "Favorites",    icon: Star,           path: "/favorites" },
   { label: "Collections",  icon: FolderOpen,     path: "/collections" },
-  { label: "Activity Log", icon: ClipboardClock, path: "/activity_log" },
+  { label: "Activity Log", icon: Activity, path: "/activity_log" },
   { label: "Settings",     icon: Settings,       path: "/settings" },
 ];
 
@@ -64,7 +64,7 @@ export function AppSidebar({
     <Sidebar collapsible="icon" className="border-r-0 sidebar-custom-bg">
       <svg width="0" height="0" className="absolute pointer-events-none">
         <defs>
-          <linearGradient id="orange-purple-pink-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="orange-purple-pink-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#F97316" />
             <stop offset="50%" stopColor="#a855f7" />
             <stop offset="100%" stopColor="#7c3aed" />
@@ -85,7 +85,7 @@ export function AppSidebar({
 
           {!collapsed && (
             <div className="flex flex-col truncate leading-none">
-              <span className="truncate text-[16px] font-bold tracking-tight text-sidebar-foreground">
+              <span className="truncate text-[16px] font-bold tracking-tight text-white">
                 Prompt Hub
               </span>
               {/* <span className="truncate text-[10px] font-medium text-sidebar-muted-foreground mt-0.5">
@@ -126,7 +126,7 @@ export function AppSidebar({
                         "hover:text-sidebar-foreground hover:bg-white/5",
                         isActive
                           ? "!bg-[radial-gradient(ellipse_at_left_60%,_#3b0764_0%,_#6b1a0f_80%,_#c2410c_100%)] !text-white glow-orange before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-sidebar-primary"
-                          : "text-sidebar-muted-foreground",
+                          : "text-white",
                       ].join(" ") || ""}
                     >
                       <Link href={item.path} className="flex items-center gap-3">
@@ -140,7 +140,14 @@ export function AppSidebar({
                         />
                         <span className="flex-1">{item.label}</span>
                         {!collapsed && (
-                          <ChevronRight className={`h-3 w-3 transition-opacity ${isActive ? "opacity-50" : "opacity-0"}`} />
+                          <ChevronRight 
+                            className={`h-3 w-3 transition-all duration-150 ${isActive ? "opacity-100" : "opacity-40"}`} 
+                            style={{ 
+                              stroke: isActive ? "url(#orange-gradient)" : "currentColor",
+                              filter: isActive ? "drop-shadow(0 0 4px rgba(249, 115, 22, 0.7))" : "none",
+                              strokeWidth: isActive ? "3px" : "2px"
+                            }}
+                          />
                         )}
                       </Link>
                     </SidebarMenuButton>
@@ -162,10 +169,10 @@ export function AppSidebar({
           </Avatar>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-              <span className="text-[13px] font-semibold truncate text-sidebar-foreground leading-tight">
+              <span className="text-[13px] font-semibold truncate text-white leading-tight">
                 {user.name || "User"}
               </span>
-              <span className="text-[11px] text-sidebar-muted-foreground truncate">
+              <span className="text-[11px] text-white/70 truncate">
                 {user.role?.toLowerCase() || "member"}
               </span>
             </div>

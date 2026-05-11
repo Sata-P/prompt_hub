@@ -117,11 +117,15 @@ export default function ActivityLogPage() {
   return (
     <div className="pb-20">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Activity className="h-6 w-6 text-primary" />
+      <div className="flex items-center gap-3 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Activity className="h-4 w-4 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
             {isAdmin ? "All system-wide activity across every user" : "Your personal activity history"}
           </p>
         </div>
