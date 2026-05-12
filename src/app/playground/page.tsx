@@ -337,7 +337,11 @@ function PlaygroundContent() {
     [template]
   );
 
-  const renderedPrompt = renderPrompt(runValues);
+  // Live preview: render with the user's current inputs (variableValues),
+  // not the last-run snapshot (runValues), so the Rendered Prompt panel
+  // updates immediately as the user types/selects variables - no need to
+  // press Run just to see the substituted output.
+  const renderedPrompt = renderPrompt(variableValues);
 
   // -------------------------------------------------------
   // Copy handlers
@@ -886,20 +890,32 @@ function PlaygroundContent() {
         <Card className="shadow-sm flex flex-col lg:col-span-8 min-h-[350px]">
           <CardHeader className="pb-3">
             <div className="flex flex-row items-center justify-between w-full">
-              <CardTitle className="text-sm font-medium">
-                Rendered Prompt
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-sm font-medium">
+                  Rendered Prompt
+                </CardTitle>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  live
+                </Badge>
+              </div>
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
                 onClick={handleCopy}
-                title="Copy Rendered Prompt"
+                disabled={!renderedPrompt}
+                title="Copy Rendered Prompt to clipboard"
               >
                 {isCopied ? (
-                  <Check className="h-3.5 w-3.5 text-green-500" />
+                  <>
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                    <span className="text-green-600">Copied</span>
+                  </>
                 ) : (
-                  <Copy className="h-3.5 w-3.5" />
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy</span>
+                  </>
                 )}
               </Button>
             </div>
