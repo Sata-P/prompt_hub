@@ -91,7 +91,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
         <StatCard
           label="My Prompts"
           icon={<FileText className="h-5 w-5" />}
@@ -127,7 +127,9 @@ export default function DashboardPage() {
               </div>
               <Button variant="ghost" size="sm" asChild className="text-xs text-orange-500 h-7 px-2 hover:text-orange-600 hover:bg-orange-500/10">
                 <Link href="/prompts">
-                  View all <ArrowRight className="h-3 w-3 ml-1" />
+                  <span className="hidden sm:inline">View all</span>
+                  <span className="sm:hidden">All</span>
+                  <ArrowRight className="h-3 w-3 ml-1" />
                 </Link>
               </Button>
             </CardHeader>
@@ -154,24 +156,24 @@ export default function DashboardPage() {
                       <Link
                         key={prompt.id}
                         href={`/prompts/${prompt.id}`}
-                        className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-accent/60 hover:border-primary/20 border border-transparent transition-all duration-150 group"
+                        className="flex items-center justify-between px-2 sm:px-3 py-3 rounded-lg hover:bg-accent/60 hover:border-primary/20 border border-transparent transition-all duration-150 group"
                         style={{ animationDelay: `${i * 40}ms` }}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 shrink-0 rounded-lg bg-orange-500/15 flex items-center justify-center text-orange-500">
-                            <FileText className="h-5 w-5" />
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-orange-500/15 flex items-center justify-center text-orange-500">
+                            <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-base sm:text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
                               {prompt.title}
                             </p>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                               {prompt.category && (
-                                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-muted-foreground bg-muted px-2 py-0.5 rounded truncate max-w-[100px]">
                                   {prompt.category.name}
                                 </span>
                               )}
-                              <span className="text-[11px] text-muted-foreground">
+                              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                                 v{prompt.latest_version_no} ·{" "}
                                 {new Date(prompt.updated_at).toLocaleDateString("en-GB", {
                                   day: "numeric",
@@ -181,9 +183,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-                        {/* <Badge variant={cfg.variant} className="shrink-0 ml-2 text-[10px]">
-                          {cfg.label}
-                        </Badge> */}
+                        <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0 ml-2" />
                       </Link>
                     );
                   })}
@@ -330,17 +330,17 @@ function StatCard({
 
   return (
     <Card className="shadow-sm border-border/60 hover:border-primary/30 hover:shadow-md transition-all duration-200">
-      <CardContent className="p-4">
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
+            <p className="text-sm sm:text-base font-bold text-muted-foreground mb-1.5">{label}</p>
             {loading ? (
-              <Skeleton className="h-7 w-14 mt-1" />
+              <Skeleton className="h-8 w-16 mt-1" />
             ) : (
-              <p className="text-2xl font-bold text-foreground">{value ?? 0}</p>
+              <p className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">{value ?? 0}</p>
             )}
           </div>
-          <div className={`p-2 rounded-lg ${accentClasses[accent]}`}>
+          <div className={`p-3 rounded-xl ${accentClasses[accent]}`}>
             {icon}
           </div>
         </div>

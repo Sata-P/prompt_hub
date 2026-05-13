@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { UserCircle, Reply, MessageCircle } from "lucide-react";
+import { UserCircle, Reply, MessageCircle, Bold, Italic, List, ListOrdered } from "lucide-react";
 import { Button } from "@/component/ui/button";
+import DOMPurify from "dompurify";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 
 export type Comment = {
   id: number;
@@ -28,6 +32,42 @@ type CommentItemProps = {
   isReply?: boolean;
 };
 
+const MenuBar = ({ editor }: { editor: any }) => {
+  if (!editor) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1 p-1 border-b border-border/50 bg-muted/30">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-7 w-7 ${editor.isActive("bold") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        type="button"
+      >
+        <Bold className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-7 w-7 ${editor.isActive("italic") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        type="button"
+      >
+        <Italic className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-7 w-7 ${editor.isActive("bulletList") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        type="button"
+      >
+        <List className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+};
+
 export default function CommentItem({
   comment,
   currentUserId,
@@ -38,21 +78,36 @@ export default function CommentItem({
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
-  const [showReplies, setShowReplies] = useState(false); // Toggle for replies
+  const [showReplies, setShowReplies] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(comment.content);
+
+  // Sanitize HTML content
+  const sanitizedContent = useMemo(() => {
+    return DOMPurify.sanitize(comment.content);
+  }, [comment.content]);
+
+  const editEditor = useEditor({
+    extensions: [StarterKit],
+    content: comment.content,
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60px] px-3 py-2 text-sm text-foreground",
+      },
+    },
+  });
 
   const handleReplySubmit = async () => {
     if (!replyContent.trim()) return;
     await onReply(comment.id, replyContent);
     setReplyContent("");
     setIsReplying(false);
-    setShowReplies(true); // Open replies when a new reply is added
+    setShowReplies(true);
   };
 
   const handleEditSubmit = async () => {
-    if (!editContent.trim()) return;
-    await onEdit(comment.id, editContent);
+    if (!editEditor || editEditor.isEmpty) return;
+    const htmlContent = editEditor.getHTML();
+    await onEdit(comment.id, htmlContent);
     setIsEditing(false);
   };
 
@@ -79,26 +134,23 @@ export default function CommentItem({
 
         {/* Comment Bubble */}
         {isEditing ? (
-          <div className="mt-2 flex flex-col gap-2 w-full max-w-md">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full text-sm border-gray-300 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-blue-500 outline-none border resize-none min-h-[60px]"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setEditContent(comment.content); }} className="rounded-full">
+          <div className="mt-2 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50">
+            <MenuBar editor={editEditor} />
+            <EditorContent editor={editEditor} />
+            <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
+              <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); editEditor?.commands.setContent(comment.content); }} className="rounded-full">
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editContent.trim() || editContent === comment.content}>
+              <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editEditor || editEditor.isEmpty}>
                 Save
               </Button>
             </div>
           </div>
         ) : (
-          <div className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block whitespace-pre-wrap">
-            {comment.content}
-          </div>
+          <div 
+            className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block prose prose-sm dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+          />
         )}
 
         {/* Action buttons */}

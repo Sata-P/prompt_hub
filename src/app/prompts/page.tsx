@@ -264,59 +264,57 @@ export default function PromptsList() {
         </div>
       </div>
 
-      {/* ตารางแสดงรายการ prompts */}
-      <div data-slot="card" className="mt-6 rounded-lg overflow-hidden shadow-sm">
+      {/* ตารางแสดงรายการ prompts (Desktop) */}
+      <div data-slot="card" className="mt-6 rounded-lg overflow-hidden shadow-sm hidden md:block">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm font-medium">
+          <table className="w-full text-base font-medium">
             <thead>
               <tr className="border-b bg-muted/20">
-                <th className="w-[35%] px-5 py-4 text-left font-bold text-foreground capitalize">Title</th>
-                <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Category</th>
-                <th className="w-[20%] px-5 py-4 text-left font-bold text-foreground capitalize">Tags</th>
-                {/* <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Status</th> */}
-                <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Model</th>
-                <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Updated</th>
+                <th className="w-[35%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Title</th>
+                <th className="w-[15%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Category</th>
+                <th className="w-[20%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Tags</th>
+                <th className="w-[15%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Model</th>
+                <th className="w-[15%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-48" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-24" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-28" /></td>
-                    {/* <td className="px-5 py-5"><Skeleton className="h-5 w-20" /></td> */}
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-24" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-32" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-48" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-28" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-32" /></td>
                   </tr>
                 ))
               ) : prompts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground border-dashed">
+                  <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground border-dashed text-lg">
                     No prompts found matching your criteria
                   </td>
                 </tr>
               ) : (
                 prompts.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="px-5 py-4">
-                      <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-medium">
+                    <td className="px-5 py-5">
+                      <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-bold text-lg">
                         {p.title}
                       </Link>
                       {p.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{p.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{p.description}</p>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-muted-foreground text-sm">
+                    <td className="px-5 py-5 text-muted-foreground text-base">
                       {p.category ? p.category.name : "-"}
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1">
+                    <td className="px-5 py-5">
+                      <div className="flex flex-wrap gap-1.5">
                         {p.tags.length > 0
                           ? p.tags.map((t) => (
                               <span
                                 key={t.id}
-                                className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground"
+                                className="text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground"
                               >
                                 #{t.name}
                               </span>
@@ -324,17 +322,10 @@ export default function PromptsList() {
                           : <span className="text-muted-foreground">-</span>}
                       </div>
                     </td>
-                    {/* <td className={`px-5 py-4 text-xs uppercase tracking-wider font-semibold ${
-                      p.status === 'PUBLISHED' ? 'text-green-600' :
-                      p.status === 'REVIEW' ? 'text-orange-500' :
-                      'text-muted-foreground'
-                    }`}>
-                      {getStatusText(p.status)}
-                    </td> */}
-                    <td className="px-5 py-4 text-muted-foreground text-sm">
+                    <td className="px-5 py-5 text-muted-foreground text-base">
                       {p.recommended_model || "-"}
                     </td>
-                    <td className="px-5 py-4 text-muted-foreground text-sm">
+                    <td className="px-5 py-5 text-muted-foreground text-base">
                       {new Date(p.updated_at).toISOString().split("T")[0]}
                     </td>
                   </tr>
@@ -343,6 +334,76 @@ export default function PromptsList() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Card Layout (Mobile) */}
+      <div className="mt-6 space-y-4 md:hidden">
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="bg-card border rounded-xl p-5 space-y-4">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-5 w-1/2" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+            </div>
+          ))
+        ) : prompts.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl text-lg">
+            No prompts found
+          </div>
+        ) : (
+          prompts.map((p) => (
+            <Link 
+              key={p.id} 
+              href={`/prompts/${p.id}`}
+              className="block bg-card border rounded-xl p-5 hover:border-primary/50 transition-colors active:scale-[0.98]"
+            >
+              <div className="flex justify-between items-start mb-2.5">
+                <h3 className="text-lg font-bold text-foreground line-clamp-1">{p.title}</h3>
+                <Badge variant="outline" className="text-xs shrink-0 ml-2">
+                  v{p.latest_version_no}
+                </Badge>
+              </div>
+              
+              {p.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                  {p.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-3 items-center text-xs">
+                {p.category && (
+                  <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-md font-bold">
+                    {p.category.name}
+                  </span>
+                )}
+                {p.recommended_model && (
+                  <span className="text-muted-foreground border-l pl-3">
+                    {p.recommended_model}
+                  </span>
+                )}
+                <span className="text-muted-foreground ml-auto font-medium">
+                  {new Date(p.updated_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'short' })}
+                </span>
+              </div>
+
+              {p.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {p.tags.slice(0, 3).map((t) => (
+                    <span key={t.id} className="text-[11px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded">
+                      #{t.name}
+                    </span>
+                  ))}
+                  {p.tags.length > 3 && (
+                    <span className="text-[11px] text-muted-foreground">+{p.tags.length - 3} more</span>
+                  )}
+                </div>
+              )}
+            </Link>
+          ))
+        )}
       </div>
 
 

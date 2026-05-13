@@ -140,8 +140,8 @@ export default function ActivityLogPage() {
         </p>
       )}
 
-      {/* Table */}
-      <div data-slot="card" className="mt-4 rounded-lg overflow-hidden shadow-sm">
+      {/* Table (Desktop) */}
+      <div data-slot="card" className="mt-4 rounded-lg overflow-hidden shadow-sm hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -236,6 +236,60 @@ export default function ActivityLogPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Card Layout (Mobile) */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {loading ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="bg-card border rounded-xl p-4 space-y-3">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))
+        ) : logs.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl bg-card">
+            No activity recorded yet.
+          </div>
+        ) : (
+          logs.map((log) => {
+            const badge = actionBadge(log.action);
+            return (
+              <div key={log.id} className="bg-card border rounded-xl p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <span
+                    className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${badge.color}`}
+                  >
+                    {badge.label}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatDate(log.created_at)}
+                  </span>
+                </div>
+
+                {isAdmin && log.user && (
+                  <div className="flex items-center gap-2 py-1 border-y border-border/50">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                      {log.user.name[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold truncate">{log.user.name}</p>
+                    </div>
+                  </div>
+                )}
+
+                {log.details && (
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <pre className="whitespace-pre-wrap font-mono text-[10px] text-muted-foreground leading-tight">
+                      {JSON.stringify(log.details, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Pagination */}

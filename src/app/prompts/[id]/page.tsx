@@ -146,43 +146,56 @@ export default function PromptDetailPage() {
   return (
     <div className="pb-20">
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold tracking-tight">{prompt.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{prompt.title}</h1>
             {/* {getStatusBadge(prompt.status)} */}
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground line-clamp-2">
             {prompt.description || "No description available"}
           </p>
           {prompt.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {prompt.tags.map(t => (
-                <span key={t.id} className="text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground">
+                <span key={t.id} className="text-[10px] sm:text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground">
                   #{t.name}
                 </span>
               ))}
             </div>
           )}
         </div>
-        <div className="flex gap-3 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => toggleFavorite(prompt.id)}
-            style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: 'white' }}>
-            {isFavorite(prompt.id) ? <FaHeart /> : <FaRegHeart />}
-            {isFavorite(prompt.id) ? "Unfavorite" : "Favorite"}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => toggleFavorite(prompt.id)}
+            className="flex-1 sm:flex-none"
+            style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: isFavorite(prompt.id) ? 'white' : '' }}
+          >
+            {isFavorite(prompt.id) ? <FaHeart className="shrink-0" /> : <FaRegHeart className="shrink-0" />}
+            <span className="ml-1 sm:inline hidden">
+              {isFavorite(prompt.id) ? "Unfavorite" : "Favorite"}
+            </span>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>Use Prompt</Link>
+          
+          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+            <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>
+              <span className="sm:inline hidden">Use Prompt</span>
+              <span className="sm:hidden">Use</span>
+            </Link>
           </Button>
 
           {canEdit && (
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="flex-1 sm:flex-none">
               <Link href={`/prompts/${id}/edit`}>Edit</Link>
             </Button>
           )}
+          
           {canDelete && (
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-1 h-4 w-4" /> Delete
+            <Button size="sm" variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none px-2 sm:px-3">
+              <Trash2 className="h-4 w-4" />
+              <span className="ml-1 sm:inline hidden">Delete</span>
             </Button>
           )}
         </div>

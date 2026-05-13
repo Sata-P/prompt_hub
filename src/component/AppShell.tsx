@@ -58,28 +58,28 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
         {/* ── Right side: header + content stacked ── */}
         <SidebarInset className="flex flex-col overflow-hidden min-h-0 h-full flex-1">
           {/* ── Top bar ── */}
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#2e1f5e]/60 bg-[#08011a] px-4 md:px-6 z-20 shadow-sm">
-            <div className="flex items-center gap-3 min-w-0">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#2e1f5e]/60 bg-[#08011a] px-3 md:px-6 z-20 shadow-sm">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0">
               <SidebarTrigger className="shrink-0 text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-colors" />
               <div className="shrink-0 h-4 w-px bg-white/15" />
-              <span className="truncate text-base font-bold text-white/90">
+              <span className="truncate text-sm md:text-base font-bold text-white/90">
                 {pageTitle}
               </span>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               {/* User name */}
-              <span className="text-sm font-medium text-white/60 hidden md:block max-w-[150px] truncate">
+              <span className="text-xs md:text-sm font-medium text-white/60 hidden sm:block max-w-[100px] md:max-w-[150px] truncate">
                 {session.user.name || session.user.email}
               </span>
-              <div className="h-4 w-px bg-white/15 hidden md:block" />
+              <div className="h-4 w-px bg-white/15 hidden sm:block" />
               <HeaderActions />
             </div>
           </header>
 
           {/* ── Page content ── */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="mx-auto max-w-6xl w-full p-4 md:p-6 lg:p-8">
+            <div className="mx-auto max-w-[1400px] w-full p-4 md:p-6 lg:p-8">
               {children}
             </div>
           </div>

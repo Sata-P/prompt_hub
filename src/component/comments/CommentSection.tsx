@@ -4,17 +4,86 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import CommentItem, { Comment } from "./CommentItem";
 import { Button } from "@/component/ui/button";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Bold, Italic, List, ListOrdered } from "lucide-react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 
 type CommentSectionProps = {
   promptId: number;
 };
 
+const MenuBar = ({ editor }: { editor: any }) => {
+  if (!editor) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1 p-1 border-b border-border/50 bg-muted/30">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 ${editor.isActive("bold") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        type="button"
+      >
+        <Bold className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 ${editor.isActive("italic") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        type="button"
+      >
+        <Italic className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 ${editor.isActive("bulletList") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        type="button"
+      >
+        <List className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 ${editor.isActive("orderedList") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        type="button"
+      >
+        <ListOrdered className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 export default function CommentSection({ promptId }: CommentSectionProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canPost, setCanPost] = useState(false);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: "Write a comment...",
+      }),
+    ],
+    content: "",
+    onUpdate: ({ editor }) => {
+      // Check if there is actual text content
+      const hasContent = !editor.isEmpty && editor.getText().trim().length > 0;
+      setCanPost(hasContent);
+    },
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[100px] px-4 py-3 text-sm text-foreground",
+      },
+    },
+  });
 
   // ดึงคอมเมนต์เมื่อเปิดหน้า
   useEffect(() => {
@@ -46,23 +115,29 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
   }, [promptId]);
 
   const handleCreateComment = async () => {
-    if (!newComment.trim()) return;
+    if (!editor || !canPost || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const htmlContent = editor.getHTML();
 
     try {
       const res = await fetch(`/api/prompts/${promptId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newComment }),
+        body: JSON.stringify({ content: htmlContent }),
       });
 
       if (res.ok) {
         const created = await res.json();
         // เพิ่ม comment ใหม่ไปด้านบนสุด (เพราะเราเรียงใหม่ไปเก่า)
         setComments((prev) => [created, ...prev]);
-        setNewComment("");
+        editor.commands.clearContent();
+        setCanPost(false);
       }
     } catch (error) {
       console.error("Error posting comment:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -162,23 +237,24 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
 
       {/* Input สำหรับคอมเมนต์ใหม่ */}
       {session ? (
-        <div className="flex gap-3 mb-8">
-          <div className="flex-1">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              className="w-full text-sm border-gray-300 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-blue-500 outline-none border resize-none h-20"
-            />
-            <div className="flex justify-end mt-2">
-              <Button
-                onClick={handleCreateComment}
-                disabled={!newComment.trim()}
-                className="px-6 rounded-full"
-              >
-                Post Comment
-              </Button>
-            </div>
+        <div className="flex flex-col mb-8 border border-border rounded-xl overflow-hidden bg-card/50">
+          <MenuBar editor={editor} />
+          <EditorContent editor={editor} />
+          <div className="flex justify-end p-2 border-t border-border/30 bg-muted/10">
+            <Button
+              onClick={handleCreateComment}
+              disabled={!canPost || isSubmitting}
+              className="px-6 rounded-full h-9 text-sm relative"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Posting...</span>
+                </div>
+              ) : (
+                "Post Comment"
+              )}
+            </Button>
           </div>
         </div>
       ) : (
