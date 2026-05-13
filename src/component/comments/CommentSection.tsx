@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import CommentItem, { Comment } from "./CommentItem";
 import { Button } from "@/component/ui/button";
-import { MessageSquare, Bold, Italic, List, ListOrdered } from "lucide-react";
+import { MessageSquare, Bold, Italic, List, ListOrdered, Paperclip, X, File as FileIcon } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -13,7 +13,7 @@ type CommentSectionProps = {
   promptId: number;
 };
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const MenuBar = ({ editor, onAttach }: { editor: any, onAttach: () => void }) => {
   if (!editor) return null;
 
   return (
@@ -54,6 +54,17 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <ListOrdered className="h-4 w-4" />
       </Button>
+      <div className="w-px h-4 bg-border/50 mx-1 self-center" />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground hover:text-primary"
+        onClick={onAttach}
+        type="button"
+        title="Attach a file"
+      >
+        <Paperclip className="h-4 w-4" />
+      </Button>
     </div>
   );
 };
@@ -64,6 +75,10 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [canPost, setCanPost] = useState(false);
+
+  // File state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -114,17 +129,44 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
     };
   }, [promptId]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
   const handleCreateComment = async () => {
     if (!editor || !canPost || isSubmitting) return;
 
     setIsSubmitting(true);
-    const htmlContent = editor.getHTML();
+    let attachmentUrl = null;
 
     try {
+      // 1. Upload file if exists
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          attachmentUrl = uploadData.url;
+        } else {
+          throw new Error("Failed to upload file");
+        }
+      }
+
+      // 2. Post comment with attachment URL
+      const htmlContent = editor.getHTML();
       const res = await fetch(`/api/prompts/${promptId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: htmlContent }),
+        body: JSON.stringify({ 
+          content: htmlContent,
+          attachmentUrl: attachmentUrl 
+        }),
       });
 
       if (res.ok) {
@@ -133,9 +175,11 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
         setComments((prev) => [created, ...prev]);
         editor.commands.clearContent();
         setCanPost(false);
+        setSelectedFile(null);
       }
     } catch (error) {
       console.error("Error posting comment:", error);
+      alert("Failed to post comment. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -238,8 +282,35 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
       {/* Input สำหรับคอมเมนต์ใหม่ */}
       {session ? (
         <div className="flex flex-col mb-8 border border-border rounded-xl overflow-hidden bg-card/50">
-          <MenuBar editor={editor} />
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+          />
+          <MenuBar 
+            editor={editor} 
+            onAttach={() => fileInputRef.current?.click()} 
+          />
           <EditorContent editor={editor} />
+          
+          {/* File Preview */}
+          {selectedFile && (
+            <div className="px-4 py-2 bg-muted/20 border-t border-border/30 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground truncate">
+                <FileIcon className="h-3.5 w-3.5 text-primary" />
+                <span className="truncate">{selectedFile.name}</span>
+                <span className="opacity-60">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+              </div>
+              <button 
+                onClick={() => setSelectedFile(null)}
+                className="p-1 hover:bg-muted rounded-full transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
           <div className="flex justify-end p-2 border-t border-border/30 bg-muted/10">
             <Button
               onClick={handleCreateComment}

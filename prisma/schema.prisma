@@ -229,13 +229,14 @@ model Activity_log {
 }
 
 model Prompt_comments {
-  id         Int      @id @default(autoincrement())
-  content    String   @db.Text
-  prompt_id  Int
-  user_id    Int
-  parent_id  Int?     // ถ้าเป็น null คือ comment หลัก ถ้ามีค่าคือเป็นการตอบกลับ (reply)
-  created_at DateTime @default(now()) @db.Timestamptz
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+  id             Int      @id @default(autoincrement())
+  content        String   @db.Text
+  attachment_url String?  @db.Text // เพิ่มฟิลด์สำหรับเก็บ URL ของไฟล์แนบ
+  prompt_id      Int
+  user_id        Int
+  parent_id      Int?     // ถ้าเป็น null คือ comment หลัก ถ้ามีค่าคือเป็นการตอบกลับ (reply)
+  created_at     DateTime @default(now()) @db.Timestamptz
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz
 
   // Relations
   prompt     Prompts           @relation(fields: [prompt_id], references: [id], onDelete: Cascade)

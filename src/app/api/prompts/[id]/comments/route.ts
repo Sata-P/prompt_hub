@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: RouteContext) {
     }
 
     const body = await request.json();
-    const { content, parentId } = body;
+    const { content, parentId, attachmentUrl } = body;
 
     if (!content || typeof content !== "string" || content.trim() === "") {
       return NextResponse.json({ error: "Content is required" }, { status: 400 });
@@ -75,6 +75,7 @@ export async function POST(request: Request, { params }: RouteContext) {
       const comment = await tx.prompt_comments.create({
         data: {
           content: content.trim(),
+          attachment_url: attachmentUrl || null,
           prompt_id: promptId,
           user_id: Number(session.user.id),
           parent_id: parentId ? Number(parentId) : null,
@@ -93,6 +94,7 @@ export async function POST(request: Request, { params }: RouteContext) {
             commentId: comment.id,
             promptId: promptId,
             parentId: parentId || null,
+            attachmentUrl: attachmentUrl || null,
           },
         },
       });

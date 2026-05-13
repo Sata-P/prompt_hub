@@ -12,6 +12,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 export type Comment = {
   id: number;
   content: string;
+  attachment_url: string | null;
   user_id: number;
   prompt_id: number;
   parent_id: number | null;
@@ -63,6 +64,15 @@ const MenuBar = ({ editor }: { editor: any }) => {
         type="button"
       >
         <List className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`h-7 w-7 ${editor.isActive("orderedList") ? "bg-primary/20 text-primary" : ""}`}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        type="button"
+      >
+        <ListOrdered className="h-3.5 w-3.5" />
       </Button>
     </div>
   );
@@ -127,31 +137,57 @@ export default function CommentItem({
           <span className="font-semibold text-sm text-white">
             {comment.user.name}
           </span>
-          <span className="text-xs text-gray-500">
-            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+          <span className="text-[11px] text-gray-500 flex items-center gap-1.5" title={new Date(comment.created_at).toLocaleString()}>
+            <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+            <span className="opacity-50">·</span>
+            <span>{new Date(comment.created_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
           </span>
         </div>
 
         {/* Comment Bubble */}
-        {isEditing ? (
-          <div className="mt-2 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50">
-            <MenuBar editor={editEditor} />
-            <EditorContent editor={editEditor} />
-            <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
-              <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); editEditor?.commands.setContent(comment.content); }} className="rounded-full">
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editEditor || editEditor.isEmpty}>
-                Save
-              </Button>
+        <div className="flex flex-col items-start gap-2">
+          {isEditing ? (
+            <div className="mt-2 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50">
+              <MenuBar editor={editEditor} />
+              <EditorContent editor={editEditor} />
+              <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
+                <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); editEditor?.commands.setContent(comment.content); }} className="rounded-full">
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editEditor || editEditor.isEmpty}>
+                  Save
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div 
-            className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block prose prose-sm dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-          />
-        )}
+          ) : (
+            <div 
+              className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block prose prose-sm dark:prose-invert max-w-none shadow-sm"
+              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+            />
+          )}
+
+          {/* Attachment Display */}
+          {comment.attachment_url && !isEditing && (
+            <a 
+              href={comment.attachment_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-2 bg-muted/30 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors group max-w-[280px]"
+            >
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <File className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-foreground truncate">
+                  {comment.attachment_url.split('/').pop()}
+                </p>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  Click to download <Download className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
+              </div>
+            </a>
+          )}
+        </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-4 text-xs font-medium text-gray-500 mt-1 pl-2">
