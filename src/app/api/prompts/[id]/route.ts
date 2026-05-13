@@ -24,6 +24,8 @@ export async function GET(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Invalid prompt ID" }, { status: 400 });
     }
 
+    const userRole = session.user.role;
+
     const prompt = await prisma.prompts.findUnique({
       where: { id: promptId, deleted_at: null },
       include: {
@@ -53,10 +55,16 @@ export async function GET(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
     }
 
+    const userId = Number(session.user.id);
+    const isOwner = prompt.owner_id === userId;
+
     // Format response
     const formatted = {
       ...prompt,
       tags: prompt.tags.map((pt) => pt.tag),
+      versions: (userRole === "VIEWER" && !isOwner)
+        ? prompt.versions.filter((v) => v.status === "PUBLISHED")
+        : prompt.versions,
     };
 
     return NextResponse.json(formatted);
@@ -108,83 +116,90 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const body = await request.json();
 
-    if (body.status && Object.keys(body).length === 1) {
-      const { status } = UpdatePromptStatusSchema.parse(body);
-
-      const updateData: any = { status };
-      if (status === "PUBLISHED") {
-        updateData.visibility = "PUBLIC";
-      }
-
-      const updatedPrompt = await prisma.$transaction(async (tx) => {
-        const updated = await tx.prompts.update({
-          where: { id: promptId },
-          data: updateData,
-        });
-
-        await tx.activity_log.create({
-          data: {
-            user_id: userId,
-            action: "UPDATE_PROMPT_STATUS",
-            details: {
-              promptId,
-              title: existing.title,
-              previousStatus: existing.status,
-              newStatus: status,
-              ...(status === "PUBLISHED" && { visibility: "PUBLIC" }),
-            },
-          },
-        });
-
-        return updated;
-      });
-
-      return NextResponse.json(updatedPrompt);
-    }
-
-    // Otherwise update metadata
-    const data = UpdatePromptSchema.parse(body);
+    // Handle status update (either standalone or with metadata)
+    const { status, ...metadata } = body;
+    const hasStatusUpdate = status !== undefined;
+    const hasMetadataUpdate = Object.keys(metadata).length > 0;
 
     const result = await prisma.$transaction(async (tx) => {
-      // Update tags if provided
-      if (data.tags !== undefined) {
-        // Remove existing tags
-        await tx.prompt_tags.deleteMany({
-          where: { prompt_id: promptId },
-        });
+      let updateData: any = {};
 
-        // Add new tags
-        if (data.tags.length > 0) {
-          const tagRecords: { id: number }[] = [];
-          for (const tagName of data.tags) {
-            const tag = await tx.tags.upsert({
-              where: { name: tagName },
-              create: { name: tagName },
-              update: {},
+      if (hasMetadataUpdate) {
+        const data = UpdatePromptSchema.parse(metadata);
+        
+        // Update tags if provided
+        if (data.tags !== undefined) {
+          await tx.prompt_tags.deleteMany({ where: { prompt_id: promptId } });
+          if (data.tags.length > 0) {
+            const tagRecords: { id: number }[] = [];
+            for (const tagName of data.tags) {
+              const tag = await tx.tags.upsert({
+                where: { name: tagName },
+                create: { name: tagName },
+                update: {},
+              });
+              tagRecords.push({ id: tag.id });
+            }
+            await tx.prompt_tags.createMany({
+              data: tagRecords.map((t) => ({ prompt_id: promptId, tag_id: t.id })),
             });
-            tagRecords.push({ id: tag.id });
           }
-
-          await tx.prompt_tags.createMany({
-            data: tagRecords.map((t) => ({
-              prompt_id: promptId,
-              tag_id: t.id,
-            })),
-          });
         }
-      }
 
-      // Update prompt
-      const updated = await tx.prompts.update({
-        where: { id: promptId },
-        data: {
+        updateData = {
           ...(data.title !== undefined && { title: data.title }),
           ...(data.description !== undefined && { description: data.description }),
           ...(data.categoryId !== undefined && { category_id: data.categoryId }),
           ...(data.recommendedModel !== undefined && { recommended_model: data.recommendedModel }),
           ...(data.visibility !== undefined && { visibility: data.visibility }),
           ...(data.isTemplateActive !== undefined && { is_template_active: data.isTemplateActive }),
-        },
+        };
+      }
+
+      if (hasStatusUpdate) {
+        const { status: validatedStatus } = UpdatePromptStatusSchema.parse({ status });
+        updateData.status = validatedStatus;
+        if (validatedStatus === "PUBLISHED") {
+          updateData.visibility = "PUBLIC";
+          
+          // Get the highest version number to publish it
+          const lastVersion = await tx.prompt_versions.findFirst({
+            where: { prompt_id: promptId },
+            orderBy: { version_no: "desc" },
+          });
+
+          if (lastVersion) {
+            updateData.latest_version_no = lastVersion.version_no;
+            
+            // Update the specific version status to PUBLISHED
+            await tx.prompt_versions.update({
+              where: { id: lastVersion.id },
+              data: { status: "PUBLISHED" },
+            });
+          }
+        } else if (validatedStatus === "DRAFT" || validatedStatus === "ARCHIVED") {
+          // For DRAFT/ARCHIVED, only sync with the current version if the prompt isn't already PUBLISHED
+          // or if we're moving to ARCHIVED. 
+          // If a prompt is PUBLISHED, saving it as DRAFT should NOT unpublish the active version.
+          if (existing.status !== "PUBLISHED" || validatedStatus === "ARCHIVED") {
+            await tx.prompt_versions.updateMany({
+              where: { prompt_id: promptId, version_no: existing.latest_version_no },
+              data: { status: validatedStatus },
+            });
+          }
+        }
+      }
+
+      // RBAC: If not admin/editor and updating metadata, reset to DRAFT/PRIVATE
+      const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
+      if (!isAdminOrEditor && hasMetadataUpdate && !hasStatusUpdate) {
+        updateData.status = "DRAFT";
+        updateData.visibility = "PRIVATE";
+      }
+
+      const updated = await tx.prompts.update({
+        where: { id: promptId },
+        data: updateData,
         include: {
           category: { select: { id: true, name: true, color: true } },
           owner: { select: { id: true, name: true, email: true } },
@@ -195,13 +210,14 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       await tx.activity_log.create({
         data: {
           user_id: userId,
-          action: "UPDATE_PROMPT",
+          action: hasStatusUpdate && !hasMetadataUpdate ? "UPDATE_PROMPT_STATUS" : "UPDATE_PROMPT",
           details: {
             promptId,
             title: updated.title,
-            changedFields: Object.keys(data).filter(
-              (k) => (data as Record<string, unknown>)[k] !== undefined
-            ),
+            ...(hasStatusUpdate && { previousStatus: existing.status, newStatus: status }),
+            ...(hasMetadataUpdate && { 
+              changedFields: Object.keys(metadata).filter(k => (metadata as any)[k] !== undefined) 
+            }),
           },
         },
       });

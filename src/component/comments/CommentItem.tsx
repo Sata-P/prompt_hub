@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect } from "react";
+import { formatDistanceToNow, format } from "date-fns";
 import { UserCircle, Reply, MessageCircle } from "lucide-react";
 import { Button } from "@/component/ui/button";
+import { RichTextEditor } from "@/component/ui/rich-text-editor";
 
 export type Comment = {
   id: number;
@@ -12,6 +13,7 @@ export type Comment = {
   prompt_id: number;
   parent_id: number | null;
   created_at: string;
+  updated_at: string;
   user: {
     id: number;
     name: string;
@@ -36,6 +38,7 @@ export default function CommentItem({
   onEdit,
   isReply = false,
 }: CommentItemProps) {
+  const [mounted, setMounted] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [showReplies, setShowReplies] = useState(false); // Toggle for replies
@@ -56,6 +59,10 @@ export default function CommentItem({
     setIsEditing(false);
   };
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const hasReplies = comment.replies && comment.replies.length > 0;
 
   return (
@@ -72,32 +79,47 @@ export default function CommentItem({
           <span className="font-semibold text-sm text-white">
             {comment.user.name}
           </span>
-          <span className="text-xs text-gray-500">
-            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+          <span className="text-zinc-400 text-[11px] flex items-center gap-1.5 ml-1">
+            <span className="opacity-40">•</span>
+            {mounted ? (
+              <>
+                <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                <span className="opacity-25 ml-0.5">•</span>
+                <span>{format(new Date(comment.created_at), "d MMM yyyy, HH:mm")}</span>
+              </>
+            ) : '...'}
           </span>
+          {mounted && new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime() + 1000 && (
+            <span className="text-[10px] text-zinc-500 italic ml-1" title={new Date(comment.updated_at).toLocaleString()}>
+              (edited)
+            </span>
+          )}
         </div>
 
         {/* Comment Bubble */}
         {isEditing ? (
-          <div className="mt-2 flex flex-col gap-2 w-full max-w-md">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full text-sm border-gray-300 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-blue-500 outline-none border resize-none min-h-[60px]"
-              autoFocus
+          <div className="mt-2 flex flex-col gap-2 w-full max-w-2xl">
+            <RichTextEditor
+              content={editContent}
+              onChange={setEditContent}
+              placeholder="Edit your comment..."
             />
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setEditContent(comment.content); }} className="rounded-full">
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editContent.trim() || editContent === comment.content}>
+              <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editContent.trim() || editContent === "<p></p>" || editContent === comment.content}>
                 Save
               </Button>
             </div>
           </div>
         ) : (
-          <div className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block whitespace-pre-wrap">
-            {comment.content}
+          <div className="bg-slate-800 rounded-2xl px-4 py-3 text-sm text-white inline-block w-full max-w-2xl">
+            <RichTextEditor
+              content={comment.content}
+              onChange={() => {}}
+              editable={false}
+            />
           </div>
         )}
 
@@ -136,24 +158,20 @@ export default function CommentItem({
 
         {/* Reply Input Form */}
         {isReplying && (
-          <div className="mt-3 flex gap-2">
-            <input
-              type="text"
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
+          <div className="mt-3 flex flex-col gap-2 w-full max-w-2xl">
+            <RichTextEditor
+              content={replyContent}
+              onChange={setReplyContent}
               placeholder={`Reply to ${comment.user.name}...`}
-              className="flex-1 text-sm border-gray-300 rounded-full px-4 py-1.5 focus:border-blue-500 focus:ring-blue-500 outline-none border"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleReplySubmit();
-              }}
             />
-            <Button size="sm" onClick={handleReplySubmit} className="rounded-full px-4" disabled={!replyContent.trim()}>
-              Post
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setIsReplying(false)} className="rounded-full">
-              Cancel
-            </Button>
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setIsReplying(false)} className="rounded-full">
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleReplySubmit} className="rounded-full px-4" disabled={!replyContent.trim() || replyContent === "<p></p>"}>
+                Post
+              </Button>
+            </div>
           </div>
         )}
 

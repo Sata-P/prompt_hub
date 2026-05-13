@@ -14,6 +14,7 @@ import { Skeleton } from "@/component/ui/skeleton";
 import { useFavorites } from "@/hooks/useFavorite";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
 import CommentSection from "@/component/comments/CommentSection";
+import SubmitReviewButton from "@/component/prompts/SubmitReviewButton";
 
 type Version = {
   id: number;
@@ -66,7 +67,7 @@ export default function PromptDetailPage() {
   const canEdit = 
     userRole === "ADMIN" || 
     userRole === "EDITOR" || 
-    (prompt && userId && Number(userId) === prompt.owner.id);
+    ((prompt && userId && Number(userId) === prompt.owner.id) && prompt?.status !== "REVIEW");
 
 
 
@@ -74,6 +75,26 @@ export default function PromptDetailPage() {
     userRole === "ADMIN" || 
     userRole === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
+
+  const handleReview = async (action: "APPROVE" | "REJECT") => {
+    try {
+      await axios.post(`/api/prompts/${id}/review`, { action });
+      // Reload to show updated status
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || `Failed to ${action.toLowerCase()} prompt.`);
+    }
+  };
+
+  const handleCancelReview = async () => {
+    if (!confirm("Are you sure you want to cancel the review? The prompt will return to Draft status and you can edit it again.")) return;
+    try {
+      await axios.delete(`/api/prompts/${id}/submit`);
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to cancel review.");
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this prompt? This action cannot be undone.")) return;
@@ -115,6 +136,7 @@ export default function PromptDetailPage() {
       case "PUBLISHED": return <Badge variant="success">Approved</Badge>;
       case "DRAFT":     return <Badge variant="secondary">Draft</Badge>;
       case "REVIEW":    return <Badge variant="warning">Review</Badge>;
+      case "REJECTED":  return <Badge variant="destructive">Rejected</Badge>;
       case "ARCHIVED":  return <Badge variant="outline">Archived</Badge>;
       default:          return <Badge>{status}</Badge>;
     }
@@ -150,7 +172,7 @@ export default function PromptDetailPage() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold tracking-tight">{prompt.title}</h1>
-            {/* {getStatusBadge(prompt.status)} */}
+            {getStatusBadge(prompt.status)}
           </div>
           <p className="text-sm text-muted-foreground">
             {prompt.description || "No description available"}
@@ -166,6 +188,26 @@ export default function PromptDetailPage() {
           )}
         </div>
         <div className="flex gap-3 shrink-0">
+          {prompt.status === "REVIEW" && (userRole === "ADMIN" || userRole === "EDITOR") && (
+            <>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleReview("APPROVE")}>
+                Approve
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => handleReview("REJECT")}>
+                Reject
+              </Button>
+            </>
+          )}
+          {prompt.status === "REVIEW" && userId && Number(userId) === prompt.owner.id && (
+            <Button size="sm" variant="outline" onClick={handleCancelReview}>
+              Cancel Review
+            </Button>
+          )}
+          <SubmitReviewButton 
+            promptId={prompt.id} 
+            status={prompt.status} 
+            ownerId={prompt.owner.id} 
+          />
           <Button variant="outline" size="sm" onClick={() => toggleFavorite(prompt.id)}
             style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: 'white' }}>
             {isFavorite(prompt.id) ? <FaHeart /> : <FaRegHeart />}

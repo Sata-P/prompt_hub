@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { ArrowLeft, Save, ShieldAlert, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, ShieldAlert, Sparkles, Send } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/component/ui/card";
 import { Button } from "@/component/ui/button";
@@ -74,6 +75,8 @@ type VariableConfig = {
 export default function EditPromptPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdminOrEditor = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
   
   const [loadingContext, setLoadingContext] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,6 +85,7 @@ export default function EditPromptPage() {
   // Data State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [currentStatus, setCurrentStatus] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -113,8 +117,17 @@ export default function EditPromptPage() {
         setAvailableTags(tagsRes.data || []);
 
         const prompt = promptRes.data;
+
+        // Only block regular users from editing prompts in REVIEW
+        if (prompt.status === "REVIEW" && !isAdminOrEditor) {
+          setError("This prompt is currently under review and cannot be edited. Please cancel the review first if you need to make changes.");
+          setLoadingContext(false);
+          return;
+        }
+
         setTitle(prompt.title);
         setDescription(prompt.description || "");
+        setCurrentStatus(prompt.status);
         setCategoryId(prompt.category ? String(prompt.category.id) : "");
         setRecommendedModel(prompt.recommended_model || "");
         setTags(prompt.tags.map(t => t.name));
@@ -142,7 +155,7 @@ export default function EditPromptPage() {
     };
 
     fetchInitialData();
-  }, [id]);
+  }, [id, isAdminOrEditor]);
 
   // Detect variables from template {{var_name}}
   useEffect(() => {
@@ -166,8 +179,6 @@ export default function EditPromptPage() {
   };
 
   // เพิ่ม option ให้ตัวแปร SELECT
-  // — รองรับ comma-separated input (เช่น "TH, EN, JP") แยกอัตโนมัติ
-  // — trim, ตัดค่าว่าง, กัน duplicate (ของเดิม + ของชุดใหม่)
   const addVariableOption = (varName: string, optRaw: string) => {
     const newOpts = optRaw
       .split(",")
@@ -219,8 +230,8 @@ export default function EditPromptPage() {
     setTags(tags.filter(t => t !== tagToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, targetStatus?: "DRAFT" | "PUBLISHED") => {
+    if (e) e.preventDefault();
     if (!title || !templateContent) {
       setError("Title and template content are required.");
       return;
@@ -230,16 +241,7 @@ export default function EditPromptPage() {
     setError("");
 
     try {
-      const promptPayload = {
-        title,
-        description: description || undefined,
-        categoryId: categoryId ? Number(categoryId) : null,
-        recommendedModel: recommendedModel || undefined,
-        tags,
-      };
-      
-      await axios.patch(`/api/prompts/${id}`, promptPayload);
-
+      // 1. Create a NEW version first (Always creates a new version now)
       const versionPayload = {
         templateContent,
         // ส่ง optionsJson เฉพาะ type === SELECT
@@ -256,17 +258,33 @@ export default function EditPromptPage() {
 
       await axios.post(`/api/prompts/${id}/versions`, versionPayload);
 
+      // 2. Update metadata and status
+      // If saving as DRAFT but it's already PUBLISHED, keep it PUBLISHED on the main prompt
+      // so viewers still see the old version.
+      const finalStatus = (targetStatus === "DRAFT" && currentStatus === "PUBLISHED") 
+        ? undefined 
+        : targetStatus;
+
+      const promptPayload = {
+        title,
+        description: description || undefined,
+        categoryId: categoryId ? Number(categoryId) : null,
+        recommendedModel: recommendedModel || undefined,
+        tags,
+        ...(finalStatus && { status: finalStatus }),
+      };
+      
+      await axios.patch(`/api/prompts/${id}`, promptPayload);
+
       router.push(`/prompts/${id}`);
 
     } catch (err: any) {
-
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError("Failed to update prompt. Please try again.");
       }
       setSaving(false);
-
     }
   };
 
@@ -294,16 +312,43 @@ export default function EditPromptPage() {
           <Link href={`/prompts/${id}`}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Prompt</Link>
         </Button>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => handleSubmit(e)}>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b pb-6">
             <div className="space-y-2">
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">Edit <span className="text-primary">Prompt</span></h1>
               <p className="text-lg text-muted-foreground">Update details or refine the template content to improve prompt performance.</p>
             </div>
-            <Button type="submit" disabled={saving} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-transform active:scale-95">
-              <Save className="mr-2 h-5 w-5" />
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
+            
+            <div className="flex items-center gap-3">
+              {isAdminOrEditor ? (
+                <>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    disabled={saving} 
+                    onClick={() => handleSubmit(undefined, "DRAFT")}
+                    className="h-12 px-6 text-base border-purple-200 text-purple-700 hover:bg-purple-50 transition-colors"
+                  >
+                    <Save className="mr-2 h-5 w-5" />
+                    {saving ? "Saving..." : "Save Draft"}
+                  </Button>
+                  <Button 
+                    type="button"
+                    disabled={saving} 
+                    onClick={() => handleSubmit(undefined, "PUBLISHED")}
+                    className="h-12 px-8 text-base bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-transform active:scale-95"
+                  >
+                    <Send className="mr-2 h-5 w-5" />
+                    {saving ? "Publishing..." : "Publish"}
+                  </Button>
+                </>
+              ) : (
+                <Button type="submit" disabled={saving} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-transform active:scale-95">
+                  <Save className="mr-2 h-5 w-5" />
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              )}
+            </div>
           </div>
 
           {error && title && (

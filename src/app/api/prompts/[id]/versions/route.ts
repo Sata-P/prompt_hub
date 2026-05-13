@@ -83,7 +83,7 @@ export async function POST(request: Request, { params }: RouteContext) {
     // Verify prompt exists and user has permission
     const prompt = await prisma.prompts.findUnique({
       where: { id: promptId, deleted_at: null },
-      select: { id: true, owner_id: true, latest_version_no: true },
+      select: { id: true, owner_id: true, latest_version_no: true, status: true },
     });
 
     if (!prompt) {
@@ -94,10 +94,20 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const newVersionNo = prompt.latest_version_no + 1;
+    const userRole = session.user.role;
+    const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
 
     const result = await prisma.$transaction(async (tx) => {
-      // Create the new version
+      // Get the highest version number regardless of status
+      const lastVersion = await tx.prompt_versions.findFirst({
+        where: { prompt_id: promptId },
+        orderBy: { version_no: "desc" },
+      });
+
+      const currentHighestVersionNo = lastVersion?.version_no ?? 0;
+
+      // Always create a new version
+      const newVersionNo = currentHighestVersionNo + 1;
       const version = await tx.prompt_versions.create({
         data: {
           prompt_id: promptId,
@@ -107,20 +117,12 @@ export async function POST(request: Request, { params }: RouteContext) {
           output_format: data.outputFormat ?? null,
           changelog: data.changelog ?? null,
           created_by: userId,
-          status: "PUBLISHED",
+          status: "DRAFT", // Always start new versions as DRAFT
         },
       });
 
-
       // Create variables for this version
       if (data.variables && data.variables.length > 0) {
-
-        // // First delete existing prompt-level variables to handle the unique constraint
-        // await tx.prompt_variables.deleteMany({
-        //   where: { prompt_id: promptId }
-        // });
-
-        // re-create variables for this version
         await tx.prompt_variables.createMany({
           data: data.variables.map((v, i) => ({
             prompt_id: promptId,
@@ -138,11 +140,17 @@ export async function POST(request: Request, { params }: RouteContext) {
         });
       }
 
-      // Update prompt's latest_version_no
-      await tx.prompts.update({
-        where: { id: promptId },
-        data: { latest_version_no: newVersionNo },
-      });
+      // Update prompt status only if NOT PUBLISHED. 
+      // DO NOT update latest_version_no yet (it happens on Publish)
+      if (prompt.status !== "PUBLISHED") {
+        await tx.prompts.update({
+          where: { id: promptId },
+          data: { 
+            status: "DRAFT",
+            visibility: "PRIVATE"
+          },
+        });
+      }
 
       return version;
     });

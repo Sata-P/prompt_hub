@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import CommentItem, { Comment } from "./CommentItem";
 import { Button } from "@/component/ui/button";
 import { MessageSquare } from "lucide-react";
+import { RichTextEditor } from "@/component/ui/rich-text-editor";
 
 type CommentSectionProps = {
   promptId: number;
@@ -164,16 +165,15 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
       {session ? (
         <div className="flex gap-3 mb-8">
           <div className="flex-1">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+            <RichTextEditor
+              content={newComment}
+              onChange={setNewComment}
               placeholder="Write a comment..."
-              className="w-full text-sm border-gray-300 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-blue-500 outline-none border resize-none h-20"
             />
-            <div className="flex justify-end mt-2">
+            <div className="flex justify-end mt-3">
               <Button
                 onClick={handleCreateComment}
-                disabled={!newComment.trim()}
+                disabled={!newComment.trim() || newComment === "<p></p>"}
                 className="px-6 rounded-full"
               >
                 Post Comment

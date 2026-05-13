@@ -12,6 +12,7 @@ import {
   Activity,
   ChevronRight,
   House,
+  ClipboardList,
 } from "lucide-react";
 
 import {
@@ -30,6 +31,7 @@ import { Avatar, AvatarFallback } from "@/component/ui/avatar";
 
 const navItems = [
   { label: "Dashboard",    icon: House,          path: "/dashboard" },
+  { label: "Review Queue", icon: ClipboardList,  path: "/review-queue" },
   { label: "Prompts",      icon: FileText,       path: "/prompts" },
   { label: "Playground",   icon: PlayCircle,     path: "/playground" },
   { label: "Favorites",    icon: Star,           path: "/favorites" },
@@ -107,8 +109,10 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="gap-0.5">
               {navItems.map((item) => {
+                // Role-based visibility guards
                 if (item.path === "/settings" && user.role !== "ADMIN") return null;
                 if (item.path === "/activity_log" && user.role !== "ADMIN") return null;
+                if (item.path === "/review-queue" && user.role !== "ADMIN" && user.role !== "EDITOR") return null;
 
                 const isActive =
                   item.path === "/dashboard"

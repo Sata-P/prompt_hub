@@ -114,6 +114,7 @@ export async function GET(request: Request) {
             },
           },
           versions: {
+            where: userRole === "VIEWER" ? { status: "PUBLISHED" } : {},
             orderBy: { version_no: "desc" },
             take: 1,
             select: {
@@ -169,6 +170,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = CreatePromptSchema.parse(body);
     const userId = Number(session.user.id);
+    const userRole = session.user.role; // Extract role from session
+
+    // --- RBAC & LIFECYCLE LOGIC ---
+    // If admin or editor, auto-publish and make public
+    // Otherwise, start as DRAFT and PRIVATE
+    const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
+    const initialStatus = isAdminOrEditor ? "PUBLISHED" : "DRAFT";
+    const initialVisibility = isAdminOrEditor ? "PUBLIC" : "PRIVATE";
+    // -------------------------------
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Resolve or create tags
@@ -184,17 +194,17 @@ export async function POST(request: Request) {
         }
       }
 
-      // 2. Create the prompt
+      // 2. Create the prompt with enforced status and visibility
       const prompt = await tx.prompts.create({
         data: {
           title: data.title,
           description: data.description ?? null,
           category_id: data.categoryId ?? null,
           recommended_model: data.recommendedModel ?? null,
-          visibility: data.visibility ?? "PUBLIC",
+          visibility: initialVisibility, // Enforced here
           owner_id: userId,
           latest_version_no: 1,
-          status: "PUBLISHED",
+          status: initialStatus, // Enforced here
           tags: {
             create: tagRecords.map((t) => ({
               tag_id: t.id,
@@ -213,7 +223,7 @@ export async function POST(request: Request) {
           output_format: data.outputFormat ?? null,
           changelog: "Initial version",
           created_by: userId,
-          status: "PUBLISHED",
+          status: initialStatus, // Match prompt status
         },
       });
 

@@ -193,7 +193,7 @@ export default function PromptsList() {
           </Select>
 
           {/* Status */}
-          {/* <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="h-10 bg-background">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -204,7 +204,7 @@ export default function PromptsList() {
               <SelectItem value="published">APPROVED</SelectItem>
               <SelectItem value="archived">ARCHIVED</SelectItem>
             </SelectContent>
-          </Select> */}
+          </Select>
 
           {/* Model */}
           <Select value={filterModel} onValueChange={setFilterModel}>
@@ -273,7 +273,7 @@ export default function PromptsList() {
                 <th className="w-[35%] px-5 py-4 text-left font-bold text-foreground capitalize">Title</th>
                 <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Category</th>
                 <th className="w-[20%] px-5 py-4 text-left font-bold text-foreground capitalize">Tags</th>
-                {/* <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Status</th> */}
+                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Status</th>
                 <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Model</th>
                 <th className="w-[15%] px-5 py-4 text-left font-bold text-foreground capitalize">Updated</th>
               </tr>
@@ -324,13 +324,13 @@ export default function PromptsList() {
                           : <span className="text-muted-foreground">-</span>}
                       </div>
                     </td>
-                    {/* <td className={`px-5 py-4 text-xs uppercase tracking-wider font-semibold ${
+                    <td className={`px-5 py-4 text-xs uppercase tracking-wider font-semibold ${
                       p.status === 'PUBLISHED' ? 'text-green-600' :
                       p.status === 'REVIEW' ? 'text-orange-500' :
                       'text-muted-foreground'
                     }`}>
                       {getStatusText(p.status)}
-                    </td> */}
+                    </td>
                     <td className="px-5 py-4 text-muted-foreground text-sm">
                       {p.recommended_model || "-"}
                     </td>
