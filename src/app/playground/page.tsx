@@ -570,7 +570,7 @@ function PlaygroundContent() {
               {pagedPrompts.map((p) => (
                 <Card
                   key={p.id}
-                  className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md bg-card group"
+                  className="hover:border-primary/50 cursor-pointer transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg active:scale-95 bg-card group"
                   onClick={() => router.push(`/playground?promptId=${p.id}`)}
                 >
                   <CardHeader>
@@ -599,6 +599,7 @@ function PlaygroundContent() {
                     size="sm"
                     disabled={listPage <= 1}
                     onClick={() => setListPage(p => p - 1)}
+                    className="transition-all duration-300 hover:scale-105 active:scale-95"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
@@ -608,6 +609,7 @@ function PlaygroundContent() {
                     size="sm"
                     disabled={listPage >= totalListPages}
                     onClick={() => setListPage(p => p + 1)}
+                    className="transition-all duration-300 hover:scale-105 active:scale-95"
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />
@@ -676,7 +678,7 @@ function PlaygroundContent() {
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 shrink-0"
+            className="h-9 w-9 shrink-0 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 hover:border-primary hover:text-primary"
             onClick={() => setShowSystemPrompt(!showSystemPrompt)}
             title="System Prompt Settings"
           >
@@ -860,7 +862,7 @@ function PlaygroundContent() {
             <div className="pt-3 mt-auto">
               {isRunning ? (
                 <Button
-                  className="w-full h-11 font-semibold transition-transform active:scale-95"
+                  className="w-full h-11 font-semibold transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95"
                   variant="destructive"
                   onClick={handleStop}
                 >
@@ -869,7 +871,7 @@ function PlaygroundContent() {
                 </Button>
               ) : (
                 <Button
-                  className="w-full h-11 font-semibold shadow-lg shadow-primary/20 transition-transform active:scale-95"
+                  className="w-full h-11 font-semibold shadow-lg shadow-primary/20 transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95"
                   onClick={handleRunPrompt}
                   disabled={!selectedModel || !apiKey.trim()}
                   title={!apiKey.trim() ? "Enter your API key first" : undefined}
@@ -897,7 +899,7 @@ function PlaygroundContent() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1.5 text-xs"
+                className="h-7 gap-1.5 text-xs transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5 hover:border-primary/30"
                 onClick={handleCopy}
                 disabled={!renderedPrompt}
                 title="Copy Rendered Prompt to clipboard"
@@ -959,7 +961,7 @@ function PlaygroundContent() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground"
+                  className="h-7 w-7 text-muted-foreground transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 hover:text-primary hover:bg-primary/10"
                   onClick={handleCopyResponse}
                   title="Copy Response"
                 >
@@ -1062,7 +1064,7 @@ function PlaygroundContent() {
                   <button
                     key={run.id}
                     onClick={() => setSelectedRun(run)}
-                    className={`shrink-0 w-[180px] lg:w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
+                    className={`shrink-0 w-[180px] lg:w-full text-left px-3 py-2.5 rounded-lg border transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 ${
                       isActive
                         ? "bg-primary/10 border-primary/40 shadow-sm"
                         : "bg-card border-border hover:bg-muted/40 hover:border-muted-foreground/20"

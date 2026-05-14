@@ -304,6 +304,7 @@ export default function ActivityLogPage() {
               size="sm"
               disabled={pagination.page <= 1}
               onClick={() => fetchLogs(pagination.page - 1)}
+              className="transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -313,6 +314,7 @@ export default function ActivityLogPage() {
               size="sm"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => fetchLogs(pagination.page + 1)}
+              className="transition-all duration-300 hover:scale-105 active:scale-95"
             >
               Next
               <ChevronRight className="h-4 w-4" />

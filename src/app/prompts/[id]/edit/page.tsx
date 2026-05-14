@@ -284,7 +284,7 @@ export default function EditPromptPage() {
   return (
     <div className="pb-20">
       <main className="py-4">
-        <Button variant="ghost" className="mb-6 -ml-4" asChild>
+        <Button variant="ghost" className="mb-6 -ml-4 transition-all duration-300 ease-in-out hover:-translate-x-1 active:scale-95" asChild>
           <Link href={`/prompts/${id}`}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Prompt</Link>
         </Button>
 
@@ -294,7 +294,7 @@ export default function EditPromptPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">Edit <span className="text-primary">Prompt</span></h1>
               <p className="text-lg text-muted-foreground">Update details or refine the template content to improve prompt performance.</p>
             </div>
-            <Button type="submit" disabled={saving} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-transform active:scale-95">
+            <Button type="submit" disabled={saving} size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
               <Save className="mr-2 h-5 w-5" />
               {saving ? "Saving..." : "Save Changes"}
             </Button>
@@ -388,8 +388,7 @@ export default function EditPromptPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
-                            variant="outline" 
-                            className="w-full justify-between h-10 px-3 bg-background border-input font-normal hover:bg-background/80 transition-colors"
+                            className="w-full justify-between h-10 px-3 bg-background border-input font-normal hover:bg-background/80 transition-all duration-300 ease-in-out hover:border-primary/50"
                           >
                             <span className="truncate">
                               {tags.length > 0 ? `Selected ${tags.length} tags` : "Select or add tags..."}
@@ -454,7 +453,7 @@ export default function EditPromptPage() {
                           {tags.map(t => (
                             <div 
                               key={t} 
-                              className="group flex items-center gap-1 bg-primary/5 text-primary/80 hover:bg-primary/10 hover:text-primary font-medium text-[11px] px-2 py-0.5 rounded-md border border-primary/10 transition-all"
+                              className="group flex items-center gap-1 bg-primary/5 text-primary/80 hover:bg-primary/10 hover:text-primary font-medium text-[11px] px-2 py-0.5 rounded-md border border-primary/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
                             >
                               {t}
                               <button 
@@ -499,7 +498,7 @@ export default function EditPromptPage() {
                       </div>
                       <div className="flex flex-col gap-4">
                         {variables.map((v, idx) => (
-                          <div key={idx} className="bg-background/60 p-3 rounded-lg border border-primary/10 shadow-sm">
+                          <div key={idx} className="bg-background/60 p-3 rounded-xl border border-primary/10 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/30">
                             <div className="grid grid-cols-[1fr_2fr] gap-4 items-start">
                               <div>
                                 <div className="font-mono text-sm font-bold text-primary mb-2 truncate" title={v.name}>
@@ -561,7 +560,7 @@ export default function EditPromptPage() {
                                     {v.options.map((opt) => (
                                       <span
                                         key={opt}
-                                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary"
+                                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary transition-all duration-300 ease-in-out hover:scale-105"
                                       >
                                         {opt}
                                         <button

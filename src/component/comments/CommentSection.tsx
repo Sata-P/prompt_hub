@@ -315,7 +315,7 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
             <Button
               onClick={handleCreateComment}
               disabled={!canPost || isSubmitting}
-              className="px-6 rounded-full h-9 text-sm relative"
+              className="px-6 rounded-full h-9 text-sm relative transition-all duration-300 hover:scale-[1.02] active:scale-95"
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">

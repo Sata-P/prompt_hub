@@ -91,7 +91,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 fade-in-up stagger-1">
         <StatCard
           label="My Prompts"
           icon={<FileText className="h-5 w-5" />}
@@ -125,7 +125,7 @@ export default function DashboardPage() {
                 <Clock className="h-5 w-5 text-primary" />
                 <CardTitle className="text-xl font-bold">Recently Updated</CardTitle>
               </div>
-              <Button variant="ghost" size="sm" asChild className="text-xs text-orange-500 h-7 px-2 hover:text-orange-600 hover:bg-orange-500/10">
+              <Button variant="ghost" size="sm" asChild className="text-xs text-orange-500 h-7 px-2 hover:text-orange-600 hover:bg-orange-500/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
                 <Link href="/prompts">
                   <span className="hidden sm:inline">View all</span>
                   <span className="sm:hidden">All</span>
@@ -144,7 +144,7 @@ export default function DashboardPage() {
                 <div className="py-10 text-center rounded-lg border border-dashed border-border">
                   <FileText className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">No prompts yet</p>
-                  <Button size="sm" className="mt-3" asChild>
+                  <Button size="sm" className="mt-3 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" asChild>
                     <Link href="/prompts/new">Create your first prompt</Link>
                   </Button>
                 </div>
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                       <Link
                         key={prompt.id}
                         href={`/prompts/${prompt.id}`}
-                        className="flex items-center justify-between px-2 sm:px-3 py-3 rounded-lg hover:bg-accent/60 hover:border-primary/20 border border-transparent transition-all duration-150 group"
+                        className="flex items-center justify-between px-2 sm:px-3 py-3 rounded-lg hover:bg-accent/60 hover:border-primary/20 border border-transparent transition-all duration-300 ease-in-out hover:scale-[1.01] active:scale-95 group"
                         style={{ animationDelay: `${i * 40}ms` }}
                       >
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -247,7 +247,7 @@ export default function DashboardPage() {
                   {stats?.popularCategories?.map((cat) => (
                     <div 
                       key={cat.id} 
-                      className="flex items-center justify-between p-2 hover:bg-accent/50 transition-colors w-full text-left rounded-lg border border-border/60 bg-card cursor-pointer"
+                      className="flex items-center justify-between p-2 hover:bg-accent/50 transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 w-full text-left rounded-lg border border-border/60 bg-card cursor-pointer"
                       onClick={() => setViewingCategoryPrompts(cat)}
                     >
                       <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export default function DashboardPage() {
               <h3 className="font-semibold text-foreground">
                 Prompts in &ldquo;{viewingCategoryPrompts.name}&rdquo;
               </h3>
-              <Button size="icon" variant="ghost" onClick={() => setViewingCategoryPrompts(null)}>
+              <Button size="icon" variant="ghost" onClick={() => setViewingCategoryPrompts(null)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -329,7 +329,7 @@ function StatCard({
   };
 
   return (
-    <Card className="shadow-sm border-border/60 hover:border-primary/30 hover:shadow-md transition-all duration-200">
+    <Card className="shadow-sm border-border/60 hover:border-primary/30 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95">
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div>

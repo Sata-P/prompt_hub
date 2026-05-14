@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { UserCircle, Reply, MessageCircle, Bold, Italic, List, ListOrdered } from "lucide-react";
+import { UserCircle, Reply, MessageCircle, Bold, Italic, List, ListOrdered,File,Download } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import DOMPurify from "dompurify";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -151,10 +151,10 @@ export default function CommentItem({
               <MenuBar editor={editEditor} />
               <EditorContent editor={editEditor} />
               <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
-                <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); editEditor?.commands.setContent(comment.content); }} className="rounded-full">
+                <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); editEditor?.commands.setContent(comment.content); }} className="rounded-full transition-all duration-300 hover:scale-105 active:scale-95">
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4" disabled={!editEditor || editEditor.isEmpty}>
+                <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4 transition-all duration-300 hover:scale-105 active:scale-95" disabled={!editEditor || editEditor.isEmpty}>
                   Save
                 </Button>
               </div>
@@ -236,10 +236,10 @@ export default function CommentItem({
                 if (e.key === "Enter") handleReplySubmit();
               }}
             />
-            <Button size="sm" onClick={handleReplySubmit} className="rounded-full px-4" disabled={!replyContent.trim()}>
+            <Button size="sm" onClick={handleReplySubmit} className="rounded-full px-4 transition-all duration-300 hover:scale-105 active:scale-95" disabled={!replyContent.trim()}>
               Post
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setIsReplying(false)} className="rounded-full">
+            <Button size="sm" variant="ghost" onClick={() => setIsReplying(false)} className="rounded-full transition-all duration-300 hover:scale-105 active:scale-95">
               Cancel
             </Button>
           </div>

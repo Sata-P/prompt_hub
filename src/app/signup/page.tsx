@@ -118,7 +118,7 @@ export default function SignupPage() {
                 <Input id="confirmPassword" type="password" placeholder="••••••••" className="pl-9" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-95" disabled={loading}>
               {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>

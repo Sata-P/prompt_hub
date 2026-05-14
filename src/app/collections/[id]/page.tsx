@@ -92,7 +92,7 @@ function PromptCard({
 }) {
   const p = item.prompt;
   return (
-    <div data-slot="card" className="group relative flex flex-col rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+    <div data-slot="card" className="group relative flex flex-col rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card">
       {/* Remove button (admin) */}
       {isAdmin && (
         <button
@@ -157,7 +157,7 @@ function PromptCard({
       {/* Run button */}
       <Link
         href={`/playground?promptId=${p.id}`}
-        className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold transition-colors"
+        className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
       >
         <Play className="h-3 w-3" /> Run in Playground
       </Link>
@@ -397,7 +397,7 @@ export default function CollectionDetailsPage() {
           {/* Admin actions */}
           {isAdmin && (
             <div className="shrink-0">
-              <Button size="sm" onClick={handleOpenAddPrompt} className="gap-1.5">
+              <Button size="sm" onClick={handleOpenAddPrompt} className="gap-1.5 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
                 <Plus className="h-3.5 w-3.5" /> Add Prompt
               </Button>
             </div>
@@ -450,7 +450,7 @@ export default function CollectionDetailsPage() {
               This collection is empty. Add prompts from the Prompt Library.
             </p>
             {isAdmin && (
-              <Button size="sm" onClick={handleOpenAddPrompt}>
+              <Button size="sm" onClick={handleOpenAddPrompt} className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
                 <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Prompts
               </Button>
             )}
@@ -490,10 +490,10 @@ export default function CollectionDetailsPage() {
                   Page {page} of {totalPages}
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                     <ChevronLeft className="h-4 w-4" /> Previous
                   </Button>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                     Next <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -530,7 +530,7 @@ export default function CollectionDetailsPage() {
                       {p.description || "No description"}
                     </span>
                   </div>
-                  <Button size="sm" variant="outline" className="shrink-0 border-primary/50 text-primary hover:bg-primary/10" onClick={() => handleAddPrompt(p.id)}>
+                  <Button size="sm" variant="outline" className="shrink-0 border-primary/50 text-primary hover:bg-primary/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => handleAddPrompt(p.id)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add
                   </Button>
                 </div>

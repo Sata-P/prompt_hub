@@ -60,7 +60,7 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
           {/* ── Top bar ── */}
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#2e1f5e]/60 bg-[#08011a] px-3 md:px-6 z-20 shadow-sm">
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
-              <SidebarTrigger className="shrink-0 text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-colors" />
+              <SidebarTrigger className="shrink-0 text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" />
               <div className="shrink-0 h-4 w-px bg-white/15" />
               <span className="truncate text-sm md:text-base font-bold text-white/90">
                 {pageTitle}

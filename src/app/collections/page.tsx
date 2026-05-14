@@ -68,7 +68,7 @@ function CollectionCard({
   onDelete: (c: Collection) => void 
 }) {
   return (
-    <Card className="hover:border-primary/40 hover:shadow-md transition-all duration-200 cursor-pointer relative group">
+    <Card className="hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 cursor-pointer relative group">
       <Link href={`/collections/${collection.id}`} className="absolute inset-0 z-0" />
       
       <CardHeader className="relative z-10 pointer-events-none">
@@ -257,7 +257,7 @@ export default function CollectionsPage() {
         
         {isAdmin && (
           <Button 
-            className="shrink-0"
+            className="shrink-0 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
             onClick={() => { resetForm(); setIsCreateOpen(true); }}
           >
             <Plus className="mr-2 h-4 w-4" /> Create Collection
@@ -282,7 +282,7 @@ export default function CollectionsPage() {
             Create your first collection to start organising your prompts.
           </p>
           {isAdmin && (
-             <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} variant="outline">
+             <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} variant="outline" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
                <Plus className="mr-2 h-4 w-4" /> Create One
              </Button>
           )}
@@ -308,10 +308,10 @@ export default function CollectionsPage() {
                 Page {page} of {totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <ChevronLeft className="h-4 w-4" />Previous
                 </Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   Next<ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

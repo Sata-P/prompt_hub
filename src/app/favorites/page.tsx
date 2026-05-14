@@ -64,7 +64,7 @@ function PromptCard({
   const totalVars = p?.versions?.reduce((sum, version) => sum + version.promptVariables.length , 0);
 
   return (
-    <div data-slot="card" className="group relative rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+    <div data-slot="card" className="group relative rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card">
       {/* Unfavorite button */}
       <button
         onClick={(e) => {
@@ -291,7 +291,7 @@ export default function FavoritesPage() {
           <p className="text-sm text-muted-foreground max-w-xs mb-6">
             Click the Favorite button on any prompt and it will appear here.
           </p>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
             <Link href="/prompts" className="gap-2">
               <ExternalLink className="h-4 w-4" />
               Browse Prompts
@@ -332,10 +332,10 @@ export default function FavoritesPage() {
                 Page {page} of {totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <ChevronLeft className="h-4 w-4" />Previous
                 </Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   Next<ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

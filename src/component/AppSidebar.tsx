@@ -85,12 +85,9 @@ export function AppSidebar({
 
           {!collapsed && (
             <div className="flex flex-col truncate leading-none">
-              <span className="truncate text-[16px] font-bold tracking-tight text-white">
+              <span className="truncate text-lg font-bold tracking-tight text-white">
                 Prompt Hub
               </span>
-              {/* <span className="truncate text-[10px] font-medium text-sidebar-muted-foreground mt-0.5">
-                Sage Edition
-              </span> */}
             </div>
           )}
         </div>
@@ -122,20 +119,20 @@ export function AppSidebar({
                       tooltip={item.label}
                       isActive={isActive}
                       className={[
-                        "relative h-10 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+                        "relative h-11 rounded-lg px-3 text-[15px] font-medium transition-all duration-150",
                         "hover:text-sidebar-foreground hover:bg-white/5",
                         isActive
                           ? "!bg-[radial-gradient(ellipse_at_left_60%,_#3b0764_0%,_#6b1a0f_80%,_#c2410c_100%)] !text-white glow-orange before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r-full before:bg-sidebar-primary"
                           : "text-white",
                       ].join(" ") || ""}
                     >
-                      <Link href={item.path} className="flex items-center gap-3">
+                      <Link href={item.path} className="flex items-center gap-3.5">
                         <item.icon
-                          className="h-5 w-5 shrink-0"
+                          className="h-[22px] w-[22px] shrink-0"
                           style={{ 
                             stroke: isActive ? "url(#orange-gradient)" : "url(#orange-purple-pink-gradient)",
                             filter: isActive ? "drop-shadow(0 0 4px rgba(249, 115, 22, 0.7))" : "none",
-                            strokeWidth: "2.7px"
+                            strokeWidth: "2.5px"
                           }}
                         />
                         <span className="flex-1">{item.label}</span>
@@ -169,10 +166,10 @@ export function AppSidebar({
           </Avatar>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-              <span className="text-[13px] font-semibold truncate text-white leading-tight">
+              <span className="text-sm font-semibold truncate text-white leading-tight">
                 {user.name || "User"}
               </span>
-              <span className="text-[11px] text-white/70 truncate">
+              <span className="text-[12px] text-white/70 truncate mt-0.5">
                 {user.role?.toLowerCase() || "member"}
               </span>
             </div>

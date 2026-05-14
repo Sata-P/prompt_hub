@@ -244,7 +244,7 @@ export default function PromptDetailPage() {
                         <Button 
                           size="sm" 
                           onClick={() => handleReview("APPROVE")} 
-                          className="bg-green-600 hover:bg-green-700 h-8 px-3"
+                          className="bg-green-600 hover:bg-green-700 h-8 px-3 transition-all duration-300 hover:scale-105 active:scale-95"
                         >
                           <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
                         </Button>
@@ -252,7 +252,7 @@ export default function PromptDetailPage() {
                           size="sm" 
                           variant="destructive" 
                           onClick={() => handleReview("REJECT")}
-                          className="h-8 px-3"
+                          className="h-8 px-3 transition-all duration-300 hover:scale-105 active:scale-95"
                         >
                           <XCircle className="h-4 w-4 mr-1" /> Reject
                         </Button>
@@ -263,7 +263,7 @@ export default function PromptDetailPage() {
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="border-yellow-300 bg-white hover:bg-yellow-50 text-yellow-700 h-8"
+                    className="border-yellow-300 bg-white hover:bg-yellow-50 text-yellow-700 h-8 transition-all duration-300 hover:scale-105 active:scale-95"
                     onClick={handleSendForReview}
                   >
                     Send for Review
@@ -296,7 +296,7 @@ export default function PromptDetailPage() {
             variant="outline" 
             size="sm" 
             onClick={() => toggleFavorite(prompt.id)}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
             style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: isFavorite(prompt.id) ? 'white' : '' }}
           >
             {isFavorite(prompt.id) ? <FaHeart className="shrink-0" /> : <FaRegHeart className="shrink-0" />}
@@ -305,7 +305,7 @@ export default function PromptDetailPage() {
             </span>
           </Button>
           
-          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5">
             <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>
               <span className="sm:inline hidden">Use Prompt</span>
               <span className="sm:hidden">Use</span>
@@ -317,7 +317,7 @@ export default function PromptDetailPage() {
                size="sm" 
                variant="outline"
                onClick={handleSendForReview}
-               className="flex-1 sm:flex-none border-primary/20 text-primary hover:bg-primary/5"
+               className="flex-1 sm:flex-none border-primary/20 text-primary transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5"
              >
                <ShieldAlert className="mr-2 h-4 w-4" />
                Send for Review
@@ -329,20 +329,20 @@ export default function PromptDetailPage() {
               size="sm"
               variant="outline"
               onClick={handleCancelReview}
-              className="flex-1 sm:flex-none border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+              className="flex-1 sm:flex-none border-yellow-400 text-yellow-700 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-yellow-50"
             >
               Cancel Review
             </Button>
           )}
 
           {canEdit && (isAdminOrEditor || selectedVersion?.status.toUpperCase() !== "REVIEW") && (
-            <Button size="sm" asChild className="flex-1 sm:flex-none">
+            <Button size="sm" asChild className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
               <Link href={`/prompts/${id}/edit`}>Edit</Link>
             </Button>
           )}
           
           {canDelete && (
-            <Button size="sm" variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none px-2 sm:px-3">
+            <Button size="sm" variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none px-2 sm:px-3 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
               <Trash2 className="h-4 w-4" />
               <span className="ml-1 sm:inline hidden">Delete</span>
             </Button>
@@ -363,10 +363,10 @@ export default function PromptDetailPage() {
                 <button
                   key={v.id}
                   onClick={() => setSelectedVersionId(v.id)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                  className={`text-xs px-4 py-1.5 rounded-full border transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 ${
                     selectedVersionId === v.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                      ? "bg-primary text-primary-foreground border-primary shadow-md"
+                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground hover:shadow-sm"
                   }`}
                 >
                   v{v.version_no}
@@ -379,7 +379,7 @@ export default function PromptDetailPage() {
           )}
 
           {/* Template Card */}
-          <Card className="border-border shadow-sm overflow-hidden">
+          <Card className="border-border shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md">
             <CardHeader className="bg-background pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold">
                 Template
@@ -394,7 +394,7 @@ export default function PromptDetailPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 text-muted-foreground transition-all duration-300 ease-in-out hover:text-primary hover:scale-110 active:scale-95 hover:bg-primary/10 rounded-md flex items-center justify-center"
                   onClick={copyToClipboard}
                   title="Copy template"
                 >
@@ -410,7 +410,7 @@ export default function PromptDetailPage() {
           </Card>
 
           {/* Version History Timeline */}
-          <Card className="border-border shadow-sm">
+          <Card className="border-border shadow-sm transition-all duration-500 hover:shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Version History</CardTitle>
             </CardHeader>
@@ -445,8 +445,8 @@ export default function PromptDetailPage() {
                               setSelectedVersionId(v.id);
                             }
                           }}
-                          className={`w-full text-left py-3 px-3 rounded-md transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                            isSelected ? "bg-primary/5" : "hover:bg-muted/40"
+                          className={`w-full text-left py-3 px-3 rounded-md transition-all duration-300 ease-in-out group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            isSelected ? "bg-primary/10 shadow-sm" : "hover:bg-muted/40 hover:-translate-y-0.5 hover:shadow-sm"
                           }`}
                         >
                           <div className="flex items-start justify-between gap-4">

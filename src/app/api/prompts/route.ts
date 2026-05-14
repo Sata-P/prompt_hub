@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const categoryId = searchParams.get("categoryId")
       ? Number(searchParams.get("categoryId"))
       : undefined;
-    const tag = searchParams.get("tag")?.trim() || undefined;
+    const tags = searchParams.getAll("tag").map(t => t.trim()).filter(t => t !== "");
     const visibility = searchParams.get("visibility") || undefined;
 
     const userId = Number(session.user.id);
@@ -83,13 +83,15 @@ export async function GET(request: Request) {
       andConditions.push({ category_id: categoryId });
     }
 
-    if (tag) {
+    if (tags.length > 0) {
       andConditions.push({
-        tags: {
-          some: {
-            tag: { name: { equals: tag, mode: "insensitive" } },
+        OR: tags.map(t => ({
+          tags: {
+            some: {
+              tag: { name: { equals: t, mode: "insensitive" } },
+            },
           },
-        },
+        })),
       });
     }
 

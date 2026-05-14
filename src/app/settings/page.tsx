@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert, ExternalLink } from "lucide-react";
+import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert, ExternalLink, Search } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import { Skeleton } from "@/component/ui/skeleton";
 import { Badge } from "@/component/ui/badge";
 import { Input } from "@/component/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/component/ui/alert-dialog";
+import { ScrollArea } from "@/component/ui/scroll-area";
 
 type Category = {
   id: number;
@@ -62,6 +63,34 @@ export default function SettingsPage() {
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [viewingCategoryPrompts, setViewingCategoryPrompts] = useState<Category | null>(null);
+
+  // Search and Pagination States
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userPage, setUserPage] = useState(1);
+  const usersPerPage = 10;
+
+  // Filtered and Paginated Data
+  const filteredCategories = categories.filter(c => 
+    c.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
+  );
+  
+  const filteredTags = tags.filter(t => 
+    t.name.toLowerCase().includes(tagSearchQuery.toLowerCase())
+  );
+  
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
+    u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
+  
+  const totalUserPages = Math.ceil(filteredUsers.length / usersPerPage) || 1;
+  const paginatedUsers = filteredUsers.slice((userPage - 1) * usersPerPage, userPage * usersPerPage);
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearchQuery]);
 
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role !== "ADMIN") {
@@ -188,7 +217,7 @@ export default function SettingsPage() {
               <CardDescription className="mt-1.5">Group prompts by usage type</CardDescription>
             </div>
             {!isAddingCategory && (
-              <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsAddingCategory(true)}>
+              <Button size="sm" variant="ghost" className="h-8 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => setIsAddingCategory(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             )}
@@ -204,14 +233,24 @@ export default function SettingsPage() {
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleCreateCategory()}
                 />
-                <Button size="sm" onClick={handleCreateCategory} disabled={categorySaving || !newCategoryName.trim()}>
+                <Button size="sm" onClick={handleCreateCategory} disabled={categorySaving || !newCategoryName.trim()} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <Save className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => setIsAddingCategory(false)} disabled={categorySaving}>
+                <Button size="icon" variant="ghost" onClick={() => setIsAddingCategory(false)} disabled={categorySaving} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             )}
+
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                className="pl-9 bg-background h-9"
+                value={categorySearchQuery}
+                onChange={(e) => setCategorySearchQuery(e.target.value)}
+              />
+            </div>
 
             {loading ? (
               <div className="space-y-3">
@@ -221,13 +260,14 @@ export default function SettingsPage() {
               </div>
             ) : categories.length === 0 && !isAddingCategory ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                No categories created yet.
+                {categories.length === 0 ? "No categories created yet." : "No categories found."}
               </div>
             ) : (
-              <ul className="space-y-2">
-                {categories.map(cat => (
-                  <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
-                    <div className="min-w-0 flex-1 pr-4">
+              <ScrollArea className="h-[400px] pr-4">
+                <ul className="space-y-2">
+                  {filteredCategories.map(cat => (
+                    <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
+                      <div className="min-w-0 flex-1 pr-4">
                       <div className="font-medium text-sm">
                         {cat.name}
                         {(cat.array_count ?? 0) > 0 && (
@@ -255,13 +295,14 @@ export default function SettingsPage() {
                       variant="ghost" 
                       size="sm" 
                       onClick={() => handleDeleteCategory(cat.id)}
-                      className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0"
+                      className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0 transition-all duration-300 hover:scale-110 active:scale-95"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </li>
                 ))}
-              </ul>
+                </ul>
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
@@ -276,7 +317,7 @@ export default function SettingsPage() {
               <CardDescription className="mt-1.5">Manage all tags used across prompts</CardDescription>
             </div>
             {!isAddingTag && (
-              <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsAddingTag(true)}>
+              <Button size="sm" variant="ghost" className="h-8 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => setIsAddingTag(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             )}
@@ -292,14 +333,24 @@ export default function SettingsPage() {
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleCreateTag()}
                 />
-                <Button size="sm" onClick={handleCreateTag} disabled={tagSaving || !newTagName.trim()}>
+                <Button size="sm" onClick={handleCreateTag} disabled={tagSaving || !newTagName.trim()} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <Save className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => setIsAddingTag(false)} disabled={tagSaving}>
+                <Button size="icon" variant="ghost" onClick={() => setIsAddingTag(false)} disabled={tagSaving} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             )}
+
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tags..."
+                className="pl-9 bg-background h-9"
+                value={tagSearchQuery}
+                onChange={(e) => setTagSearchQuery(e.target.value)}
+              />
+            </div>
 
             {loading ? (
               <div className="flex flex-wrap gap-2">
@@ -310,13 +361,14 @@ export default function SettingsPage() {
               </div>
             ) : tags.length === 0 && !isAddingTag ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                No tags created yet.
+                {tags.length === 0 ? "No tags created yet." : "No tags found."}
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <Badge key={tag.id} variant="secondary" className="px-3 py-1 flex items-center gap-1.5 group">
-                    #{tag.name}
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="flex flex-wrap gap-2">
+                  {filteredTags.map(tag => (
+                    <Badge key={tag.id} variant="secondary" className="px-3 py-1 flex items-center gap-1.5 group">
+                      #{tag.name}
                     <span 
                       onClick={() => handleDeleteTag(tag.id)}
                       className="cursor-pointer text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
@@ -325,7 +377,8 @@ export default function SettingsPage() {
                     </span>
                   </Badge>
                 ))}
-              </div>
+                  </div>
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
@@ -340,15 +393,25 @@ export default function SettingsPage() {
               <CardDescription className="mt-1.5">Change access rights (Role) of users in the system</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users by name or email..."
+                className="pl-9 bg-background h-9"
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+              />
+            </div>
+
             {loading ? (
               <div className="space-y-3">
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
               </div>
-            ) : users.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/20 border rounded-lg border-dashed">
-                No users found.
+                {users.length === 0 ? "No users found." : "No users match your search."}
               </div>
             ) : (
               <>
@@ -364,7 +427,7 @@ export default function SettingsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map(user => (
+                      {paginatedUsers.map(user => (
                         <tr key={user.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-3 font-medium">{user.name}</td>
                           <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
@@ -399,7 +462,7 @@ export default function SettingsPage() {
                                 setIsDeleteOpen(true);
                               }}
                               disabled={user.id === Number(session?.user?.id) || user.status === 'deactivated'}
-                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-30 disabled:pointer-events-none"
+                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-30 disabled:pointer-events-none transition-all duration-300 hover:scale-110 active:scale-95"
                               title={user.status === 'deactivated' ? "User already deactivated" : "Deactivate user"}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -413,7 +476,7 @@ export default function SettingsPage() {
 
                 {/* Mobile View */}
                 <div className="space-y-4 md:hidden">
-                  {users.map(user => (
+                  {paginatedUsers.map(user => (
                     <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-card shadow-sm">
                       <div className="flex justify-between items-start">
                         <div className="min-w-0">
@@ -451,7 +514,7 @@ export default function SettingsPage() {
                             setIsDeleteOpen(true);
                           }}
                           disabled={user.id === Number(session?.user?.id) || user.status === 'deactivated'}
-                          className="text-destructive border-destructive/20 hover:bg-destructive hover:text-white shrink-0"
+                          className="text-destructive border-destructive/20 hover:bg-destructive hover:text-white shrink-0 transition-all duration-300 hover:scale-105 active:scale-95"
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1" /> Deactivate
                         </Button>
@@ -459,6 +522,35 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Pagination Controls */}
+                {totalUserPages > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-sm text-muted-foreground">
+                      Page {userPage} of {totalUserPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                        disabled={userPage === 1}
+                        className="transition-all duration-300 hover:scale-105 active:scale-95"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))}
+                        disabled={userPage === totalUserPages}
+                        className="transition-all duration-300 hover:scale-105 active:scale-95"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
