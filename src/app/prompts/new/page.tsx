@@ -70,7 +70,7 @@ export default function CreatePromptPage() {
   
   // --- State สำหรับ list ของ AI Models ---
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const [recommendedModel, setRecommendedModel] = useState<string>("");
+  const [recommendedModels, setRecommendedModels] = useState<string[]>([]);
   
   // --- State สำหรับรายการ Tags ทั้งหมดในระบบ (เพื่อใช้เป็นตัวเลือก) ---
   const [availableTags, setAvailableTags] = useState<{ id: number; name: string }[]>([]);
@@ -193,7 +193,7 @@ export default function CreatePromptPage() {
         title,
         description: description || undefined,                      // optional
         categoryId: categoryId ? Number(categoryId) : undefined,    // optional
-        recommendedModel: recommendedModel || undefined,            // optional
+        recommendedModels: recommendedModels.length > 0 ? recommendedModels : undefined,            // optional
         tags,
         templateContent,
         // ส่งตัวแปรพร้อม optionsJson (เฉพาะเมื่อ type === SELECT)
@@ -311,21 +311,50 @@ export default function CreatePromptPage() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="model" className="text-sm font-semibold">Recommended AI Model</Label>
-                        <Select 
-                          value={recommendedModel || "none"} 
-                          onValueChange={(val) => setRecommendedModel(val === "none" ? "" : val)}
-                        >
-                          <SelectTrigger id="model" className="h-10 bg-background">
-                            <SelectValue placeholder="-- None (use Default) --" />
-                          </SelectTrigger>
-                          <SelectContent position="popper">
-                            <SelectItem value="none">-- None (use Default) --</SelectItem>
-                            {models.map(m => (
-                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="model" className="text-sm font-semibold">Recommended AI Models</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              className="w-full justify-between h-10 px-3 bg-background border-input font-normal hover:bg-background/80 transition-all duration-300 ease-in-out hover:border-primary/50"
+                            >
+                              <span className="truncate">
+                                {recommendedModels.length > 0 
+                                  ? recommendedModels.map(id => models.find(m => m.id === id)?.name || id).join(", ")
+                                  : "-- None (use Default) --"}
+                              </span>
+                              <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[300px] p-0" align="start">
+                            <ScrollArea className="h-60 p-1">
+                              <DropdownMenuCheckboxItem
+                                checked={recommendedModels.length === 0}
+                                onCheckedChange={() => setRecommendedModels([])}
+                                className="focus:bg-primary/10 focus:text-primary data-[state=checked]:text-primary"
+                              >
+                                -- None (use Default) --
+                              </DropdownMenuCheckboxItem>
+                              <DropdownMenuSeparator />
+                              {models.map(m => (
+                                <DropdownMenuCheckboxItem
+                                  key={m.id}
+                                  checked={recommendedModels.includes(m.id)}
+                                  onCheckedChange={() => {
+                                    if (recommendedModels.includes(m.id)) {
+                                      setRecommendedModels(recommendedModels.filter(id => id !== m.id));
+                                    } else {
+                                      setRecommendedModels([...recommendedModels, m.id]);
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="focus:bg-primary/10 focus:text-primary data-[state=checked]:text-primary"
+                                >
+                                  {m.name}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </ScrollArea>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 

@@ -48,7 +48,7 @@ type PromptDetail = {
   title: string;
   description: string | null;
   status: string;
-  recommended_model: string | null;
+  recommended_models: string[];
   category: { id: number; name: string } | null;
   tags: Tag[];
   versions: {
@@ -93,7 +93,7 @@ export default function EditPromptPage() {
   // Categories and Models
   const [categories, setCategories] = useState<Category[]>([]);
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const [recommendedModel, setRecommendedModel] = useState<string>("");
+  const [recommendedModels, setRecommendedModels] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function EditPromptPage() {
         setTitle(prompt.title);
         setDescription(prompt.description || "");
         setCategoryId(prompt.category ? String(prompt.category.id) : "");
-        setRecommendedModel(prompt.recommended_model || "");
+        setRecommendedModels(prompt.recommended_models || []);
         setTags(prompt.tags.map(t => t.name));
         
         if (prompt.versions && prompt.versions.length > 0) {
@@ -235,7 +235,7 @@ export default function EditPromptPage() {
         title,
         description: description || undefined,
         categoryId: categoryId ? Number(categoryId) : null,
-        recommendedModel: recommendedModel || undefined,
+        recommendedModels: recommendedModels.length > 0 ? recommendedModels : undefined,
         tags,
       };
       
@@ -361,21 +361,50 @@ export default function EditPromptPage() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="model" className="text-sm font-semibold">Recommended AI Model</Label>
-                        <Select
-                          value={recommendedModel || "none"}
-                          onValueChange={(val) => setRecommendedModel(val === "none" ? "" : val)}
-                        >
-                          <SelectTrigger id="model" className="h-10 bg-background">
-                            <SelectValue placeholder="-- None (use Default) --" />
-                          </SelectTrigger>
-                          <SelectContent position="popper" side="bottom">
-                            <SelectItem value="none">-- None (use Default) --</SelectItem>
-                            {models.map(m => (
-                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="model" className="text-sm font-semibold">Recommended AI Models</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              className="w-full justify-between h-10 px-3 bg-background border-input font-normal hover:bg-background/80 transition-all duration-300 ease-in-out hover:border-primary/50"
+                            >
+                              <span className="truncate">
+                                {recommendedModels.length > 0 
+                                  ? recommendedModels.map(id => models.find(m => m.id === id)?.name || id).join(", ")
+                                  : "-- None (use Default) --"}
+                              </span>
+                              <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[300px] p-0" align="start">
+                            <ScrollArea className="h-60 p-1">
+                              <DropdownMenuCheckboxItem
+                                checked={recommendedModels.length === 0}
+                                onCheckedChange={() => setRecommendedModels([])}
+                                className="focus:bg-primary/10 focus:text-primary data-[state=checked]:text-primary"
+                              >
+                                -- None (use Default) --
+                              </DropdownMenuCheckboxItem>
+                              <DropdownMenuSeparator />
+                              {models.map(m => (
+                                <DropdownMenuCheckboxItem
+                                  key={m.id}
+                                  checked={recommendedModels.includes(m.id)}
+                                  onCheckedChange={() => {
+                                    if (recommendedModels.includes(m.id)) {
+                                      setRecommendedModels(recommendedModels.filter(id => id !== m.id));
+                                    } else {
+                                      setRecommendedModels([...recommendedModels, m.id]);
+                                    }
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="focus:bg-primary/10 focus:text-primary data-[state=checked]:text-primary"
+                                >
+                                  {m.name}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </ScrollArea>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 
