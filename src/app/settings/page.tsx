@@ -267,30 +267,31 @@ export default function SettingsPage() {
                 <ul className="space-y-2">
                   {filteredCategories.map(cat => (
                     <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
-                      <div className="min-w-0 flex-1 pr-4">
-                      <div className="font-medium text-sm">
-                        {cat.name}
-                        {(cat.array_count ?? 0) > 0 && (
-                          <span 
-                            className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground cursor-pointer hover:bg-primary/20 hover:text-primary transition-colors"
+                      <div className="min-w-0 flex-1 pr-4 overflow-hidden">
+                        <div className="font-medium text-sm truncate w-full">
+                          {cat.name}
+                          {(cat.array_count ?? 0) > 0 && (
+                            <span 
+                              className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground cursor-pointer hover:bg-primary/20 hover:text-primary transition-colors"
+                              onClick={() => setViewingCategoryPrompts(cat)}
+                            >
+                              {cat.array_count}
+                            </span>
+                          )}
+                        </div>
+                        {cat.prompts && cat.prompts.length > 0 ? (
+                          <div 
+                            className="text-xs text-muted-foreground mt-1 truncate cursor-pointer hover:text-primary transition-colors w-full"
                             onClick={() => setViewingCategoryPrompts(cat)}
+                            title={`Prompts: ${cat.prompts.map(p => p.title).join(", ")}`}
                           >
-                            {cat.array_count}
-                          </span>
+                            Prompts: {cat.prompts.slice(0, 2).map(p => p.title).join(", ")}
+                            {cat.prompts.length > 2 && ` ... (+${cat.prompts.length - 2} more)`}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground/50 mt-1">No prompts linked</div>
                         )}
                       </div>
-                      {cat.prompts && cat.prompts.length > 0 ? (
-                        <div 
-                          className="text-xs text-muted-foreground mt-1 truncate cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => setViewingCategoryPrompts(cat)}
-                        >
-                          Prompts: {cat.prompts.slice(0, 3).map(p => p.title).join(", ")}
-                          {cat.prompts.length > 3 && ` +${cat.prompts.length - 3} more`}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground/50 mt-1">No prompts linked</div>
-                      )}
-                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
