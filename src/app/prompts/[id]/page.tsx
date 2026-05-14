@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { Copy, Check, Clock, ChevronDown, Trash2 } from "lucide-react";
+import { Copy, Check, Clock, ChevronDown, Trash2, AlertCircle, CheckCircle2, XCircle, ShieldAlert } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
@@ -64,15 +64,13 @@ export default function PromptDetailPage() {
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
 
   const canEdit = 
-    userRole === "ADMIN" || 
-    userRole === "EDITOR" || 
+    userRole?.toUpperCase() === "ADMIN" || 
+    userRole?.toUpperCase() === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
 
-
-
   const canDelete = 
-    userRole === "ADMIN" || 
-    userRole === "EDITOR" || 
+    userRole?.toUpperCase() === "ADMIN" || 
+    userRole?.toUpperCase() === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
 
   const handleDelete = async () => {
@@ -92,8 +90,14 @@ export default function PromptDetailPage() {
     axios.get<PromptDetail>(`/api/prompts/${id}`)
       .then(res => {
         setPrompt(res.data);
-        // default to latest version
-        if (res.data.versions.length > 0) {
+        
+        // Requirement: Default to latest PUBLISHED version for general users
+        const publishedVersions = res.data.versions.filter(v => v.status === "PUBLISHED");
+        if (publishedVersions.length > 0) {
+          // Sort descending by version_no
+          const latestPublished = publishedVersions.sort((a, b) => b.version_no - a.version_no)[0];
+          setSelectedVersionId(latestPublished.id);
+        } else if (res.data.versions.length > 0) {
           setSelectedVersionId(res.data.versions[0].id);
         }
       })
@@ -103,6 +107,87 @@ export default function PromptDetailPage() {
 
   const selectedVersion = prompt?.versions.find(v => v.id === selectedVersionId) ?? prompt?.versions[0];
 
+  // Requirement: Check for newer REVIEW version (Owner/Admin only)
+  const latestPublishedNo = prompt?.versions
+    .filter(v => v.status.toUpperCase() === "PUBLISHED")
+    .reduce((max, v) => Math.max(max, v.version_no), 0) || 0;
+    
+  const hasPendingReview = prompt?.versions.some(v => v.status.toUpperCase() === "REVIEW" && v.version_no > latestPublishedNo);
+  const isOwnerOrAdmin = userRole?.toUpperCase() === "ADMIN" || (prompt && userId && Number(userId) === prompt.owner.id);
+  const isAdminOrEditor = userRole?.toUpperCase() === "ADMIN" || userRole?.toUpperCase() === "EDITOR";
+
+  const handleReview = async (action: "APPROVE" | "REJECT") => {
+    if (!selectedVersionId) return;
+    if (!confirm(`Are you sure you want to ${action.toLowerCase()} this version?`)) return;
+
+    try {
+      await axios.post(`/api/prompts/${id}/versions/${selectedVersionId}/review`, { action });
+      alert(`Version ${action === "APPROVE" ? "approved" : "rejected"} successfully.`);
+      window.location.reload(); 
+    } catch (err: any) {
+      alert(err.response?.data?.error || `Failed to ${action.toLowerCase()} version.`);
+    }
+  };
+
+  const handleSendForReview = async () => {
+    if (!prompt) return;
+    if (!confirm("Send this prompt for review?")) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "REVIEW" });
+      
+      // Also update the latest version status to REVIEW if it's DRAFT or REJECTED
+      const latestVer = prompt.versions[0];
+      if (latestVer && (latestVer.status === "DRAFT" || latestVer.status === "REJECTED")) {
+        // We might need an API to update version status directly or just rely on the prompt status update
+        // For now, the prompt status update is enough as it signals intent to admins.
+      }
+      
+      alert("Prompt sent for review successfully!");
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to send for review.");
+    }
+  };
+
+  const handleCancelReview = async () => {
+    if (!prompt) return;
+    if (!confirm("Are you sure you want to cancel the review for this prompt?")) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
+      alert("Review cancelled successfully.");
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to cancel review.");
+    }
+  };
+
+  const handleDeleteVersion = async (versionId: number, versionNo: number) => {
+    if (!prompt) return;
+    if (!confirm(`Are you sure you want to delete version v${versionNo}?`)) return;
+
+    try {
+      await axios.delete(`/api/prompts/${id}/versions/${versionId}`);
+      alert("Version deleted successfully.");
+      
+      // If we deleted the currently selected version, reset to another one
+      if (versionId === selectedVersionId) {
+        // Find the next available version (excluding the one we just deleted)
+        const remaining = prompt.versions.filter(v => v.id !== versionId);
+        if (remaining.length > 0) {
+          setSelectedVersionId(remaining[0].id);
+        }
+      }
+      
+      // Reload prompt data to refresh list
+      const res = await axios.get<PromptDetail>(`/api/prompts/${id}`);
+      setPrompt(res.data);
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to delete version.");
+    }
+  };
+
   const copyToClipboard = () => {
     if (!selectedVersion?.template_content) return;
     navigator.clipboard.writeText(selectedVersion.template_content);
@@ -111,10 +196,12 @@ export default function PromptDetailPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const s = status.toUpperCase();
+    switch (s) {
       case "PUBLISHED": return <Badge variant="success">Approved</Badge>;
       case "DRAFT":     return <Badge variant="secondary">Draft</Badge>;
       case "REVIEW":    return <Badge variant="warning">Review</Badge>;
+      case "REJECTED":  return <Badge variant="destructive">Rejected</Badge>;
       case "ARCHIVED":  return <Badge variant="outline">Archived</Badge>;
       default:          return <Badge>{status}</Badge>;
     }
@@ -145,12 +232,51 @@ export default function PromptDetailPage() {
 
   return (
     <div className="pb-20">
+      {hasPendingReview && isOwnerOrAdmin && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between gap-3 text-yellow-800">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600" />
+            <span className="text-sm font-medium">A newer version is currently pending review.</span>
+          </div>
+                  <div className="flex items-center gap-2 mr-2">
+                    {isAdminOrEditor && selectedVersion?.status.toUpperCase() === "REVIEW" && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleReview("APPROVE")} 
+                          className="bg-green-600 hover:bg-green-700 h-8 px-3"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleReview("REJECT")}
+                          className="h-8 px-3"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                {(selectedVersion?.status.toUpperCase() === "DRAFT" || selectedVersion?.status.toUpperCase() === "REJECTED") && !isAdminOrEditor && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-yellow-300 bg-white hover:bg-yellow-50 text-yellow-700 h-8"
+                    onClick={handleSendForReview}
+                  >
+                    Send for Review
+                  </Button>
+                )}
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{prompt.title}</h1>
-            {/* {getStatusBadge(prompt.status)} */}
+            {selectedVersion && getStatusBadge(selectedVersion.status)}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">
             {prompt.description || "No description available"}
@@ -186,7 +312,30 @@ export default function PromptDetailPage() {
             </Link>
           </Button>
 
-          {canEdit && (
+          {(selectedVersion?.status.toUpperCase() === "DRAFT" || selectedVersion?.status.toUpperCase() === "REJECTED") && Number(userId) === prompt.owner.id && (
+             <Button 
+               size="sm" 
+               variant="outline"
+               onClick={handleSendForReview}
+               className="flex-1 sm:flex-none border-primary/20 text-primary hover:bg-primary/5"
+             >
+               <ShieldAlert className="mr-2 h-4 w-4" />
+               Send for Review
+             </Button>
+          )}
+
+          {selectedVersion?.status.toUpperCase() === "REVIEW" && Number(userId) === prompt.owner.id && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancelReview}
+              className="flex-1 sm:flex-none border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+            >
+              Cancel Review
+            </Button>
+          )}
+
+          {canEdit && (isAdminOrEditor || selectedVersion?.status.toUpperCase() !== "REVIEW") && (
             <Button size="sm" asChild className="flex-1 sm:flex-none">
               <Link href={`/prompts/${id}/edit`}>Edit</Link>
             </Button>
@@ -241,15 +390,17 @@ export default function PromptDetailPage() {
                   </span>
                 )}
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={copyToClipboard}
-                title="Copy template"
-              >
-                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={copyToClipboard}
+                  title="Copy template"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-2">
               <div className="bg-muted p-4 rounded-md border text-sm font-mono whitespace-pre-wrap text-foreground min-h-[120px]">
@@ -284,38 +435,65 @@ export default function PromptDetailPage() {
                           <span className="text-[10px] font-bold">{v.version_no}</span>
                         </span>
 
-                        <button
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={() => setSelectedVersionId(v.id)}
-                          className={`w-full text-left py-3 px-3 rounded-md transition-colors group ${
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setSelectedVersionId(v.id);
+                            }
+                          }}
+                          className={`w-full text-left py-3 px-3 rounded-md transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                             isSelected ? "bg-primary/5" : "hover:bg-muted/40"
                           }`}
                         >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}>
-                              v{v.version_no}
-                            </span>
-                            {isLatest && (
-                              <Badge variant="secondary" className="text-[10px] h-4 px-1.5">latest</Badge>
-                            )}
-                            {isSelected && (
-                              <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/40">
-                                viewing
-                              </Badge>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                                  v{v.version_no}
+                                </span>
+                                {isLatest && (
+                                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5">latest</Badge>
+                                )}
+                                {isSelected && (
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/40">
+                                    viewing
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {new Date(v.created_at).toLocaleString("en-GB", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })}
+                              </div>
+                              {v.promptVariables.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {v.promptVariables.length} variable{v.promptVariables.length > 1 ? "s" : ""}
+                                </p>
+                              )}
+                            </div>
+
+                            {canEdit && prompt.versions.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteVersion(v.id, v.version_no);
+                                }}
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                                title="Delete version"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {new Date(v.created_at).toLocaleString("en-GB", {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            })}
-                          </div>
-                          {v.promptVariables.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {v.promptVariables.length} variable{v.promptVariables.length > 1 ? "s" : ""}
-                            </p>
-                          )}
-                        </button>
+                        </div>
 
                         {idx < prompt.versions.length - 1 && <div className="h-2" />}
                       </li>

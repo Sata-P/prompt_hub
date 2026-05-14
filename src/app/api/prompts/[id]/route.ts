@@ -53,10 +53,32 @@ export async function GET(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
     }
 
+    const userId = Number(session.user.id);
+    const userRole = session.user.role?.toUpperCase();
+    const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
+    const isOwner = prompt.owner_id === userId;
+
+    // 1. Filter versions based on status first
+    const visibleVersions = prompt.versions.filter(v => {
+      const vs = v.status.toUpperCase();
+      if (vs === "PUBLISHED") return true;
+      if (vs === "REVIEW") return isOwner || isAdminOrEditor;
+      return isOwner; // DRAFT/REJECTED/ARCHIVED/etc: Only owner
+    });
+
+    // 2. Check prompt-level access based on available versions
+    // If user has access to at least one version, they can see the prompt
+    const canViewPrompt = visibleVersions.length > 0;
+
+    if (!canViewPrompt) {
+      return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
+    }
+
     // Format response
     const formatted = {
       ...prompt,
       tags: prompt.tags.map((pt) => pt.tag),
+      versions: visibleVersions,
     };
 
     return NextResponse.json(formatted);
@@ -122,10 +144,27 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           data: updateData,
         });
 
+        // If sending for review or canceling to draft, sync the latest version status
+        if (status === "REVIEW" || status === "DRAFT") {
+          await tx.prompt_versions.updateMany({
+            where: { 
+              prompt_id: promptId,
+              version_no: updated.latest_version_no
+            },
+            data: { status }
+          });
+        }
+
+        // Determine a more specific action name for the activity log
+        let actionName = "UPDATE_PROMPT_STATUS";
+        if (status === "REVIEW") actionName = "SEND_FOR_REVIEW";
+        else if (status === "DRAFT" && existing.status === "REVIEW") actionName = "CANCEL_REVIEW";
+        else if (status === "PUBLISHED") actionName = "PUBLISH_PROMPT";
+
         await tx.activity_log.create({
           data: {
             user_id: userId,
-            action: "UPDATE_PROMPT_STATUS",
+            action: actionName,
             details: {
               promptId,
               title: existing.title,
@@ -183,6 +222,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           ...(data.categoryId !== undefined && { category_id: data.categoryId }),
           ...(data.recommendedModel !== undefined && { recommended_model: data.recommendedModel }),
           ...(data.visibility !== undefined && { visibility: data.visibility }),
+          ...(data.status !== undefined && { status: data.status }),
           ...(data.isTemplateActive !== undefined && { is_template_active: data.isTemplateActive }),
         },
         include: {

@@ -230,6 +230,7 @@ export default function EditPromptPage() {
     setError("");
 
     try {
+      // 1. Update Metadata (Title, Description, etc.)
       const promptPayload = {
         title,
         description: description || undefined,
@@ -240,33 +241,26 @@ export default function EditPromptPage() {
       
       await axios.patch(`/api/prompts/${id}`, promptPayload);
 
+      // 2. Submit NEW Version (Approval Workflow)
       const versionPayload = {
         templateContent,
-        // ส่ง optionsJson เฉพาะ type === SELECT
-        variables: variables.length > 0
-          ? variables.map(v => ({
-              name: v.name,
-              label: v.label || v.name,
-              type: v.type,
-              description: v.description || undefined,
-              optionsJson: v.type === "SELECT" ? v.options : undefined,
-            }))
-          : undefined
+        variables: variables.map(v => ({
+          name: v.name,
+          type: v.type,
+          label: v.label,
+          description: v.description,
+          optionsJson: v.options,
+        })),
       };
 
       await axios.post(`/api/prompts/${id}/versions`, versionPayload);
 
+      alert("Changes submitted successfully! Your new version is now pending review (if not an Admin/Editor).");
       router.push(`/prompts/${id}`);
 
     } catch (err: any) {
-
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError("Failed to update prompt. Please try again.");
-      }
+      setError(err.response?.data?.error || "Failed to update prompt. Please try again.");
       setSaving(false);
-
     }
   };
 

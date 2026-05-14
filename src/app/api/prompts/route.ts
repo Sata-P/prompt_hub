@@ -42,28 +42,24 @@ export async function GET(request: Request) {
       { deleted_at: null }, // Exclude soft-deleted
     ];
 
-    const userRole = session.user.role;
+    const userRole = session.user.role?.toUpperCase();
 
-    if (visibility === 'PUBLIC') {
-      andConditions.push({ visibility: 'PUBLIC' });
-    } else if (visibility === 'PRIVATE') {
-      andConditions.push({ visibility: 'PRIVATE' });
-      if (userRole === "ADMIN" || userRole === "EDITOR") {
-        andConditions.push({ OR: [{ owner_id: userId }, { status: 'REVIEW' }] });
-      } else {
-        andConditions.push({ owner_id: userId });
-      }
-    } else {
-      // By default show user's own prompts OR any public prompts
-      const defaultOr: any[] = [
-        { owner_id: userId },
-        { visibility: 'PUBLIC' }
-      ];
-      if (userRole === "ADMIN" || userRole === "EDITOR") {
-        defaultOr.push({ status: 'REVIEW' });
-      }
-      andConditions.push({ OR: defaultOr });
+    // Visibility rules:
+    // 1. DRAFT/REJECTED: Only owner
+    // 2. REVIEW: Owner, Admin, Editor
+    // 3. PUBLISHED: Everyone
+    
+    // Simplified visibility logic
+    const defaultOr: any[] = [
+      { status: "PUBLISHED" }, // Everyone
+      { owner_id: userId },    // Owner sees all their own
+    ];
+
+    if (userRole === "ADMIN" || userRole === "EDITOR") {
+      defaultOr.push({ status: "REVIEW" }); // Admins/Editors see all pending reviews
     }
+
+    andConditions.push({ OR: defaultOr });
 
     if (q) {
       andConditions.push({
@@ -194,7 +190,7 @@ export async function POST(request: Request) {
           visibility: data.visibility ?? "PUBLIC",
           owner_id: userId,
           latest_version_no: 1,
-          status: "PUBLISHED",
+          status: data.status ?? (session.user.role === "ADMIN" || session.user.role === "EDITOR" ? "PUBLISHED" : "REVIEW"),
           tags: {
             create: tagRecords.map((t) => ({
               tag_id: t.id,
@@ -213,7 +209,7 @@ export async function POST(request: Request) {
           output_format: data.outputFormat ?? null,
           changelog: "Initial version",
           created_by: userId,
-          status: "PUBLISHED",
+          status: data.status ?? (session.user.role === "ADMIN" || session.user.role === "EDITOR" ? "PUBLISHED" : "REVIEW"),
         },
       });
 
