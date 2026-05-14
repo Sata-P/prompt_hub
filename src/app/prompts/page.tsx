@@ -328,11 +328,12 @@ export default function PromptsList() {
           <table className="w-full text-base font-medium">
             <thead>
               <tr className="border-b bg-muted/20">
-                <th className="w-[35%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Title</th>
-                <th className="w-[15%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Category</th>
-                <th className="w-[20%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Tags</th>
-                <th className="w-[15%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Model</th>
-                <th className="w-[15%] px-5 py-5 text-left font-bold text-foreground capitalize text-lg">Updated</th>
+                <th className="w-[32%] pl-6 pr-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Title</th>
+                <th className="w-[12%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Category</th>
+                <th className="w-[18%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Tags</th>
+                <th className="w-[15%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Model</th>
+                <th className="w-[10%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Status</th>
+                <th className="w-[13%] pl-4 pr-6 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px] whitespace-nowrap">Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -343,19 +344,20 @@ export default function PromptsList() {
                     <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
                     <td className="px-5 py-6"><Skeleton className="h-6 w-28" /></td>
                     <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-20" /></td>
                     <td className="px-5 py-6"><Skeleton className="h-6 w-32" /></td>
                   </tr>
                 ))
               ) : prompts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground border-dashed text-lg">
+                  <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground border-dashed text-lg">
                     No prompts found matching your criteria
                   </td>
                 </tr>
               ) : (
                 prompts.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/30 transition-all duration-300 group">
-                    <td className="px-5 py-5">
+                    <td className="pl-6 pr-4 py-5">
                       <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-bold text-lg">
                         {p.title}
                       </Link>
@@ -363,10 +365,10 @@ export default function PromptsList() {
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{p.description}</p>
                       )}
                     </td>
-                    <td className="px-5 py-5 text-muted-foreground text-base">
+                    <td className="px-4 py-5 text-muted-foreground text-base">
                       {p.category ? p.category.name : "-"}
                     </td>
-                    <td className="px-5 py-5">
+                    <td className="px-4 py-5">
                       <div className="flex flex-wrap gap-1.5">
                         {p.tags.length > 0 ? (
                           <>
@@ -389,10 +391,24 @@ export default function PromptsList() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-5 text-muted-foreground text-base">
+                    <td className="px-4 py-5 text-muted-foreground text-base">
                       {p.recommended_model || "-"}
                     </td>
-                    <td className="px-5 py-5 text-muted-foreground text-base">
+                    <td className="px-4 py-5">
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[10px] font-bold px-2 py-0",
+                          p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                          p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                          p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
+                          p.status === 'ARCHIVED' && "bg-red-500/10 text-red-500 border-red-500/20"
+                        )}
+                      >
+                        {getStatusText(p.status)}
+                      </Badge>
+                    </td>
+                    <td className="pl-4 pr-6 py-5 text-muted-foreground text-base whitespace-nowrap">
                       {new Date(p.updated_at).toISOString().split("T")[0]}
                     </td>
                   </tr>
@@ -429,9 +445,23 @@ export default function PromptsList() {
             >
               <div className="flex justify-between items-start mb-2.5">
                 <h3 className="text-lg font-bold text-foreground line-clamp-1">{p.title}</h3>
-                <Badge variant="outline" className="text-xs shrink-0 ml-2">
-                  v{p.latest_version_no}
-                </Badge>
+                <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
+                  <Badge variant="outline" className="text-[10px] h-5">
+                    v{p.latest_version_no}
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[9px] px-1.5 h-4 font-bold",
+                      p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                      p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                      p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
+                      p.status === 'ARCHIVED' && "bg-red-500/10 text-red-500 border-red-500/20"
+                    )}
+                  >
+                    {getStatusText(p.status)}
+                  </Badge>
+                </div>
               </div>
               
               {p.description && (

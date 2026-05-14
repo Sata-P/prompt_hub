@@ -408,7 +408,7 @@ export default function CollectionDetailsPage() {
       {/* ── Prompts section ── */}
       <div className="space-y-4">
         {/* Section header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-base font-semibold text-foreground">Prompts</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -419,20 +419,20 @@ export default function CollectionDetailsPage() {
           </div>
 
           {promptCount > 0 && (
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search prompts..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 pr-8 h-9 text-sm bg-background"
+                className="pl-9 pr-9 h-10 text-sm bg-background border-border/60 focus:border-primary/50"
               />
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
