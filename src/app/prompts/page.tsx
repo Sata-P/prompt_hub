@@ -28,7 +28,7 @@ type Prompt = {
   updated_at: string;
   category: { id: number; name: string } | null;
   tags: { id: number; name: string }[];
-  recommended_model: string | null;
+  recommended_models: string[] | null;
 };
 
 type ApiResponse = {
@@ -392,7 +392,7 @@ export default function PromptsList() {
                       </div>
                     </td>
                     <td className="px-4 py-5 text-muted-foreground text-base">
-                      {p.recommended_model || "-"}
+                      {p.recommended_models?.length ? p.recommended_models.join(", ") : "-"}
                     </td>
                     <td className="px-4 py-5">
                       <Badge 
@@ -476,9 +476,9 @@ export default function PromptsList() {
                     {p.category.name}
                   </span>
                 )}
-                {p.recommended_model && (
+                {p.recommended_models && p.recommended_models.length > 0 && (
                   <span className="text-muted-foreground border-l pl-3">
-                    {p.recommended_model}
+                    {p.recommended_models.join(", ")}
                   </span>
                 )}
                 <span className="text-muted-foreground ml-auto font-medium">

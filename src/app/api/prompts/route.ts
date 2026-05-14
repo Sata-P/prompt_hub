@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 
     const model = searchParams.get("model")?.trim() || undefined;
     if (model) {
-      andConditions.push({ recommended_model: model });
+      andConditions.push({ recommended_models: { has: model } });
     }
 
     if (categoryId) {
@@ -188,7 +188,7 @@ export async function POST(request: Request) {
           title: data.title,
           description: data.description ?? null,
           category_id: data.categoryId ?? null,
-          recommended_model: data.recommendedModel ?? null,
+          recommended_models: data.recommendedModels,
           visibility: data.visibility ?? "PUBLIC",
           owner_id: userId,
           latest_version_no: 1,

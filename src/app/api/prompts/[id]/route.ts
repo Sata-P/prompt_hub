@@ -220,7 +220,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           ...(data.title !== undefined && { title: data.title }),
           ...(data.description !== undefined && { description: data.description }),
           ...(data.categoryId !== undefined && { category_id: data.categoryId }),
-          ...(data.recommendedModel !== undefined && { recommended_model: data.recommendedModel }),
+          ...(data.recommendedModels !== undefined && { recommended_models: data.recommendedModels }),
           ...(data.visibility !== undefined && { visibility: data.visibility }),
           ...(data.status !== undefined && { status: data.status }),
           ...(data.isTemplateActive !== undefined && { is_template_active: data.isTemplateActive }),

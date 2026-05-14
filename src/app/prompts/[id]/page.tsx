@@ -40,7 +40,7 @@ type PromptDetail = {
   owner: { id: number; name: string; email: string };
   tags: { id: number; name: string }[];
   versions: Version[];
-  recommended_model: string | null;
+  recommended_models: string[] | null;
 };
 
 /**
@@ -526,7 +526,7 @@ export default function PromptDetailPage() {
 
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Model</div>
-                <div className="text-sm">{prompt.recommended_model || "gpt-4.1"}</div>
+                <div className="text-sm">{prompt.recommended_models?.length ? prompt.recommended_models.join(", ") : "gpt-4.1"}</div>
               </div>
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Versions</div>
