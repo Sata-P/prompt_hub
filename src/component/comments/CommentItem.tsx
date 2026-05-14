@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo, useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { UserCircle, Reply, MessageCircle, Bold, Italic, List, ListOrdered,File,Download } from "lucide-react";
+import { UserCircle, Reply, Bold, Italic, List, ListOrdered, File, Download, Paperclip, X } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import DOMPurify from "dompurify";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { cn } from "@/lib/utils";
 
 export type Comment = {
   id: number;
@@ -17,68 +18,194 @@ export type Comment = {
   prompt_id: number;
   parent_id: number | null;
   created_at: string;
-  user: {
-    id: number;
-    name: string;
-  };
+  user: { id: number; name: string };
   replies?: Comment[];
 };
 
 type CommentItemProps = {
   comment: Comment;
   currentUserId?: number;
-  onReply: (parentId: number, content: string) => Promise<void>;
+  onReply: (parentId: number, content: string, file: File | null) => Promise<void>;
   onDelete: (commentId: number) => Promise<void>;
   onEdit: (commentId: number, content: string) => Promise<void>;
   isReply?: boolean;
 };
 
-const MenuBar = ({ editor }: { editor: any }) => {
-  if (!editor) return null;
+// ── Inline edit editor — only mounted when editing ─────────────────────────
+function EditEditor({
+  initialContent,
+  onSave,
+  onCancel,
+}: {
+  initialContent: string;
+  onSave: (html: string) => void;
+  onCancel: () => void;
+}) {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: initialContent,
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60px] px-3 py-2 text-sm text-foreground",
+      },
+    },
+  });
+
+  const toolbarButtons = [
+    { icon: Bold,         cmd: "toggleBold",        active: "bold",        label: "Bold" },
+    { icon: Italic,       cmd: "toggleItalic",      active: "italic",      label: "Italic" },
+    { icon: List,         cmd: "toggleBulletList",  active: "bulletList",  label: "Bullet list" },
+    { icon: ListOrdered,  cmd: "toggleOrderedList", active: "orderedList", label: "Ordered list" },
+  ] as const;
 
   return (
-    <div className="flex flex-wrap gap-1 p-1 border-b border-border/50 bg-muted/30">
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`h-7 w-7 ${editor.isActive("bold") ? "bg-primary/20 text-primary" : ""}`}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        type="button"
-      >
-        <Bold className="h-3.5 w-3.5" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`h-7 w-7 ${editor.isActive("italic") ? "bg-primary/20 text-primary" : ""}`}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        type="button"
-      >
-        <Italic className="h-3.5 w-3.5" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`h-7 w-7 ${editor.isActive("bulletList") ? "bg-primary/20 text-primary" : ""}`}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        type="button"
-      >
-        <List className="h-3.5 w-3.5" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`h-7 w-7 ${editor.isActive("orderedList") ? "bg-primary/20 text-primary" : ""}`}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        type="button"
-      >
-        <ListOrdered className="h-3.5 w-3.5" />
-      </Button>
+    
+    <div className="mt-2 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-border/50 bg-muted/20">
+        {toolbarButtons.map((btn) => (
+          <Button
+            key={btn.label}
+            variant="ghost"
+            size="icon"
+            type="button"
+            title={btn.label}
+            // preventDefault keeps editor focused when clicking toolbar
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => (editor?.chain().focus() as any)[btn.cmd]().run()}
+            className="h-7 w-7 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <btn.icon className="h-3.5 w-3.5" />
+          </Button>
+        ))}
+      </div>
+
+      <EditorContent editor={editor} />
+
+      <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
+        <Button size="sm" variant="ghost" className="rounded-full" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          className="rounded-full px-4"
+          disabled={!editor || editor.isEmpty}
+          onClick={() => editor && onSave(editor.getHTML())}
+        >
+          Save
+        </Button>
+      </div>
     </div>
   );
-};
+}
 
-export default function CommentItem({
+// ── Inline reply editor ─────────────────────────────────────────────────────
+function ReplyEditor({
+  onSave,
+  onCancel,
+}: {
+  onSave: (html: string, file: File | null) => void;
+  onCancel: () => void;
+}) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editor = useEditor({
+    extensions: [StarterKit, Placeholder.configure({ placeholder: "Write a reply..." })],
+    content: "",
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60px] px-3 py-2 text-sm text-foreground",
+      },
+    },
+  });
+
+  const toolbarButtons = [
+    { icon: Bold,         cmd: "toggleBold",        active: "bold",        label: "Bold" },
+    { icon: Italic,       cmd: "toggleItalic",      active: "italic",      label: "Italic" },
+    { icon: List,         cmd: "toggleBulletList",  active: "bulletList",  label: "Bullet list" },
+    { icon: ListOrdered,  cmd: "toggleOrderedList", active: "orderedList", label: "Ordered list" },
+  ] as const;
+
+  return (
+    <div className="mt-3 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50 shadow-sm">
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && setSelectedFile(e.target.files[0])}
+      />
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-border/50 bg-muted/20">
+        {toolbarButtons.map((btn) => (
+          <Button
+            key={btn.label}
+            variant="ghost"
+            size="icon"
+            type="button"
+            title={btn.label}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => (editor?.chain().focus() as any)[btn.cmd]().run()}
+            className="h-7 w-7 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <btn.icon className="h-3.5 w-3.5" />
+          </Button>
+        ))}
+        <div className="w-px h-4 bg-border/50 mx-0.5 self-center" />
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          title="Attach file"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+          className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-muted/50"
+        >
+          <Paperclip className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <EditorContent editor={editor} />
+
+      {selectedFile && (
+        <div className="px-3 py-1.5 bg-muted/20 border-t border-border/30 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+            <File className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="truncate">{selectedFile.name}</span>
+            <span className="opacity-60 shrink-0">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+          </div>
+          <button onClick={() => setSelectedFile(null)} className="p-1 hover:bg-muted rounded-full transition-colors shrink-0">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
+        <Button size="sm" variant="ghost" className="rounded-full" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          className="rounded-full px-4"
+          disabled={(!editor || editor.isEmpty) && !selectedFile}
+          onClick={() => {
+            if (editor && (!editor.isEmpty || selectedFile)) {
+              onSave(editor.getHTML(), selectedFile);
+            }
+          }}
+        >
+          Reply
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main comment item ───────────────────────────────────────────────────────
+const CommentItem = memo(function CommentItem({
   comment,
   currentUserId,
   onReply,
@@ -86,42 +213,34 @@ export default function CommentItem({
   onEdit,
   isReply = false,
 }: CommentItemProps) {
-  const [isReplying, setIsReplying] = useState(false);
-  const [replyContent, setReplyContent] = useState("");
+  const [isReplying, setIsReplying]   = useState(false);
   const [showReplies, setShowReplies] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing]     = useState(false);
 
-  // Sanitize HTML content
-  const sanitizedContent = useMemo(() => {
-    return DOMPurify.sanitize(comment.content);
-  }, [comment.content]);
+  const sanitizedContent = useMemo(
+    () => DOMPurify.sanitize(comment.content),
+    [comment.content],
+  );
 
-  const editEditor = useEditor({
-    extensions: [StarterKit],
-    content: comment.content,
-    editorProps: {
-      attributes: {
-        class: "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60px] px-3 py-2 text-sm text-foreground",
-      },
-    },
-  });
-
-  const handleReplySubmit = async () => {
-    if (!replyContent.trim()) return;
-    await onReply(comment.id, replyContent);
-    setReplyContent("");
+  const handleReplySubmit = useCallback(async (html: string, file: File | null) => {
+    // If the editor is empty (e.g. only <p></p>) and there's no file, do nothing.
+    const isEmptyHTML = html === "<p></p>" || html.trim() === "";
+    if (isEmptyHTML && !file) return;
+    
+    await onReply(comment.id, html, file);
     setIsReplying(false);
     setShowReplies(true);
-  };
+  }, [comment.id, onReply]);
 
-  const handleEditSubmit = async () => {
-    if (!editEditor || editEditor.isEmpty) return;
-    const htmlContent = editEditor.getHTML();
-    await onEdit(comment.id, htmlContent);
-    setIsEditing(false);
-  };
+  const handleSaveEdit = useCallback(
+    async (html: string) => {
+      await onEdit(comment.id, html);
+      setIsEditing(false);
+    },
+    [comment.id, onEdit],
+  );
 
-  const hasReplies = comment.replies && comment.replies.length > 0;
+  const hasReplies = (comment.replies?.length ?? 0) > 0;
 
   return (
     <div className={`flex gap-3 ${isReply ? "mt-3" : "mt-6"}`}>
@@ -132,45 +251,42 @@ export default function CommentItem({
 
       {/* Content */}
       <div className="flex-1 space-y-1">
-        {/* Name and Date */}
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-white">
-            {comment.user.name}
-          </span>
-          <span className="text-[11px] text-gray-500 flex items-center gap-1.5" title={new Date(comment.created_at).toLocaleString()}>
-            <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+        {/* Name + date */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm text-foreground">{comment.user.name}</span>
+          <span
+            className="text-[11px] text-gray-500 flex items-center gap-1"
+            title={new Date(comment.created_at).toLocaleString()}
+          >
+            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
             <span className="opacity-50">·</span>
-            <span>{new Date(comment.created_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+            {new Date(comment.created_at).toLocaleDateString("en-GB", {
+              day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+            })}
           </span>
         </div>
 
-        {/* Comment Bubble */}
+        {/* Bubble / edit form */}
         <div className="flex flex-col items-start gap-2">
           {isEditing ? (
-            <div className="mt-2 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50">
-              <MenuBar editor={editEditor} />
-              <EditorContent editor={editEditor} />
-              <div className="flex justify-end gap-2 p-2 border-t border-border/30 bg-muted/10">
-                <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); editEditor?.commands.setContent(comment.content); }} className="rounded-full transition-all duration-300 hover:scale-105 active:scale-95">
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleEditSubmit} className="rounded-full px-4 transition-all duration-300 hover:scale-105 active:scale-95" disabled={!editEditor || editEditor.isEmpty}>
-                  Save
-                </Button>
-              </div>
-            </div>
+            /* EditEditor is only mounted when editing → no wasted resources */
+            <EditEditor
+              initialContent={comment.content}
+              onSave={handleSaveEdit}
+              onCancel={() => setIsEditing(false)}
+            />
           ) : (
-            <div 
-              className="bg-slate-800 rounded-2xl px-4 py-2 text-sm text-white inline-block prose prose-sm dark:prose-invert max-w-none shadow-sm"
+            <div
+              className="bg-secondary/40 border border-border/30 rounded-2xl px-4 py-2.5 text-sm text-foreground inline-block prose prose-sm dark:prose-invert max-w-none shadow-sm backdrop-blur-sm"
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
           )}
 
-          {/* Attachment Display */}
+          {/* Attachment */}
           {comment.attachment_url && !isEditing && (
-            <a 
-              href={comment.attachment_url} 
-              target="_blank" 
+            <a
+              href={comment.attachment_url}
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-2 bg-muted/30 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors group max-w-[280px]"
             >
@@ -179,10 +295,11 @@ export default function CommentItem({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-medium text-foreground truncate">
-                  {comment.attachment_url.split('/').pop()}
+                  {comment.attachment_url.split("/").pop()}
                 </p>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  Click to download <Download className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  Click to download
+                  <Download className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </p>
               </div>
             </a>
@@ -190,66 +307,42 @@ export default function CommentItem({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-4 text-xs font-medium text-gray-500 mt-1 pl-2">
-          {!isReply && !isEditing && (
-            <button
-              onClick={() => setIsReplying(!isReplying)}
-              className="hover:text-blue-600 transition-colors"
-            >
-              Reply
-            </button>
-          )}
-          
-          {(currentUserId === comment.user_id) && !isEditing && (
-            <>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="hover:text-blue-600 transition-colors"
-              >
-                Edit
+        {!isEditing && (
+          <div className="flex items-center gap-4 text-xs font-medium text-gray-500 mt-1 pl-2">
+            {!isReply && (
+              <button onClick={() => setIsReplying((v) => !v)} className="hover:text-blue-600 transition-colors">
+                Reply
               </button>
-              <button
-                onClick={() => {
-                  if (confirm("Are you sure you want to delete this comment?")) {
-                    onDelete(comment.id);
-                  }
-                }}
-                className="hover:text-red-600 transition-colors"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Reply Input Form */}
-        {isReplying && (
-          <div className="mt-3 flex gap-2">
-            <input
-              type="text"
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder={`Reply to ${comment.user.name}...`}
-              className="flex-1 text-sm border-gray-300 rounded-full px-4 py-1.5 focus:border-blue-500 focus:ring-blue-500 outline-none border"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleReplySubmit();
-              }}
-            />
-            <Button size="sm" onClick={handleReplySubmit} className="rounded-full px-4 transition-all duration-300 hover:scale-105 active:scale-95" disabled={!replyContent.trim()}>
-              Post
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setIsReplying(false)} className="rounded-full transition-all duration-300 hover:scale-105 active:scale-95">
-              Cancel
-            </Button>
+            )}
+            {currentUserId === comment.user_id && (
+              <>
+                <button onClick={() => setIsEditing(true)} className="hover:text-blue-600 transition-colors">
+                  Edit
+                </button>
+                <button
+                  onClick={() => confirm("Delete this comment?") && onDelete(comment.id)}
+                  className="hover:text-red-600 transition-colors"
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         )}
 
-        {/* Nested Replies Toggle */}
+        {/* Reply input */}
+        {isReplying && (
+          <ReplyEditor
+            onSave={handleReplySubmit}
+            onCancel={() => setIsReplying(false)}
+          />
+        )}
+
+        {/* Replies toggle */}
         {hasReplies && !isReply && (
           <div className="mt-2 pl-2">
             <button
-              onClick={() => setShowReplies(!showReplies)}
+              onClick={() => setShowReplies((v) => !v)}
               className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
             >
               <Reply className="w-4 h-4 rotate-180" />
@@ -258,7 +351,6 @@ export default function CommentItem({
           </div>
         )}
 
-        {/* Nested Replies List */}
         {showReplies && hasReplies && (
           <div className="pl-4 border-l-2 border-gray-200 mt-2 space-y-3">
             {comment.replies!.map((reply) => (
@@ -269,7 +361,7 @@ export default function CommentItem({
                 onReply={onReply}
                 onDelete={onDelete}
                 onEdit={onEdit}
-                isReply={true}
+                isReply
               />
             ))}
           </div>
@@ -277,4 +369,6 @@ export default function CommentItem({
       </div>
     </div>
   );
-}
+});
+
+export default CommentItem;

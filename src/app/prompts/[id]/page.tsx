@@ -232,7 +232,7 @@ export default function PromptDetailPage() {
 
   return (
     <div className="pb-20">
-      {hasPendingReview && isOwnerOrAdmin && (
+      {hasPendingReview && (isOwnerOrAdmin || isAdminOrEditor) && (
         <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between gap-3 text-yellow-800">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-600" />
