@@ -20,9 +20,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-inter);
-  --font-mono: var(--font-mono);
+  --font-sans: var(--font-ibm-plex-thai), sans-serif;
+  --font-heading: var(--font-ibm-plex-thai), sans-serif;
+  --font-mono: var(--font-mono), monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -37,6 +37,15 @@
   --color-sidebar: var(--sidebar);
   --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+
+  /* ── Custom Typography Scale ── */
+  --font-size-display: 2.5rem;
+  --font-size-h1: 2rem;
+  --font-size-h2: 1.5rem;
+  --font-size-body-lg: 1.125rem;
+  --font-size-body: 1rem;
+  --font-size-caption: 0.875rem;
+  --font-size-label: 0.75rem;
 }
 
 /* ── Dark Navy + Orange Design System ── */
@@ -46,7 +55,7 @@
   --foreground: #EEE9FF;
 
   /* Surface / Card: dark purple with subtle transparency */
-  --card: #130a2e;
+  --card: #10071C;
   --card-foreground: #EEE9FF;
   --popover: #160d33;
   --popover-foreground: #EEE9FF;
@@ -80,16 +89,16 @@
   --radius: 0.625rem;
 
   /* ── Sidebar: deep navy-purple gradient with orange bottom ── */
-  --sidebar: linear-gradient(-310deg, #AC270B 0%, #5F1321 10%, #130a2e 45%, #0d0829 100%);
-  --sidebar-foreground: #F0ECFF;
+  --sidebar: #0A0A14;
+  --sidebar-foreground: #94A3B8;
   --sidebar-primary: #F97316;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: rgba(249, 115, 22, 0.12);
-  --sidebar-accent-foreground: #FB923C;
-  --sidebar-border: rgba(88, 28, 135, 0.35);
-  --sidebar-ring: rgba(249, 115, 22, 0.4);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-ring: #F97316;
   --sidebar-muted: rgba(255, 255, 255, 0.04);
-  --sidebar-muted-foreground: #9d8ec4;
+  --sidebar-muted-foreground: #94A3B8;
 }
 
 * {
@@ -100,10 +109,11 @@
 [data-slot="card"] {
   /* Solid gradient border: orange → purple → violet */
   background:
-    linear-gradient(#130a2e, #130a2e) padding-box,
+    linear-gradient(var(--card), var(--card)) padding-box,
     linear-gradient(135deg,
       #F97316 0%,
-      #a855f7 55%,
+      rgba(249, 115, 22, 0.1) 45%,
+      rgba(124, 58, 237, 0.1) 65%,
       #7c3aed 100%) border-box !important;
   border: 1px solid transparent !important;
   color: var(--card-foreground) !important;
@@ -127,18 +137,48 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
   line-height: 1.6;
-  font-size: 1.05rem;
+  font-size: var(--font-size-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (min-width: 768px) {
-  body {
-    font-size: 1.1rem;
-  }
+h1,
+.text-h1 {
+  font-size: var(--font-size-h1);
+  line-height: 1.2;
+  font-weight: 700;
 }
+
+h2,
+.text-h2 {
+  font-size: var(--font-size-h2);
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.text-display {
+  font-size: var(--font-size-display);
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.text-body-lg {
+  font-size: var(--font-size-body-lg);
+}
+
+.text-caption {
+  font-size: var(--font-size-caption);
+  color: var(--sidebar-muted-foreground);
+}
+
+.text-label {
+  font-size: var(--font-size-label);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
 
 h1,
 h2,
@@ -152,9 +192,20 @@ h6 {
   font-weight: 700;
 }
 
-h1 { font-size: 2.5rem; line-height: 1.2; }
-h2 { font-size: 2rem; line-height: 1.3; }
-h3 { font-size: 1.75rem; line-height: 1.4; }
+h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.75rem;
+  line-height: 1.4;
+}
 
 /* Monospace for prompt templates */
 code,
@@ -237,6 +288,16 @@ pre,
   animation-delay: 300ms;
 }
 
+/* ── Utility to hide scrollbars ── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ── Prompt code block styling ── */
 .prompt-template {
   font-family: var(--font-mono), monospace;
@@ -252,7 +313,8 @@ pre,
 }
 
 /* ── TipTap List Fixes ── */
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   padding-left: 1.5rem !important;
   margin-top: 0.75rem !important;
   margin-bottom: 0.75rem !important;
@@ -270,7 +332,7 @@ pre,
   margin-bottom: 0.25rem !important;
 }
 
-.prose li > p {
+.prose li>p {
   margin: 0 !important;
   display: inline;
 }
@@ -284,16 +346,13 @@ pre,
   margin-bottom: 0.5rem;
 }
 
-.sidebar-custom-bg {
-  color: #FB923C;
-  font-weight: 600;
-  background: rgba(249, 115, 22, 0.12);
-  border-radius: 3px;
-  padding: 0 3px;
-}
+
 
 .sidebar-custom-bg {
-  background: var(--sidebar) !important;
+  /* Very dark base with a radial glow originating from bottom-left */
+  background:
+    radial-gradient(circle at 0% 100%, rgba(249, 116, 22, 0.875) 0%, rgba(206, 88, 14, 0.359) 25%, rgba(95, 19, 33, 0.05) 50%, transparent 100%),
+    #0A0A14 !important;
 }
 
 .glow-orange {

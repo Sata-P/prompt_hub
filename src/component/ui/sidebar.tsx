@@ -27,7 +27,7 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH = "280px"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
@@ -226,7 +226,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "group peer hidden text-sidebar-foreground md:block shrink-0 transition-[width] duration-200 ease-linear w-[--sidebar-width]",
+          "group peer hidden text-sidebar-foreground min-[1300px]:block shrink-0 transition-[width] duration-200 ease-linear w-[--sidebar-width]",
           "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
           "group-data-[collapsible=offcanvas]:w-0",
         )}
@@ -237,7 +237,7 @@ const Sidebar = React.forwardRef<
       >
         <div
           className={cn(
-            "sticky top-0 z-10 hidden h-full w-full md:flex flex-col bg-sidebar",
+            "sticky top-0 z-10 hidden h-full w-full min-[1300px]:flex flex-col bg-sidebar",
             side === "left" ? "border-r" : "border-l",
             className
           )}
@@ -275,7 +275,7 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft />
+      {props.children || <PanelLeft />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
