@@ -22,9 +22,16 @@ import {
   Search,
   X,
   FlaskConical,
+  Layers,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/component/ui/tooltip";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/component/ui/card";
 import { Button } from "@/component/ui/button";
@@ -83,6 +90,22 @@ type PromptRun = {
 // -------------------------------------------------------
 
 const ITEMS_PER_PAGE = 9;
+
+// Status badge matching the collections/[id] pattern
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
+    DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
+    REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+  };
+  const s = map[status] ?? { label: status, cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+  return (
+    <span className={`inline-flex items-center px-1.5 h-4 rounded text-[10px] font-bold border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+}
 
 function PlaygroundContent() {
   const searchParams = useSearchParams();
@@ -239,12 +262,16 @@ function PlaygroundContent() {
           "/api/prompts?visibility=PUBLIC&status=PUBLISHED&limit=20",
           { signal: controller.signal }
         );
-        if (!res.ok) throw new Error("Failed to fetch public prompts");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to fetch public prompts (${res.status})`);
+        }
         const data = await res.json();
         setPublicPrompts(data.data || []);
       } catch (err: any) {
         if (err.name === "AbortError") return;
-        console.error("Failed to fetch public prompts:", err);
+        console.error("Playground: Failed to fetch public prompts:", err);
+        toast.error(err.message || "Could not load public prompts");
       } finally {
         if (!controller.signal.aborted) {
           setLoadingList(false);
@@ -493,24 +520,24 @@ function PlaygroundContent() {
   // -------------------------------------------------------
   if (!promptId) {
     return (
-      <div className="pb-20 max-w-6xl mx-auto space-y-6 pt-4 px-4 fade-in-up">
+      <div className="pb-20 space-y-6 fade-in-up">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <PlayCircle className="h-4 w-4 text-primary" />
+              <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+                <PlayCircle className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+              <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground font-heading">
                 Prompt Playground
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm xl:text-base text-muted-foreground">
               Select a Prompt to test with an AI Model
             </p>
           </div>
           {!loadingList && publicPrompts.length > 0 && (
-            <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3.5 py-1.5 rounded-full">
-              <FlaskConical className="h-3.5 w-3.5" />
+            <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm xl:text-base font-medium px-3.5 py-1.5 xl:px-4 xl:py-2 rounded-full">
+              <FlaskConical className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
               {filteredPrompts.length} prompt{filteredPrompts.length !== 1 ? "s" : ""}
             </div>
           )}
@@ -518,14 +545,14 @@ function PlaygroundContent() {
 
         {/* Search bar */}
         {!loadingList && publicPrompts.length > 0 && (
-          <div className="relative mb-6 max-w-sm">
+          <div className="relative mb-6 max-w-sm xl:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search prompts..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-9 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-9 xl:h-10 pl-9 pr-9 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
             />
             {search && (
               <button
@@ -539,9 +566,19 @@ function PlaygroundContent() {
         )}
 
         {loadingList ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-xl" />
+              <div key={i} className="bg-card border border-border rounded-xl px-6 py-5 space-y-3 h-full min-h-[160px]" role="status" aria-busy="true">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <div className="flex-1" />
+                <div className="pt-3 border-t border-border flex justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
             ))}
           </div>
         ) : publicPrompts.length === 0 ? (
@@ -566,25 +603,74 @@ function PlaygroundContent() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pagedPrompts.map((p) => (
-                <Card
-                  key={p.id}
-                  className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md bg-card group"
-                  onClick={() => router.push(`/playground?promptId=${p.id}`)}
-                >
-                  <CardHeader>
-                    <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors">
-                      {p.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {p.description || "No description available"}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {pagedPrompts.map((p) => {
+                const recommendedModel = Array.isArray(p.recommended_models)
+                  ? p.recommended_models[0]
+                  : p.recommended_model ?? null;
+                return (
+                  <div
+                    key={p.id}
+                    data-slot="card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(`/playground?promptId=${p.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/playground?promptId=${p.id}`);
+                      }
+                    }}
+                    className="group relative flex flex-col rounded-xl px-6 py-5 border bg-card transition-all duration-300 ease-in-out hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:scale-[1.01] active:scale-95 cursor-pointer h-full min-h-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[20px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
+                          {p.title}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {p.status && <StatusBadge status={p.status} />}
+                          {p.category && (
+                            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                              {p.category.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {p.description && (
+                      <p className="mt-3 text-sm text-muted-foreground line-clamp-2 text-left">
+                        {p.description}
+                      </p>
+                    )}
+
+                    <div className="flex-1" />
+
+                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <Layers className="h-3 w-3" />
+                          v{p.latest_version_no ?? 1}
+                        </span>
+                        {recommendedModel && (
+                          <span className="hidden sm:block truncate max-w-[100px] opacity-60 text-[11px]">
+                            {recommendedModel}
+                          </span>
+                        )}
+                      </div>
+                      {p.updated_at && (
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Clock className="h-3 w-3" />
+                          {new Date(p.updated_at).toLocaleDateString("en-GB", {
+                            day: "numeric", month: "short", year: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Pagination controls */}
@@ -599,6 +685,7 @@ function PlaygroundContent() {
                     size="sm"
                     disabled={listPage <= 1}
                     onClick={() => setListPage(p => p - 1)}
+                    className="transition-all duration-300 hover:scale-105 active:scale-95"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
@@ -608,6 +695,7 @@ function PlaygroundContent() {
                     size="sm"
                     disabled={listPage >= totalListPages}
                     onClick={() => setListPage(p => p + 1)}
+                    className="transition-all duration-300 hover:scale-105 active:scale-95"
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />
@@ -625,27 +713,27 @@ function PlaygroundContent() {
   // Main Playground UI
   // -------------------------------------------------------
   return (
-    <div className="pb-20 max-w-7xl mx-auto space-y-5 pt-4 px-4 fade-in-up">
+    <div className="pb-20 space-y-5 fade-in-up">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-        <div>
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Sparkles className="h-4 w-4 xl:h-5 xl:w-5 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+            <h1 className="text-xl sm:text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground font-heading truncate">
               {promptTitle || "Prompt Playground"}
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm xl:text-base text-muted-foreground">
             Enter variables, select a model, and click Run to test with AI
           </p>
         </div>
 
         {/* Provider + Model + Settings */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Select value={provider} onValueChange={(v) => setProvider(v as LLMProvider)}>
-            <SelectTrigger className="w-[160px] h-9 bg-background">
+            <SelectTrigger className="w-full sm:w-[140px] md:w-[160px] h-9 bg-background">
               <SelectValue placeholder="Provider" />
             </SelectTrigger>
             <SelectContent>
@@ -657,10 +745,10 @@ function PlaygroundContent() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <Bot className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[200px] h-9 bg-background">
+              <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-9 bg-background">
                 <SelectValue placeholder="Select Model" />
               </SelectTrigger>
               <SelectContent>
@@ -676,7 +764,7 @@ function PlaygroundContent() {
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9"
+            className="h-9 w-9 shrink-0 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 hover:border-primary hover:text-primary"
             onClick={() => setShowSystemPrompt(!showSystemPrompt)}
             title="System Prompt Settings"
           >
@@ -693,8 +781,8 @@ function PlaygroundContent() {
               <Sparkles className="h-3.5 w-3.5 text-amber-600" />
               {PROVIDERS.find((p) => p.id === provider)?.name} API Key
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Your key is sent only for this single request and is never stored on our servers or in the browser. It is also cleared from this field after every Run.
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">
+              Your key is sent only for this request and is never stored.
             </p>
           </div>
           <Input
@@ -706,9 +794,6 @@ function PlaygroundContent() {
             }
             value={apiKey}
             onChange={(e) => {
-              // Normalize smart-quotes / em dashes that some editors insert
-              // on copy-paste, and strip any remaining non-ASCII character
-              // so the value can always be put in the Authorization header.
               const sanitized = e.target.value
                 .replace(/[\u2012\u2013\u2014\u2015]/g, "-")
                 .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
@@ -716,7 +801,7 @@ function PlaygroundContent() {
                 .replace(/[^\x20-\x7E]/g, "");
               setApiKey(sanitized);
             }}
-            className="sm:w-[320px] h-9 bg-background font-mono text-xs"
+            className="w-full sm:w-[280px] md:w-[320px] h-9 bg-background font-mono text-xs"
           />
         </CardContent>
       </Card>
@@ -763,7 +848,7 @@ function PlaygroundContent() {
       <div className="flex flex-col gap-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Left: Variables */}
-          <Card className="shadow-sm flex flex-col lg:col-span-4 min-h-[350px]">
+          <Card className="shadow-sm flex flex-col lg:col-span-4 min-h-[300px] sm:min-h-[350px]">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Variables</CardTitle>
           </CardHeader>
@@ -786,7 +871,6 @@ function PlaygroundContent() {
                   const isMultiline =
                     typeUpper === "TEXTAREA" ||
                     v.name.toLowerCase().includes("content");
-                  // รองรับทั้งกรณีที่ Prisma คืน array, string-encoded JSON, หรือ null
                   let options: string[] = [];
                   if (Array.isArray(v.options_json)) {
                     options = v.options_json as string[];
@@ -832,7 +916,7 @@ function PlaygroundContent() {
                       ) : isMultiline ? (
                         <Textarea
                           placeholder={v.name}
-                          className="min-h-[120px] resize-y bg-background text-sm"
+                          className="min-h-[100px] sm:min-h-[120px] resize-y bg-background text-sm"
                           value={variableValues[v.name] || ""}
                           onChange={(e) =>
                             setVariableValues((prev) => ({
@@ -864,7 +948,7 @@ function PlaygroundContent() {
             <div className="pt-3 mt-auto">
               {isRunning ? (
                 <Button
-                  className="w-full h-11 font-semibold transition-transform active:scale-95"
+                  className="w-full h-11 font-semibold transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95"
                   variant="destructive"
                   onClick={handleStop}
                 >
@@ -873,7 +957,7 @@ function PlaygroundContent() {
                 </Button>
               ) : (
                 <Button
-                  className="w-full h-11 font-semibold shadow-lg shadow-primary/20 transition-transform active:scale-95"
+                  className="w-full h-11 font-semibold shadow-lg shadow-primary/20 transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95"
                   onClick={handleRunPrompt}
                   disabled={!selectedModel || !apiKey.trim()}
                   title={!apiKey.trim() ? "Enter your API key first" : undefined}
@@ -887,21 +971,21 @@ function PlaygroundContent() {
         </Card>
 
         {/* Right: Rendered Prompt */}
-        <Card className="shadow-sm flex flex-col lg:col-span-8 min-h-[350px]">
-          <CardHeader className="pb-3">
+        <Card className="shadow-sm flex flex-col lg:col-span-8 min-h-[300px] sm:min-h-[350px]">
+          <CardHeader className="pb-3 px-4 sm:px-6">
             <div className="flex flex-row items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-sm font-medium">
                   Rendered Prompt
                 </CardTitle>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
                   live
                 </Badge>
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1.5 text-xs"
+                className="h-7 gap-1.5 text-xs transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5 hover:border-primary/30"
                 onClick={handleCopy}
                 disabled={!renderedPrompt}
                 title="Copy Rendered Prompt to clipboard"
@@ -909,18 +993,18 @@ function PlaygroundContent() {
                 {isCopied ? (
                   <>
                     <Check className="h-3.5 w-3.5 text-green-500" />
-                    <span className="text-green-600">Copied</span>
+                    <span className="text-green-600 hidden sm:inline">Copied</span>
                   </>
                 ) : (
                   <>
                     <Copy className="h-3.5 w-3.5" />
-                    <span>Copy</span>
+                    <span className="hidden sm:inline">Copy</span>
                   </>
                 )}
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="p-0 flex-1 relative">
+          <CardContent className="p-0 flex-1 relative mx-4 sm:mx-6 mb-4">
             {loading ? (
               <div className="p-5">
                 <Skeleton className="h-4 w-full mb-3" />
@@ -929,7 +1013,7 @@ function PlaygroundContent() {
                 <Skeleton className="h-4 w-3/4" />
               </div>
             ) : (
-              <div className="absolute inset-x-4 top-0 bottom-4 overflow-auto rounded-lg bg-muted/30 shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed font-mono text-white">
+              <div className="absolute inset-0 overflow-auto rounded-lg bg-muted/30 shadow-inner border border-border/50 px-3 sm:px-4 py-3 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-mono text-white">
                 {renderedPrompt || (
                   <span className="text-muted-foreground italic text-xs">
                     prompt preview...
@@ -944,7 +1028,7 @@ function PlaygroundContent() {
 
         {/* Bottom: LLM Response */}
         <Card className="shadow-sm flex flex-col min-h-[400px] w-full">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 px-4 sm:px-6">
             <div className="flex flex-row items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-sm font-medium">
@@ -953,7 +1037,7 @@ function PlaygroundContent() {
                 {isRunning && (
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-xs text-primary animate-pulse font-medium">
+                    <span className="text-[10px] sm:text-xs text-primary animate-pulse font-medium">
                       generating...
                     </span>
                   </div>
@@ -963,7 +1047,7 @@ function PlaygroundContent() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground"
+                  className="h-7 w-7 text-muted-foreground transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 hover:text-primary hover:bg-primary/10"
                   onClick={handleCopyResponse}
                   title="Copy Response"
                 >
@@ -976,18 +1060,18 @@ function PlaygroundContent() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-0 flex-1 flex flex-col relative">
+          <CardContent className="p-0 flex-1 flex flex-col relative mx-4 sm:mx-6 mb-16">
             {/* Response Content */}
             <div
               ref={responseRef}
-              className="absolute inset-x-4 top-0 bottom-16 overflow-auto rounded-lg bg-gradient-to-b from-primary/[0.02] to-transparent shadow-inner border border-border/50 px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed text-white"
+              className="absolute inset-0 overflow-auto rounded-lg bg-gradient-to-b from-primary/[0.02] to-transparent shadow-inner border border-border/50 px-3 sm:px-4 py-3 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed text-white"
             >
               {llmResponse ? (
                 llmResponse
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground/50">
-                  <Bot className="h-10 w-10 mb-3 opacity-30" />
-                  <span className="text-xs">
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground/50 text-center px-4">
+                  <Bot className="h-8 w-8 sm:h-10 sm:w-10 mb-3 opacity-30" />
+                  <span className="text-[10px] sm:text-xs">
                     Click Run Prompt to see the AI response
                   </span>
                 </div>
@@ -995,17 +1079,14 @@ function PlaygroundContent() {
             </div>
 
             {/* Metrics Bar */}
-            <div className="absolute bottom-0 left-0 right-0 px-4 pb-3">
+            <div className="absolute -bottom-14 left-0 right-0 py-3">
               {(usage || executionTime) && (
-                <div className="flex items-center gap-4 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 border">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 border">
                   {responseModel && (
                     <div className="flex items-center gap-1">
                       <Bot className="h-3 w-3" />
                       <span className="font-medium">{responseModel}</span>
                     </div>
-                  )}
-                  {responseModel && (usage || executionTime) && (
-                    <Separator orientation="vertical" className="h-3" />
                   )}
                   {executionTime !== null && (
                     <div className="flex items-center gap-1">
@@ -1023,7 +1104,7 @@ function PlaygroundContent() {
                         <Coins className="h-3 w-3" />
                         <span>{usage.totalTokens} tokens</span>
                       </div>
-                      <span className="text-muted-foreground/50">
+                      <span className="text-muted-foreground/50 hidden sm:inline">
                         ({usage.promptTokens}↑ {usage.completionTokens}↓)
                       </span>
                     </>
@@ -1036,12 +1117,12 @@ function PlaygroundContent() {
       </div>
 
       {/* Usage Examples (Successful Runs) */}
-      <div className="mt-6">
+      <div className="mt-8 sm:mt-10">
         <div className="flex items-center gap-2 mb-3">
           <Zap className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">Usage Examples</h2>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {runs.length} successful run{runs.length !== 1 ? "s" : ""}
+          <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            {runs.length} run{runs.length !== 1 ? "s" : ""}
           </span>
         </div>
 
@@ -1053,23 +1134,23 @@ function PlaygroundContent() {
             <div className="h-48 rounded-lg bg-muted animate-pulse" />
           </div>
         ) : runs.length === 0 ? (
-          <div className="border border-dashed rounded-xl p-8 text-center">
-            <Zap className="h-7 w-7 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm font-medium text-foreground mb-1">No runs yet</p>
-            <p className="text-xs text-muted-foreground">Run this prompt above — successful executions will appear here.</p>
+          <div className="border border-dashed rounded-xl p-8 text-center bg-card/30">
+            <Zap className="h-6 w-6 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-xs font-medium text-foreground mb-1">No runs yet</p>
+            <p className="text-[10px] text-muted-foreground">Successful executions will appear here.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4 items-start">
 
-            {/* Left: selector */}
-            <div className="flex flex-col gap-1.5">
+            {/* Left: selector (Scrollable horizontal on mobile, vertical on desktop) */}
+            <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
               {runs.map((run, idx) => {
                 const isActive = selectedRun?.id === run.id;
                 return (
                   <button
                     key={run.id}
                     onClick={() => setSelectedRun(run)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
+                    className={`shrink-0 w-[180px] lg:w-full text-left px-3 py-2.5 rounded-lg border transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 ${
                       isActive
                         ? "bg-primary/10 border-primary/40 shadow-sm"
                         : "bg-card border-border hover:bg-muted/40 hover:border-muted-foreground/20"
@@ -1077,22 +1158,16 @@ function PlaygroundContent() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Bot className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`text-xs font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                      <span className={`text-[11px] sm:text-xs font-semibold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
                         {run.model || "Unknown"}
                       </span>
-                      <span className="text-[10px] text-muted-foreground ml-auto shrink-0">#{idx + 1}</span>
+                      <span className="text-[9px] text-muted-foreground ml-auto shrink-0">#{idx + 1}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                       {run.execution_time_ms != null && (
                         <span className="flex items-center gap-0.5">
-                          <Timer className="h-3 w-3" />
+                          <Timer className="h-2.5 w-2.5" />
                           {run.execution_time_ms < 1000 ? `${run.execution_time_ms}ms` : `${(run.execution_time_ms / 1000).toFixed(1)}s`}
-                        </span>
-                      )}
-                      {run.token_used > 0 && (
-                        <span className="flex items-center gap-0.5">
-                          <Coins className="h-3 w-3" />
-                          {Math.round(run.token_used)}
                         </span>
                       )}
                       <span className="ml-auto shrink-0">v{run.prompt_version.version_no}</span>
@@ -1107,51 +1182,38 @@ function PlaygroundContent() {
               const run = selectedRun;
               const hasVars = run.variables_input && Object.keys(run.variables_input).length > 0;
               return (
-                <div className="border rounded-xl bg-card shadow-sm overflow-hidden">
-                  <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b bg-muted/30">
-                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                <div className="border rounded-xl bg-card shadow-sm overflow-hidden min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 border-b bg-muted/30">
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-semibold">
                       <Bot className="h-3 w-3" />{run.model || "Unknown"}
                     </span>
-                    <span className="text-xs text-muted-foreground">v{run.prompt_version.version_no}</span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground">v{run.prompt_version.version_no}</span>
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                       <UserIcon className="h-3 w-3" />{run.user.name}
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {new Date(run.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
                     </span>
-                    <span className="ml-auto flex items-center gap-3">
-                      {run.execution_time_ms != null && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Timer className="h-3 w-3" />
-                          {run.execution_time_ms < 1000 ? `${run.execution_time_ms}ms` : `${(run.execution_time_ms / 1000).toFixed(2)}s`}
-                        </span>
-                      )}
-                      {run.token_used > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Coins className="h-3 w-3" />{Math.round(run.token_used)} tokens
-                        </span>
-                      )}
-                    </span>
                   </div>
-                  <div className="p-4 space-y-3">
+                  <div className="p-4 space-y-4">
                     {hasVars && (
                       <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Inputs</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Inputs</p>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(run.variables_input!).map(([k, v]) => (
-                            <span key={k} className="text-xs bg-muted px-2.5 py-1 rounded-md">
-                              <span className="font-mono text-primary">{`{{${k}}}`}</span>
+                            <span key={k} className="text-[10px] sm:text-xs bg-muted px-2 py-1 rounded-md">
+                              <span className="font-mono text-primary truncate max-w-[100px] inline-block align-bottom">{`{{${k}}}`}</span>
                               <span className="text-muted-foreground"> = </span>
-                              <span className="text-foreground">{String(v)}</span>
+                              <span className="text-foreground truncate max-w-[150px] inline-block align-bottom">{String(v)}</span>
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Output</p>
-                      <div className="bg-muted/50 rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto border">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Output</p>
+                      <div className="bg-muted/50 rounded-lg p-3 sm:p-4 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto border">
                         {run.output_response || "—"}
                       </div>
                     </div>

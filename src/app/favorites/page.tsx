@@ -43,14 +43,18 @@ type FavoritePrompt = {
 
 /* ─── Helper Components ──────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; variant: "success" | "warning" | "secondary" | "outline" | "default" }> = {
-    PUBLISHED: { label: "Published", variant: "success" },
-    DRAFT:     { label: "Draft",     variant: "secondary" },
-    REVIEW:    { label: "Review",    variant: "warning" },
-    ARCHIVED:  { label: "Archived",  variant: "outline" },
+  const map: Record<string, { label: string; cls: string }> = {
+    PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
+    DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
+    REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
   };
-  const s = map[status] ?? { label: status, variant: "default" };
-  return <Badge variant={s.variant}>{s.label}</Badge>;
+  const s = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
+  return (
+    <span className={`inline-flex items-center px-1.5 h-4 rounded text-[10px] font-bold border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
 }
 
 function PromptCard({
@@ -64,47 +68,39 @@ function PromptCard({
   const totalVars = p?.versions?.reduce((sum, version) => sum + version.promptVariables.length , 0);
 
   return (
-    <div data-slot="card" className="group relative rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+    <div
+      data-slot="card"
+      className="group relative flex flex-col rounded-xl px-6 py-5 border transition-all duration-300 ease-in-out bg-card h-full min-h-[160px] hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:scale-[1.01] active:scale-95 cursor-pointer"
+    >
       {/* Unfavorite button */}
       <button
         onClick={(e) => {
           e.preventDefault();
           onUnfavorite(p.id);
         }}
-        className="absolute top-4 right-4 p-1.5 rounded-lg text-primary opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-all duration-200"
+        className="absolute top-4 right-4 p-1.5 rounded-lg text-primary opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-all duration-200 z-10"
         title="Remove from favorites"
         aria-label="Remove from favorites"
       >
         <Heart className="h-4 w-4 fill-primary" />
       </button>
 
-      <Link href={`/prompts/${p.id}`} className="block">
-        {/* Header */}
+      <Link href={`/prompts/${p.id}`} className="flex flex-col flex-1">
         <div className="flex items-start gap-3 pr-8">
-          {/* Icon orb */}
-          <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-            <BookOpen className="h-4 w-4 text-primary" />
-          </div>
-
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                {p.title}
-              </h3>
-              {/* <StatusBadge status={p.status} /> */}
+            <p className="text-[20px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
+              {p.title}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={p.status} />
+              {p.category && (
+                <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                  {p.category.name}
+                </span>
+              )}
             </div>
-            {p.category && (
-              <p className="text-xs text-muted-foreground">{p.category.name}</p>
-            )}
           </div>
         </div>
-
-        {/* Description */}
-        {p.description && (
-          <p className="mt-3 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {p.description}
-          </p>
-        )}
 
         {/* Tags */}
         {p.tags?.length > 0 && (
@@ -126,7 +122,9 @@ function PromptCard({
           </div>
         )}
 
-        {/* Footer stats */}
+        <div className="flex-1" />
+
+        {/* Footer stats — matches collections/[id] */}
         <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
@@ -140,8 +138,8 @@ function PromptCard({
               </span>
             )}
             {p.recommended_model && (
-              <span className="hidden sm:flex items-center gap-1 truncate max-w-[120px]">
-                <span className="opacity-60">{p.recommended_model}</span>
+              <span className="hidden sm:block truncate max-w-[100px] opacity-60 text-[11px]">
+                {p.recommended_model}
               </span>
             )}
           </div>
@@ -157,9 +155,8 @@ function PromptCard({
 
 function CardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-xl px-6 py-5 space-y-3">
       <div className="flex items-start gap-3">
-        <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
         <div className="flex-1 space-y-1.5">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/3" />
@@ -223,28 +220,28 @@ export default function FavoritesPage() {
 
   /* ── Render ── */
   return (
-    <div className="pb-20">
+    <div className="pb-20 space-y-6 fade-in-up">
 
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Star className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+              <Star className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground">
               Favorites
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm xl:text-base text-muted-foreground">
             All prompts you&apos;ve marked as favorite
           </p>
         </div>
 
         {/* Count pill */}
         {!isLoading && favorites.length > 0 && (
-          <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3.5 py-1.5 rounded-full">
-            <Heart className="h-3.5 w-3.5 fill-primary" />
+          <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm xl:text-base font-medium px-3.5 py-1.5 xl:px-4 xl:py-2 rounded-full">
+            <Heart className="h-3.5 w-3.5 xl:h-4 xl:w-4 fill-primary" />
             {favorites.length} prompt{favorites.length > 1 ? "s" : ""}
           </div>
         )}
@@ -252,13 +249,13 @@ export default function FavoritesPage() {
 
       {/* ── Search bar ── */}
       {!isLoading && favorites.length > 0 && (
-        <div className="relative mb-6 max-w-sm">
+        <div className="relative mb-6 max-w-sm xl:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search favorites..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-9 h-9 text-sm bg-background"
+            className="pl-9 pr-9 h-9 xl:h-10 text-sm bg-background"
           />
           {search && (
             <button
@@ -291,7 +288,7 @@ export default function FavoritesPage() {
           <p className="text-sm text-muted-foreground max-w-xs mb-6">
             Click the Favorite button on any prompt and it will appear here.
           </p>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
             <Link href="/prompts" className="gap-2">
               <ExternalLink className="h-4 w-4" />
               Browse Prompts
@@ -315,7 +312,7 @@ export default function FavoritesPage() {
       ) : (
         <>
           {/* Card grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
             {paged.map((item) => (
               <PromptCard
                 key={item.id}
@@ -332,10 +329,10 @@ export default function FavoritesPage() {
                 Page {page} of {totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <ChevronLeft className="h-4 w-4" />Previous
                 </Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   Next<ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

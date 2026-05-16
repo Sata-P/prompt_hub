@@ -60,7 +60,7 @@ export const UsersScalarFieldEnumSchema = z.enum(['id','name','email','password'
 
 export const CategoriesScalarFieldEnumSchema = z.enum(['id','name','color','created_at','updated_at']);
 
-export const PromptsScalarFieldEnumSchema = z.enum(['id','title','description','status','visibility','latest_version_no','recommended_model','is_template_active','created_at','updated_at','deleted_at','category_id','owner_id']);
+export const PromptsScalarFieldEnumSchema = z.enum(['id','title','description','status','visibility','latest_version_no','recommended_models','is_template_active','created_at','updated_at','deleted_at','category_id','owner_id']);
 
 export const TagsScalarFieldEnumSchema = z.enum(['id','name','created_at']);
 
@@ -80,7 +80,7 @@ export const Prompt_runScalarFieldEnumSchema = z.enum(['id','prompt_id','prompt_
 
 export const Activity_logScalarFieldEnumSchema = z.enum(['id','user_id','action','details','created_at']);
 
-export const Prompt_commentsScalarFieldEnumSchema = z.enum(['id','content','prompt_id','user_id','parent_id','created_at','updated_at']);
+export const Prompt_commentsScalarFieldEnumSchema = z.enum(['id','content','attachment_url','prompt_id','user_id','parent_id','created_at','updated_at']);
 
 export const SortOrderSchema = z.enum(['asc','desc']);
 
@@ -190,7 +190,7 @@ export const PromptsSchema = z.object({
   status: z.string(),
   visibility: z.string(),
   latest_version_no: z.number().int(),
-  recommended_model: z.string().nullable(),
+  recommended_models: z.string().array(),
   is_template_active: z.boolean(),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
@@ -521,6 +521,7 @@ export const Activity_logWithRelationsSchema: z.ZodType<Activity_logWithRelation
 export const Prompt_commentsSchema = z.object({
   id: z.number().int(),
   content: z.string(),
+  attachment_url: z.string().nullable(),
   prompt_id: z.number().int(),
   user_id: z.number().int(),
   parent_id: z.number().int().nullable(),
@@ -675,7 +676,7 @@ export const PromptsSelectSchema: z.ZodType<Prisma.PromptsSelect> = z.object({
   status: z.boolean().optional(),
   visibility: z.boolean().optional(),
   latest_version_no: z.boolean().optional(),
-  recommended_model: z.boolean().optional(),
+  recommended_models: z.boolean().optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.boolean().optional(),
   updated_at: z.boolean().optional(),
@@ -976,6 +977,7 @@ export const Prompt_commentsCountOutputTypeSelectSchema: z.ZodType<Prisma.Prompt
 export const Prompt_commentsSelectSchema: z.ZodType<Prisma.Prompt_commentsSelect> = z.object({
   id: z.boolean().optional(),
   content: z.boolean().optional(),
+  attachment_url: z.boolean().optional(),
   prompt_id: z.boolean().optional(),
   user_id: z.boolean().optional(),
   parent_id: z.boolean().optional(),
@@ -1171,7 +1173,7 @@ export const PromptsWhereInputSchema: z.ZodType<Prisma.PromptsWhereInput> = z.st
   status: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   visibility: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   latest_version_no: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  recommended_model: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  recommended_models: z.lazy(() => StringNullableListFilterSchema).optional(),
   is_template_active: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
   created_at: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updated_at: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
@@ -1196,7 +1198,7 @@ export const PromptsOrderByWithRelationInputSchema: z.ZodType<Prisma.PromptsOrde
   status: z.lazy(() => SortOrderSchema).optional(),
   visibility: z.lazy(() => SortOrderSchema).optional(),
   latest_version_no: z.lazy(() => SortOrderSchema).optional(),
-  recommended_model: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  recommended_models: z.lazy(() => SortOrderSchema).optional(),
   is_template_active: z.lazy(() => SortOrderSchema).optional(),
   created_at: z.lazy(() => SortOrderSchema).optional(),
   updated_at: z.lazy(() => SortOrderSchema).optional(),
@@ -1227,7 +1229,7 @@ export const PromptsWhereUniqueInputSchema: z.ZodType<Prisma.PromptsWhereUniqueI
   status: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   visibility: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   latest_version_no: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
-  recommended_model: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  recommended_models: z.lazy(() => StringNullableListFilterSchema).optional(),
   is_template_active: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
   created_at: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updated_at: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
@@ -1252,7 +1254,7 @@ export const PromptsOrderByWithAggregationInputSchema: z.ZodType<Prisma.PromptsO
   status: z.lazy(() => SortOrderSchema).optional(),
   visibility: z.lazy(() => SortOrderSchema).optional(),
   latest_version_no: z.lazy(() => SortOrderSchema).optional(),
-  recommended_model: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
+  recommended_models: z.lazy(() => SortOrderSchema).optional(),
   is_template_active: z.lazy(() => SortOrderSchema).optional(),
   created_at: z.lazy(() => SortOrderSchema).optional(),
   updated_at: z.lazy(() => SortOrderSchema).optional(),
@@ -1276,7 +1278,7 @@ export const PromptsScalarWhereWithAggregatesInputSchema: z.ZodType<Prisma.Promp
   status: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   visibility: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
   latest_version_no: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
-  recommended_model: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
+  recommended_models: z.lazy(() => StringNullableListFilterSchema).optional(),
   is_template_active: z.union([ z.lazy(() => BoolWithAggregatesFilterSchema), z.boolean() ]).optional(),
   created_at: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
   updated_at: z.union([ z.lazy(() => DateTimeWithAggregatesFilterSchema), z.coerce.date() ]).optional(),
@@ -1984,6 +1986,7 @@ export const Prompt_commentsWhereInputSchema: z.ZodType<Prisma.Prompt_commentsWh
   NOT: z.union([ z.lazy(() => Prompt_commentsWhereInputSchema), z.lazy(() => Prompt_commentsWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   content: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  attachment_url: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   prompt_id: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   user_id: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   parent_id: z.union([ z.lazy(() => IntNullableFilterSchema), z.number() ]).optional().nullable(),
@@ -1998,6 +2001,7 @@ export const Prompt_commentsWhereInputSchema: z.ZodType<Prisma.Prompt_commentsWh
 export const Prompt_commentsOrderByWithRelationInputSchema: z.ZodType<Prisma.Prompt_commentsOrderByWithRelationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   content: z.lazy(() => SortOrderSchema).optional(),
+  attachment_url: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   prompt_id: z.lazy(() => SortOrderSchema).optional(),
   user_id: z.lazy(() => SortOrderSchema).optional(),
   parent_id: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
@@ -2018,6 +2022,7 @@ export const Prompt_commentsWhereUniqueInputSchema: z.ZodType<Prisma.Prompt_comm
   OR: z.lazy(() => Prompt_commentsWhereInputSchema).array().optional(),
   NOT: z.union([ z.lazy(() => Prompt_commentsWhereInputSchema), z.lazy(() => Prompt_commentsWhereInputSchema).array() ]).optional(),
   content: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  attachment_url: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   prompt_id: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   user_id: z.union([ z.lazy(() => IntFilterSchema), z.number().int() ]).optional(),
   parent_id: z.union([ z.lazy(() => IntNullableFilterSchema), z.number().int() ]).optional().nullable(),
@@ -2032,6 +2037,7 @@ export const Prompt_commentsWhereUniqueInputSchema: z.ZodType<Prisma.Prompt_comm
 export const Prompt_commentsOrderByWithAggregationInputSchema: z.ZodType<Prisma.Prompt_commentsOrderByWithAggregationInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   content: z.lazy(() => SortOrderSchema).optional(),
+  attachment_url: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
   prompt_id: z.lazy(() => SortOrderSchema).optional(),
   user_id: z.lazy(() => SortOrderSchema).optional(),
   parent_id: z.union([ z.lazy(() => SortOrderSchema), z.lazy(() => SortOrderInputSchema) ]).optional(),
@@ -2050,6 +2056,7 @@ export const Prompt_commentsScalarWhereWithAggregatesInputSchema: z.ZodType<Pris
   NOT: z.union([ z.lazy(() => Prompt_commentsScalarWhereWithAggregatesInputSchema), z.lazy(() => Prompt_commentsScalarWhereWithAggregatesInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   content: z.union([ z.lazy(() => StringWithAggregatesFilterSchema), z.string() ]).optional(),
+  attachment_url: z.union([ z.lazy(() => StringNullableWithAggregatesFilterSchema), z.string() ]).optional().nullable(),
   prompt_id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   user_id: z.union([ z.lazy(() => IntWithAggregatesFilterSchema), z.number() ]).optional(),
   parent_id: z.union([ z.lazy(() => IntNullableWithAggregatesFilterSchema), z.number() ]).optional().nullable(),
@@ -2218,7 +2225,7 @@ export const PromptsCreateInputSchema: z.ZodType<Prisma.PromptsCreateInput> = z.
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -2241,7 +2248,7 @@ export const PromptsUncheckedCreateInputSchema: z.ZodType<Prisma.PromptsUnchecke
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -2263,7 +2270,7 @@ export const PromptsUpdateInputSchema: z.ZodType<Prisma.PromptsUpdateInput> = z.
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2286,7 +2293,7 @@ export const PromptsUncheckedUpdateInputSchema: z.ZodType<Prisma.PromptsUnchecke
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2309,7 +2316,7 @@ export const PromptsCreateManyInputSchema: z.ZodType<Prisma.PromptsCreateManyInp
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -2324,7 +2331,7 @@ export const PromptsUpdateManyMutationInputSchema: z.ZodType<Prisma.PromptsUpdat
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2338,7 +2345,7 @@ export const PromptsUncheckedUpdateManyInputSchema: z.ZodType<Prisma.PromptsUnch
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -2953,6 +2960,7 @@ export const Activity_logUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Activi
 
 export const Prompt_commentsCreateInputSchema: z.ZodType<Prisma.Prompt_commentsCreateInput> = z.strictObject({
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
   prompt: z.lazy(() => PromptsCreateNestedOneWithoutCommentsInputSchema),
@@ -2964,6 +2972,7 @@ export const Prompt_commentsCreateInputSchema: z.ZodType<Prisma.Prompt_commentsC
 export const Prompt_commentsUncheckedCreateInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedCreateInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   user_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
@@ -2974,6 +2983,7 @@ export const Prompt_commentsUncheckedCreateInputSchema: z.ZodType<Prisma.Prompt_
 
 export const Prompt_commentsUpdateInputSchema: z.ZodType<Prisma.Prompt_commentsUpdateInput> = z.strictObject({
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   prompt: z.lazy(() => PromptsUpdateOneRequiredWithoutCommentsNestedInputSchema).optional(),
@@ -2985,6 +2995,7 @@ export const Prompt_commentsUpdateInputSchema: z.ZodType<Prisma.Prompt_commentsU
 export const Prompt_commentsUncheckedUpdateInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -2996,6 +3007,7 @@ export const Prompt_commentsUncheckedUpdateInputSchema: z.ZodType<Prisma.Prompt_
 export const Prompt_commentsCreateManyInputSchema: z.ZodType<Prisma.Prompt_commentsCreateManyInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   user_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
@@ -3005,6 +3017,7 @@ export const Prompt_commentsCreateManyInputSchema: z.ZodType<Prisma.Prompt_comme
 
 export const Prompt_commentsUpdateManyMutationInputSchema: z.ZodType<Prisma.Prompt_commentsUpdateManyMutationInput> = z.strictObject({
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
 });
@@ -3012,6 +3025,7 @@ export const Prompt_commentsUpdateManyMutationInputSchema: z.ZodType<Prisma.Prom
 export const Prompt_commentsUncheckedUpdateManyInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateManyInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -3292,6 +3306,14 @@ export const StringNullableWithAggregatesFilterSchema: z.ZodType<Prisma.StringNu
   _max: z.lazy(() => NestedStringNullableFilterSchema).optional(),
 });
 
+export const StringNullableListFilterSchema: z.ZodType<Prisma.StringNullableListFilter> = z.strictObject({
+  equals: z.string().array().optional().nullable(),
+  has: z.string().optional().nullable(),
+  hasEvery: z.string().array().optional(),
+  hasSome: z.string().array().optional(),
+  isEmpty: z.boolean().optional(),
+});
+
 export const BoolFilterSchema: z.ZodType<Prisma.BoolFilter> = z.strictObject({
   equals: z.boolean().optional(),
   not: z.union([ z.boolean(),z.lazy(() => NestedBoolFilterSchema) ]).optional(),
@@ -3366,7 +3388,7 @@ export const PromptsCountOrderByAggregateInputSchema: z.ZodType<Prisma.PromptsCo
   status: z.lazy(() => SortOrderSchema).optional(),
   visibility: z.lazy(() => SortOrderSchema).optional(),
   latest_version_no: z.lazy(() => SortOrderSchema).optional(),
-  recommended_model: z.lazy(() => SortOrderSchema).optional(),
+  recommended_models: z.lazy(() => SortOrderSchema).optional(),
   is_template_active: z.lazy(() => SortOrderSchema).optional(),
   created_at: z.lazy(() => SortOrderSchema).optional(),
   updated_at: z.lazy(() => SortOrderSchema).optional(),
@@ -3389,7 +3411,6 @@ export const PromptsMaxOrderByAggregateInputSchema: z.ZodType<Prisma.PromptsMaxO
   status: z.lazy(() => SortOrderSchema).optional(),
   visibility: z.lazy(() => SortOrderSchema).optional(),
   latest_version_no: z.lazy(() => SortOrderSchema).optional(),
-  recommended_model: z.lazy(() => SortOrderSchema).optional(),
   is_template_active: z.lazy(() => SortOrderSchema).optional(),
   created_at: z.lazy(() => SortOrderSchema).optional(),
   updated_at: z.lazy(() => SortOrderSchema).optional(),
@@ -3405,7 +3426,6 @@ export const PromptsMinOrderByAggregateInputSchema: z.ZodType<Prisma.PromptsMinO
   status: z.lazy(() => SortOrderSchema).optional(),
   visibility: z.lazy(() => SortOrderSchema).optional(),
   latest_version_no: z.lazy(() => SortOrderSchema).optional(),
-  recommended_model: z.lazy(() => SortOrderSchema).optional(),
   is_template_active: z.lazy(() => SortOrderSchema).optional(),
   created_at: z.lazy(() => SortOrderSchema).optional(),
   updated_at: z.lazy(() => SortOrderSchema).optional(),
@@ -3948,6 +3968,7 @@ export const Prompt_commentsNullableScalarRelationFilterSchema: z.ZodType<Prisma
 export const Prompt_commentsCountOrderByAggregateInputSchema: z.ZodType<Prisma.Prompt_commentsCountOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   content: z.lazy(() => SortOrderSchema).optional(),
+  attachment_url: z.lazy(() => SortOrderSchema).optional(),
   prompt_id: z.lazy(() => SortOrderSchema).optional(),
   user_id: z.lazy(() => SortOrderSchema).optional(),
   parent_id: z.lazy(() => SortOrderSchema).optional(),
@@ -3965,6 +3986,7 @@ export const Prompt_commentsAvgOrderByAggregateInputSchema: z.ZodType<Prisma.Pro
 export const Prompt_commentsMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Prompt_commentsMaxOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   content: z.lazy(() => SortOrderSchema).optional(),
+  attachment_url: z.lazy(() => SortOrderSchema).optional(),
   prompt_id: z.lazy(() => SortOrderSchema).optional(),
   user_id: z.lazy(() => SortOrderSchema).optional(),
   parent_id: z.lazy(() => SortOrderSchema).optional(),
@@ -3975,6 +3997,7 @@ export const Prompt_commentsMaxOrderByAggregateInputSchema: z.ZodType<Prisma.Pro
 export const Prompt_commentsMinOrderByAggregateInputSchema: z.ZodType<Prisma.Prompt_commentsMinOrderByAggregateInput> = z.strictObject({
   id: z.lazy(() => SortOrderSchema).optional(),
   content: z.lazy(() => SortOrderSchema).optional(),
+  attachment_url: z.lazy(() => SortOrderSchema).optional(),
   prompt_id: z.lazy(() => SortOrderSchema).optional(),
   user_id: z.lazy(() => SortOrderSchema).optional(),
   parent_id: z.lazy(() => SortOrderSchema).optional(),
@@ -4307,6 +4330,10 @@ export const PromptsUncheckedUpdateManyWithoutCategoryNestedInputSchema: z.ZodTy
   deleteMany: z.union([ z.lazy(() => PromptsScalarWhereInputSchema), z.lazy(() => PromptsScalarWhereInputSchema).array() ]).optional(),
 });
 
+export const PromptsCreaterecommended_modelsInputSchema: z.ZodType<Prisma.PromptsCreaterecommended_modelsInput> = z.strictObject({
+  set: z.string().array(),
+});
+
 export const CategoriesCreateNestedOneWithoutPromptsInputSchema: z.ZodType<Prisma.CategoriesCreateNestedOneWithoutPromptsInput> = z.strictObject({
   create: z.union([ z.lazy(() => CategoriesCreateWithoutPromptsInputSchema), z.lazy(() => CategoriesUncheckedCreateWithoutPromptsInputSchema) ]).optional(),
   connectOrCreate: z.lazy(() => CategoriesCreateOrConnectWithoutPromptsInputSchema).optional(),
@@ -4415,6 +4442,11 @@ export const Prompt_commentsUncheckedCreateNestedManyWithoutPromptInputSchema: z
   connectOrCreate: z.union([ z.lazy(() => Prompt_commentsCreateOrConnectWithoutPromptInputSchema), z.lazy(() => Prompt_commentsCreateOrConnectWithoutPromptInputSchema).array() ]).optional(),
   createMany: z.lazy(() => Prompt_commentsCreateManyPromptInputEnvelopeSchema).optional(),
   connect: z.union([ z.lazy(() => Prompt_commentsWhereUniqueInputSchema), z.lazy(() => Prompt_commentsWhereUniqueInputSchema).array() ]).optional(),
+});
+
+export const PromptsUpdaterecommended_modelsInputSchema: z.ZodType<Prisma.PromptsUpdaterecommended_modelsInput> = z.strictObject({
+  set: z.string().array().optional(),
+  push: z.union([ z.string(),z.string().array() ]).optional(),
 });
 
 export const BoolFieldUpdateOperationsInputSchema: z.ZodType<Prisma.BoolFieldUpdateOperationsInput> = z.strictObject({
@@ -5364,7 +5396,7 @@ export const PromptsCreateWithoutOwnerInputSchema: z.ZodType<Prisma.PromptsCreat
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -5386,7 +5418,7 @@ export const PromptsUncheckedCreateWithoutOwnerInputSchema: z.ZodType<Prisma.Pro
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -5537,6 +5569,7 @@ export const Activity_logCreateManyUserInputEnvelopeSchema: z.ZodType<Prisma.Act
 
 export const Prompt_commentsCreateWithoutUserInputSchema: z.ZodType<Prisma.Prompt_commentsCreateWithoutUserInput> = z.strictObject({
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
   prompt: z.lazy(() => PromptsCreateNestedOneWithoutCommentsInputSchema),
@@ -5547,6 +5580,7 @@ export const Prompt_commentsCreateWithoutUserInputSchema: z.ZodType<Prisma.Promp
 export const Prompt_commentsUncheckedCreateWithoutUserInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedCreateWithoutUserInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
   created_at: z.coerce.date().optional(),
@@ -5590,7 +5624,7 @@ export const PromptsScalarWhereInputSchema: z.ZodType<Prisma.PromptsScalarWhereI
   status: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   visibility: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
   latest_version_no: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
-  recommended_model: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  recommended_models: z.lazy(() => StringNullableListFilterSchema).optional(),
   is_template_active: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
   created_at: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
   updated_at: z.union([ z.lazy(() => DateTimeFilterSchema), z.coerce.date() ]).optional(),
@@ -5743,6 +5777,7 @@ export const Prompt_commentsScalarWhereInputSchema: z.ZodType<Prisma.Prompt_comm
   NOT: z.union([ z.lazy(() => Prompt_commentsScalarWhereInputSchema), z.lazy(() => Prompt_commentsScalarWhereInputSchema).array() ]).optional(),
   id: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   content: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  attachment_url: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
   prompt_id: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   user_id: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
   parent_id: z.union([ z.lazy(() => IntNullableFilterSchema), z.number() ]).optional().nullable(),
@@ -5756,7 +5791,7 @@ export const PromptsCreateWithoutCategoryInputSchema: z.ZodType<Prisma.PromptsCr
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -5778,7 +5813,7 @@ export const PromptsUncheckedCreateWithoutCategoryInputSchema: z.ZodType<Prisma.
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6057,6 +6092,7 @@ export const Prompt_runCreateManyPromptInputEnvelopeSchema: z.ZodType<Prisma.Pro
 
 export const Prompt_commentsCreateWithoutPromptInputSchema: z.ZodType<Prisma.Prompt_commentsCreateWithoutPromptInput> = z.strictObject({
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
   user: z.lazy(() => UsersCreateNestedOneWithoutCommentsInputSchema),
@@ -6067,6 +6103,7 @@ export const Prompt_commentsCreateWithoutPromptInputSchema: z.ZodType<Prisma.Pro
 export const Prompt_commentsUncheckedCreateWithoutPromptInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedCreateWithoutPromptInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   user_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
   created_at: z.coerce.date().optional(),
@@ -6341,7 +6378,7 @@ export const PromptsCreateWithoutVersionsInputSchema: z.ZodType<Prisma.PromptsCr
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6363,7 +6400,7 @@ export const PromptsUncheckedCreateWithoutVersionsInputSchema: z.ZodType<Prisma.
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6518,7 +6555,7 @@ export const PromptsUpdateWithoutVersionsInputSchema: z.ZodType<Prisma.PromptsUp
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6540,7 +6577,7 @@ export const PromptsUncheckedUpdateWithoutVersionsInputSchema: z.ZodType<Prisma.
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6635,7 +6672,7 @@ export const PromptsCreateWithoutVariablesInputSchema: z.ZodType<Prisma.PromptsC
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6657,7 +6694,7 @@ export const PromptsUncheckedCreateWithoutVariablesInputSchema: z.ZodType<Prisma
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6726,7 +6763,7 @@ export const PromptsUpdateWithoutVariablesInputSchema: z.ZodType<Prisma.PromptsU
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6748,7 +6785,7 @@ export const PromptsUncheckedUpdateWithoutVariablesInputSchema: z.ZodType<Prisma
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6807,7 +6844,7 @@ export const PromptsCreateWithoutTagsInputSchema: z.ZodType<Prisma.PromptsCreate
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6829,7 +6866,7 @@ export const PromptsUncheckedCreateWithoutTagsInputSchema: z.ZodType<Prisma.Prom
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -6882,7 +6919,7 @@ export const PromptsUpdateWithoutTagsInputSchema: z.ZodType<Prisma.PromptsUpdate
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -6904,7 +6941,7 @@ export const PromptsUncheckedUpdateWithoutTagsInputSchema: z.ZodType<Prisma.Prom
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7005,7 +7042,7 @@ export const PromptsCreateWithoutCollectionsInputSchema: z.ZodType<Prisma.Prompt
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7027,7 +7064,7 @@ export const PromptsUncheckedCreateWithoutCollectionsInputSchema: z.ZodType<Pris
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7092,7 +7129,7 @@ export const PromptsUpdateWithoutCollectionsInputSchema: z.ZodType<Prisma.Prompt
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7114,7 +7151,7 @@ export const PromptsUncheckedUpdateWithoutCollectionsInputSchema: z.ZodType<Pris
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7171,7 +7208,7 @@ export const PromptsCreateWithoutFavoritesInputSchema: z.ZodType<Prisma.PromptsC
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7193,7 +7230,7 @@ export const PromptsUncheckedCreateWithoutFavoritesInputSchema: z.ZodType<Prisma
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7272,7 +7309,7 @@ export const PromptsUpdateWithoutFavoritesInputSchema: z.ZodType<Prisma.PromptsU
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7294,7 +7331,7 @@ export const PromptsUncheckedUpdateWithoutFavoritesInputSchema: z.ZodType<Prisma
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7351,7 +7388,7 @@ export const PromptsCreateWithoutPromptRunsInputSchema: z.ZodType<Prisma.Prompts
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7373,7 +7410,7 @@ export const PromptsUncheckedCreateWithoutPromptRunsInputSchema: z.ZodType<Prism
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7484,7 +7521,7 @@ export const PromptsUpdateWithoutPromptRunsInputSchema: z.ZodType<Prisma.Prompts
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7506,7 +7543,7 @@ export const PromptsUncheckedUpdateWithoutPromptRunsInputSchema: z.ZodType<Prism
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7643,7 +7680,7 @@ export const PromptsCreateWithoutCommentsInputSchema: z.ZodType<Prisma.PromptsCr
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7665,7 +7702,7 @@ export const PromptsUncheckedCreateWithoutCommentsInputSchema: z.ZodType<Prisma.
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7723,6 +7760,7 @@ export const UsersCreateOrConnectWithoutCommentsInputSchema: z.ZodType<Prisma.Us
 
 export const Prompt_commentsCreateWithoutRepliesInputSchema: z.ZodType<Prisma.Prompt_commentsCreateWithoutRepliesInput> = z.strictObject({
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
   prompt: z.lazy(() => PromptsCreateNestedOneWithoutCommentsInputSchema),
@@ -7733,6 +7771,7 @@ export const Prompt_commentsCreateWithoutRepliesInputSchema: z.ZodType<Prisma.Pr
 export const Prompt_commentsUncheckedCreateWithoutRepliesInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedCreateWithoutRepliesInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   user_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
@@ -7747,6 +7786,7 @@ export const Prompt_commentsCreateOrConnectWithoutRepliesInputSchema: z.ZodType<
 
 export const Prompt_commentsCreateWithoutParentInputSchema: z.ZodType<Prisma.Prompt_commentsCreateWithoutParentInput> = z.strictObject({
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
   prompt: z.lazy(() => PromptsCreateNestedOneWithoutCommentsInputSchema),
@@ -7757,6 +7797,7 @@ export const Prompt_commentsCreateWithoutParentInputSchema: z.ZodType<Prisma.Pro
 export const Prompt_commentsUncheckedCreateWithoutParentInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedCreateWithoutParentInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   user_id: z.number().int(),
   created_at: z.coerce.date().optional(),
@@ -7791,7 +7832,7 @@ export const PromptsUpdateWithoutCommentsInputSchema: z.ZodType<Prisma.PromptsUp
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7813,7 +7854,7 @@ export const PromptsUncheckedUpdateWithoutCommentsInputSchema: z.ZodType<Prisma.
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -7883,6 +7924,7 @@ export const Prompt_commentsUpdateToOneWithWhereWithoutRepliesInputSchema: z.Zod
 
 export const Prompt_commentsUpdateWithoutRepliesInputSchema: z.ZodType<Prisma.Prompt_commentsUpdateWithoutRepliesInput> = z.strictObject({
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   prompt: z.lazy(() => PromptsUpdateOneRequiredWithoutCommentsNestedInputSchema).optional(),
@@ -7893,6 +7935,7 @@ export const Prompt_commentsUpdateWithoutRepliesInputSchema: z.ZodType<Prisma.Pr
 export const Prompt_commentsUncheckedUpdateWithoutRepliesInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateWithoutRepliesInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
@@ -7923,7 +7966,7 @@ export const PromptsCreateManyOwnerInputSchema: z.ZodType<Prisma.PromptsCreateMa
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -7976,6 +8019,7 @@ export const Activity_logCreateManyUserInputSchema: z.ZodType<Prisma.Activity_lo
 export const Prompt_commentsCreateManyUserInputSchema: z.ZodType<Prisma.Prompt_commentsCreateManyUserInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
   created_at: z.coerce.date().optional(),
@@ -7988,7 +8032,7 @@ export const PromptsUpdateWithoutOwnerInputSchema: z.ZodType<Prisma.PromptsUpdat
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8010,7 +8054,7 @@ export const PromptsUncheckedUpdateWithoutOwnerInputSchema: z.ZodType<Prisma.Pro
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8032,7 +8076,7 @@ export const PromptsUncheckedUpdateManyWithoutOwnerInputSchema: z.ZodType<Prisma
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8168,6 +8212,7 @@ export const Activity_logUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Pr
 
 export const Prompt_commentsUpdateWithoutUserInputSchema: z.ZodType<Prisma.Prompt_commentsUpdateWithoutUserInput> = z.strictObject({
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   prompt: z.lazy(() => PromptsUpdateOneRequiredWithoutCommentsNestedInputSchema).optional(),
@@ -8178,6 +8223,7 @@ export const Prompt_commentsUpdateWithoutUserInputSchema: z.ZodType<Prisma.Promp
 export const Prompt_commentsUncheckedUpdateWithoutUserInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateWithoutUserInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8188,6 +8234,7 @@ export const Prompt_commentsUncheckedUpdateWithoutUserInputSchema: z.ZodType<Pri
 export const Prompt_commentsUncheckedUpdateManyWithoutUserInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateManyWithoutUserInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8201,7 +8248,7 @@ export const PromptsCreateManyCategoryInputSchema: z.ZodType<Prisma.PromptsCreat
   status: z.string().optional(),
   visibility: z.string().optional(),
   latest_version_no: z.number().int().optional(),
-  recommended_model: z.string().optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsCreaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.boolean().optional(),
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
@@ -8215,7 +8262,7 @@ export const PromptsUpdateWithoutCategoryInputSchema: z.ZodType<Prisma.PromptsUp
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8237,7 +8284,7 @@ export const PromptsUncheckedUpdateWithoutCategoryInputSchema: z.ZodType<Prisma.
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8259,7 +8306,7 @@ export const PromptsUncheckedUpdateManyWithoutCategoryInputSchema: z.ZodType<Pri
   status: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   visibility: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
   latest_version_no: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
-  recommended_model: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  recommended_models: z.union([ z.lazy(() => PromptsUpdaterecommended_modelsInputSchema), z.string().array() ]).optional(),
   is_template_active: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8330,6 +8377,7 @@ export const Prompt_runCreateManyPromptInputSchema: z.ZodType<Prisma.Prompt_runC
 export const Prompt_commentsCreateManyPromptInputSchema: z.ZodType<Prisma.Prompt_commentsCreateManyPromptInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   user_id: z.number().int(),
   parent_id: z.number().int().optional().nullable(),
   created_at: z.coerce.date().optional(),
@@ -8518,6 +8566,7 @@ export const Prompt_runUncheckedUpdateManyWithoutPromptInputSchema: z.ZodType<Pr
 
 export const Prompt_commentsUpdateWithoutPromptInputSchema: z.ZodType<Prisma.Prompt_commentsUpdateWithoutPromptInput> = z.strictObject({
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   user: z.lazy(() => UsersUpdateOneRequiredWithoutCommentsNestedInputSchema).optional(),
@@ -8528,6 +8577,7 @@ export const Prompt_commentsUpdateWithoutPromptInputSchema: z.ZodType<Prisma.Pro
 export const Prompt_commentsUncheckedUpdateWithoutPromptInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateWithoutPromptInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8538,6 +8588,7 @@ export const Prompt_commentsUncheckedUpdateWithoutPromptInputSchema: z.ZodType<P
 export const Prompt_commentsUncheckedUpdateManyWithoutPromptInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateManyWithoutPromptInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   parent_id: z.union([ z.number().int(),z.lazy(() => NullableIntFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8709,6 +8760,7 @@ export const Collections_promptsUncheckedUpdateManyWithoutCollectionInputSchema:
 export const Prompt_commentsCreateManyParentInputSchema: z.ZodType<Prisma.Prompt_commentsCreateManyParentInput> = z.strictObject({
   id: z.number().int().optional(),
   content: z.string(),
+  attachment_url: z.string().optional().nullable(),
   prompt_id: z.number().int(),
   user_id: z.number().int(),
   created_at: z.coerce.date().optional(),
@@ -8717,6 +8769,7 @@ export const Prompt_commentsCreateManyParentInputSchema: z.ZodType<Prisma.Prompt
 
 export const Prompt_commentsUpdateWithoutParentInputSchema: z.ZodType<Prisma.Prompt_commentsUpdateWithoutParentInput> = z.strictObject({
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   updated_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
   prompt: z.lazy(() => PromptsUpdateOneRequiredWithoutCommentsNestedInputSchema).optional(),
@@ -8727,6 +8780,7 @@ export const Prompt_commentsUpdateWithoutParentInputSchema: z.ZodType<Prisma.Pro
 export const Prompt_commentsUncheckedUpdateWithoutParentInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateWithoutParentInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
@@ -8737,6 +8791,7 @@ export const Prompt_commentsUncheckedUpdateWithoutParentInputSchema: z.ZodType<P
 export const Prompt_commentsUncheckedUpdateManyWithoutParentInputSchema: z.ZodType<Prisma.Prompt_commentsUncheckedUpdateManyWithoutParentInput> = z.strictObject({
   id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   content: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  attachment_url: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
   prompt_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   user_id: z.union([ z.number().int(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
   created_at: z.union([ z.coerce.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),

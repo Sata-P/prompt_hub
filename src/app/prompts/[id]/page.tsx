@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { Copy, Check, Clock, ChevronDown, Trash2 } from "lucide-react";
+import { Copy, Check, Clock, ChevronDown, Trash2, AlertCircle, CheckCircle2, XCircle, ShieldAlert, Archive, ArchiveRestore } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
 import { Button } from "@/component/ui/button";
 import { Badge } from "@/component/ui/badge";
 import { Skeleton } from "@/component/ui/skeleton";
 import { useFavorites } from "@/hooks/useFavorite";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
 import CommentSection from "@/component/comments/CommentSection";
 
@@ -40,7 +42,7 @@ type PromptDetail = {
   owner: { id: number; name: string; email: string };
   tags: { id: number; name: string }[];
   versions: Version[];
-  recommended_model: string | null;
+  recommended_models: string[] | null;
 };
 
 /**
@@ -57,6 +59,7 @@ export default function PromptDetailPage() {
   const userRole = session?.user?.role;
 
   const {toggleFavorite, isFavorite} = useFavorites();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [prompt, setPrompt] = useState<PromptDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -64,24 +67,29 @@ export default function PromptDetailPage() {
   const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
 
   const canEdit = 
-    userRole === "ADMIN" || 
-    userRole === "EDITOR" || 
+    userRole?.toUpperCase() === "ADMIN" || 
+    userRole?.toUpperCase() === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
 
-
-
   const canDelete = 
-    userRole === "ADMIN" || 
-    userRole === "EDITOR" || 
+    userRole?.toUpperCase() === "ADMIN" || 
+    userRole?.toUpperCase() === "EDITOR" || 
     (prompt && userId && Number(userId) === prompt.owner.id);
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this prompt? This action cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this prompt?",
+      description: "This action cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/prompts/${id}`);
+      toast.success("Prompt deleted.");
       router.push("/prompts");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete prompt.");
+      toast.error(err.response?.data?.error || "Failed to delete prompt.");
     }
   };
 
@@ -92,8 +100,14 @@ export default function PromptDetailPage() {
     axios.get<PromptDetail>(`/api/prompts/${id}`)
       .then(res => {
         setPrompt(res.data);
-        // default to latest version
-        if (res.data.versions.length > 0) {
+        
+        // Requirement: Default to latest PUBLISHED version for general users
+        const publishedVersions = res.data.versions.filter(v => v.status === "PUBLISHED");
+        if (publishedVersions.length > 0) {
+          // Sort descending by version_no
+          const latestPublished = publishedVersions.sort((a, b) => b.version_no - a.version_no)[0];
+          setSelectedVersionId(latestPublished.id);
+        } else if (res.data.versions.length > 0) {
           setSelectedVersionId(res.data.versions[0].id);
         }
       })
@@ -103,6 +117,140 @@ export default function PromptDetailPage() {
 
   const selectedVersion = prompt?.versions.find(v => v.id === selectedVersionId) ?? prompt?.versions[0];
 
+  // Requirement: Check for newer REVIEW version (Owner/Admin only)
+  const latestPublishedNo = prompt?.versions
+    .filter(v => v.status.toUpperCase() === "PUBLISHED")
+    .reduce((max, v) => Math.max(max, v.version_no), 0) || 0;
+    
+  const hasPendingReview = prompt?.versions.some(v => v.status.toUpperCase() === "REVIEW" && v.version_no > latestPublishedNo);
+  const isOwnerOrAdmin = userRole?.toUpperCase() === "ADMIN" || (prompt && userId && Number(userId) === prompt.owner.id);
+  const isAdminOrEditor = userRole?.toUpperCase() === "ADMIN" || userRole?.toUpperCase() === "EDITOR";
+
+  const handleReview = async (action: "APPROVE" | "REJECT") => {
+    if (!selectedVersionId) return;
+    const isReject = action === "REJECT";
+    const ok = await confirm({
+      title: isReject ? "Reject this version?" : "Approve this version?",
+      description: isReject
+        ? "The author will need to make changes and submit again."
+        : "This version will become the published version of the prompt.",
+      confirmLabel: isReject ? "Reject" : "Approve",
+      destructive: isReject,
+    });
+    if (!ok) return;
+
+    try {
+      await axios.post(`/api/prompts/${id}/versions/${selectedVersionId}/review`, { action });
+      toast.success(`Version ${isReject ? "rejected" : "approved"} successfully.`);
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || `Failed to ${action.toLowerCase()} version.`);
+    }
+  };
+
+  const handleSendForReview = async () => {
+    if (!prompt) return;
+    const ok = await confirm({
+      title: "Send this prompt for review?",
+      description: "An admin or editor will review it before it can be published.",
+      confirmLabel: "Send for Review",
+    });
+    if (!ok) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "REVIEW" });
+      toast.success("Prompt sent for review.");
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to send for review.");
+    }
+  };
+
+  const handleCancelReview = async () => {
+    if (!prompt) return;
+    const ok = await confirm({
+      title: "Cancel the review?",
+      description: "The prompt will return to draft status.",
+      confirmLabel: "Cancel Review",
+      cancelLabel: "Keep in Review",
+    });
+    if (!ok) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
+      toast.success("Review cancelled.");
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to cancel review.");
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!prompt) return;
+    const ok = await confirm({
+      title: "Archive this prompt?",
+      description: "It will be hidden from active listings but can be restored later.",
+      confirmLabel: "Archive",
+    });
+    if (!ok) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "ARCHIVED" });
+      toast.success("Prompt archived.");
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to archive prompt.");
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!prompt) return;
+    const ok = await confirm({
+      title: "Restore this prompt to draft?",
+      description: "It will move back to your drafts and become editable again.",
+      confirmLabel: "Restore",
+    });
+    if (!ok) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
+      toast.success("Prompt unarchived.");
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to unarchive prompt.");
+    }
+  };
+
+  const handleDeleteVersion = async (versionId: number, versionNo: number) => {
+    if (!prompt) return;
+    const ok = await confirm({
+      title: `Delete version v${versionNo}?`,
+      description: "This action cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      await axios.delete(`/api/prompts/${id}/versions/${versionId}`);
+      toast.success(`Version v${versionNo} deleted.`);
+
+      // If we deleted the currently selected version, reset to another one
+      if (versionId === selectedVersionId) {
+        const remaining = prompt.versions.filter(v => v.id !== versionId);
+        if (remaining.length > 0) {
+          setSelectedVersionId(remaining[0].id);
+        }
+      }
+
+      // Reload prompt data to refresh list
+      const res = await axios.get<PromptDetail>(`/api/prompts/${id}`);
+      setPrompt(res.data);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to delete version.");
+    }
+  };
+
   const copyToClipboard = () => {
     if (!selectedVersion?.template_content) return;
     navigator.clipboard.writeText(selectedVersion.template_content);
@@ -111,10 +259,12 @@ export default function PromptDetailPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const s = status.toUpperCase();
+    switch (s) {
       case "PUBLISHED": return <Badge variant="success">Approved</Badge>;
       case "DRAFT":     return <Badge variant="secondary">Draft</Badge>;
       case "REVIEW":    return <Badge variant="warning">Review</Badge>;
+      case "REJECTED":  return <Badge variant="destructive">Rejected</Badge>;
       case "ARCHIVED":  return <Badge variant="outline">Archived</Badge>;
       default:          return <Badge>{status}</Badge>;
     }
@@ -145,44 +295,145 @@ export default function PromptDetailPage() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold tracking-tight">{prompt.title}</h1>
-            {/* {getStatusBadge(prompt.status)} */}
+      {hasPendingReview && (isOwnerOrAdmin || isAdminOrEditor) && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-between gap-3 text-yellow-800">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600" />
+            <span className="text-sm font-medium">A newer version is currently pending review.</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 mr-2">
+                    {isAdminOrEditor && selectedVersion?.status.toUpperCase() === "REVIEW" && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleReview("APPROVE")} 
+                          className="bg-green-600 hover:bg-green-700 h-8 px-3 transition-all duration-300 hover:scale-105 active:scale-95"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleReview("REJECT")}
+                          className="h-8 px-3 transition-all duration-300 hover:scale-105 active:scale-95"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                {(selectedVersion?.status.toUpperCase() === "DRAFT" || selectedVersion?.status.toUpperCase() === "REJECTED") && !isAdminOrEditor && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-yellow-300 bg-white hover:bg-yellow-50 text-yellow-700 h-8 transition-all duration-300 hover:scale-105 active:scale-95"
+                    onClick={handleSendForReview}
+                  >
+                    Send for Review
+                  </Button>
+                )}
+        </div>
+      )}
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{prompt.title}</h1>
+            {selectedVersion && getStatusBadge(selectedVersion.status)}
+          </div>
+          <p className="text-sm text-muted-foreground line-clamp-2">
             {prompt.description || "No description available"}
           </p>
           {prompt.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {prompt.tags.map(t => (
-                <span key={t.id} className="text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground">
+                <span key={t.id} className="text-[10px] sm:text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground">
                   #{t.name}
                 </span>
               ))}
             </div>
           )}
         </div>
-        <div className="flex gap-3 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => toggleFavorite(prompt.id)}
-            style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: 'white' }}>
-            {isFavorite(prompt.id) ? <FaHeart /> : <FaRegHeart />}
-            {isFavorite(prompt.id) ? "Unfavorite" : "Favorite"}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => toggleFavorite(prompt.id)}
+            className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
+            style={{ backgroundColor: isFavorite(prompt.id) ? 'orange' : '', color: isFavorite(prompt.id) ? 'white' : '' }}
+          >
+            {isFavorite(prompt.id) ? <FaHeart className="shrink-0" /> : <FaRegHeart className="shrink-0" />}
+            <span className="ml-1 sm:inline hidden">
+              {isFavorite(prompt.id) ? "Unfavorite" : "Favorite"}
+            </span>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>Use Prompt</Link>
+          
+          <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5">
+            <Link href={`/playground?promptId=${id}&versionId=${selectedVersionId || prompt.versions[0]?.id}`}>
+              <span className="sm:inline hidden">Use Prompt</span>
+              <span className="sm:hidden">Use</span>
+            </Link>
           </Button>
 
-          {canEdit && (
-            <Button size="sm" asChild>
+          {(selectedVersion?.status.toUpperCase() === "DRAFT" || selectedVersion?.status.toUpperCase() === "REJECTED") && Number(userId) === prompt.owner.id && (
+             <Button 
+               size="sm" 
+               variant="outline"
+               onClick={handleSendForReview}
+               className="flex-1 sm:flex-none border-primary/20 text-primary transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5"
+             >
+               <ShieldAlert className="mr-2 h-4 w-4" />
+               Send for Review
+             </Button>
+          )}
+
+          {selectedVersion?.status.toUpperCase() === "REVIEW" && Number(userId) === prompt.owner.id && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancelReview}
+              className="flex-1 sm:flex-none border-yellow-400 text-yellow-700 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-yellow-50"
+            >
+              Cancel Review
+            </Button>
+          )}
+
+          {Number(userId) === prompt.owner.id &&
+            prompt.status.toUpperCase() !== "ARCHIVED" &&
+            prompt.status.toUpperCase() !== "REVIEW" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleArchive}
+                className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-muted"
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                <span className="sm:inline hidden">Archive</span>
+              </Button>
+            )}
+
+          {Number(userId) === prompt.owner.id && prompt.status.toUpperCase() === "ARCHIVED" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleUnarchive}
+              className="flex-1 sm:flex-none border-primary/20 text-primary transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5"
+            >
+              <ArchiveRestore className="mr-2 h-4 w-4" />
+              <span className="sm:inline hidden">Unarchive</span>
+            </Button>
+          )}
+
+          {canEdit && (isAdminOrEditor || selectedVersion?.status.toUpperCase() !== "REVIEW") && (
+            <Button size="sm" asChild className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
               <Link href={`/prompts/${id}/edit`}>Edit</Link>
             </Button>
           )}
+          
           {canDelete && (
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-1 h-4 w-4" /> Delete
+            <Button size="sm" variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none px-2 sm:px-3 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
+              <Trash2 className="h-4 w-4" />
+              <span className="ml-1 sm:inline hidden">Delete</span>
             </Button>
           )}
         </div>
@@ -201,10 +452,10 @@ export default function PromptDetailPage() {
                 <button
                   key={v.id}
                   onClick={() => setSelectedVersionId(v.id)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                  className={`text-xs px-4 py-1.5 rounded-full border transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 ${
                     selectedVersionId === v.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                      ? "bg-primary text-primary-foreground border-primary shadow-md"
+                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground hover:shadow-sm"
                   }`}
                 >
                   v{v.version_no}
@@ -217,7 +468,7 @@ export default function PromptDetailPage() {
           )}
 
           {/* Template Card */}
-          <Card className="border-border shadow-sm overflow-hidden">
+          <Card className="border-border shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md">
             <CardHeader className="bg-background pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold">
                 Template
@@ -228,15 +479,17 @@ export default function PromptDetailPage() {
                   </span>
                 )}
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={copyToClipboard}
-                title="Copy template"
-              >
-                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground transition-all duration-300 ease-in-out hover:text-primary hover:scale-110 active:scale-95 hover:bg-primary/10 rounded-md flex items-center justify-center"
+                  onClick={copyToClipboard}
+                  title="Copy template"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-2">
               <div className="bg-muted p-4 rounded-md border text-sm font-mono whitespace-pre-wrap text-foreground min-h-[120px]">
@@ -246,7 +499,7 @@ export default function PromptDetailPage() {
           </Card>
 
           {/* Version History Timeline */}
-          <Card className="border-border shadow-sm">
+          <Card className="border-border shadow-sm transition-all duration-500 hover:shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">Version History</CardTitle>
             </CardHeader>
@@ -271,38 +524,65 @@ export default function PromptDetailPage() {
                           <span className="text-[10px] font-bold">{v.version_no}</span>
                         </span>
 
-                        <button
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={() => setSelectedVersionId(v.id)}
-                          className={`w-full text-left py-3 px-3 rounded-md transition-colors group ${
-                            isSelected ? "bg-primary/5" : "hover:bg-muted/40"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setSelectedVersionId(v.id);
+                            }
+                          }}
+                          className={`w-full text-left py-3 px-3 rounded-md transition-all duration-300 ease-in-out group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            isSelected ? "bg-primary/10 shadow-sm" : "hover:bg-muted/40 hover:-translate-y-0.5 hover:shadow-sm"
                           }`}
                         >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}>
-                              v{v.version_no}
-                            </span>
-                            {isLatest && (
-                              <Badge variant="secondary" className="text-[10px] h-4 px-1.5">latest</Badge>
-                            )}
-                            {isSelected && (
-                              <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/40">
-                                viewing
-                              </Badge>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                                  v{v.version_no}
+                                </span>
+                                {isLatest && (
+                                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5">latest</Badge>
+                                )}
+                                {isSelected && (
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/40">
+                                    viewing
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {new Date(v.created_at).toLocaleString("en-GB", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })}
+                              </div>
+                              {v.promptVariables.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {v.promptVariables.length} variable{v.promptVariables.length > 1 ? "s" : ""}
+                                </p>
+                              )}
+                            </div>
+
+                            {canEdit && prompt.versions.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteVersion(v.id, v.version_no);
+                                }}
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                                title="Delete version"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {new Date(v.created_at).toLocaleString("en-GB", {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            })}
-                          </div>
-                          {v.promptVariables.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {v.promptVariables.length} variable{v.promptVariables.length > 1 ? "s" : ""}
-                            </p>
-                          )}
-                        </button>
+                        </div>
 
                         {idx < prompt.versions.length - 1 && <div className="h-2" />}
                       </li>
@@ -335,7 +615,7 @@ export default function PromptDetailPage() {
 
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Model</div>
-                <div className="text-sm">{prompt.recommended_model || "gpt-4.1"}</div>
+                <div className="text-sm">{prompt.recommended_models?.length ? prompt.recommended_models.join(", ") : "gpt-4.1"}</div>
               </div>
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1">
                 <div className="text-sm font-semibold text-muted-foreground">Versions</div>
@@ -399,6 +679,8 @@ export default function PromptDetailPage() {
       <div className="mt-8">
         <CommentSection promptId={prompt.id} />
       </div>
+
+      {confirmDialog}
     </div>
   );
 }

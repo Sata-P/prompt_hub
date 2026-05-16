@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Manrope, JetBrains_Mono } from "next/font/google";
+import { Inter, Manrope, JetBrains_Mono, IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import AuthProvider from "../component/SessionProvider";
@@ -13,6 +13,12 @@ const inter = Inter({
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
+});
+
+const ibmPlexThai = IBM_Plex_Sans_Thai({
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ibm-plex-thai",
+  subsets: ["thai", "latin"],
 });
 
 const mono = JetBrains_Mono({
@@ -33,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${manrope.variable} ${mono.variable} font-sans h-full antialiased`}
+      className={`${inter.variable} ${manrope.variable} ${ibmPlexThai.variable} ${mono.variable} font-sans h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>

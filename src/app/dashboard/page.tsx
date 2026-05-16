@@ -5,27 +5,14 @@ import Link from "next/link";
 import axios from "axios";
 import {
   FileText,
-  Plus,
   Clock,
   CheckCircle2,
-  AlertCircle,
   Archive,
-  PlayCircle,
-  FolderOpen,
-  Tag,
-  TrendingUp,
-  Star,
   ArrowRight,
-  ChevronDown,
-  X,
-  ExternalLink,
-  House,
+  LayoutDashboard,
 } from "lucide-react";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
-import { Button } from "@/component/ui/button";
 import { Skeleton } from "@/component/ui/skeleton";
-import { Badge } from "@/component/ui/badge";
 import { useSession } from "next-auth/react";
 
 type DashboardStats = {
@@ -45,30 +32,13 @@ type DashboardStats = {
     updated_at: string;
     category?: { name: string; color?: string } | null;
   }[];
-  totalCategories: number;
-  totalTags: number;
-  totalFavorites: number;
   systemTotalPrompts: number;
-  popularCategories: { id: number; name: string; color?: string | null; _count: { prompts: number }; prompts: { id: number; title: string; status: string }[] }[];
-  popularTags: { id: number; name: string; _count: { prompts: number }; prompts: { prompt: { id: number; title: string; status: string } }[] }[];
-};
-
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: "success" | "warning" | "secondary" | "outline" | "default" }
-> = {
-  PUBLISHED: { label: "Published", variant: "success" },
-  DRAFT:     { label: "Draft",     variant: "secondary" },
-  REVIEW:    { label: "Review",    variant: "warning" },
-  ARCHIVED:  { label: "Archived",  variant: "outline" },
-  REJECTED:  { label: "Rejected",  variant: "default" },
 };
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
-  const [viewingCategoryPrompts, setViewingCategoryPrompts] = useState<NonNullable<DashboardStats["popularCategories"]>[number] | null>(null);
 
   useEffect(() => {
     axios
@@ -78,275 +48,177 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <div className="min-h-full">
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8 shrink-0">
-            <House className="h-4 w-4 text-primary" />
+  if (loading) {
+    return (
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-48" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl" />
+            ))}
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
         </div>
+    );
+  }
+
+  return (
+    <div className="max-w-[1600px] mx-auto space-y-10 pb-10">
+      {/* ── Page Header ── */}
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+          <LayoutDashboard className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
+        </div>
+        <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold text-white tracking-tight">Dashboard</h1>
       </div>
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
-        <StatCard
-          label="My Prompts"
-          icon={<FileText className="h-5 w-5" />}
-          value={stats?.totalPrompts}
-          loading={loading}
-          accent="orange"
-        />
+      {/* ── Stats Section ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 2xl:gap-10">
         <StatCard
           label="Total Prompts"
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          value={stats?.systemTotalPrompts}
-          loading={loading}
-          accent="green"
+          value={stats?.totalPrompts ?? 0}
+          icon={<FileText className="h-6 w-6 text-white" />}
+          iconBg="bg-[#F97316]"
+          glowColor="rgba(249,115,22,0.4)"
         />
         <StatCard
-          label="Favorite Prompts"
-          icon={<Star className="h-5 w-5" />}
-          value={stats?.totalFavorites}
-          loading={loading}
-          accent="yellow"
+          label="Published"
+          value={stats?.byStatus?.PUBLISHED ?? 0}
+          icon={<CheckCircle2 className="h-6 w-6 text-white" />}
+          iconBg="bg-[#22C55E]"
+          glowColor="rgba(34,197,94,0.4)"
+        />
+        <StatCard
+          label="In Draft"
+          value={stats?.byStatus?.DRAFT ?? 0}
+          icon={<Clock className="h-6 w-6 text-white" />}
+          iconBg="bg-[#EB9109]"
+          glowColor="rgba(234,179,8,0.4)"
+        />
+        <StatCard
+          label="Archived"
+          value={stats?.byStatus?.ARCHIVED ?? 0}
+          icon={<Archive className="h-6 w-6 text-white" />}
+          iconBg="bg-[#A855F7]"
+          glowColor="rgba(168,85,247,0.4)"
         />
       </div>
 
-      {/* ── Main content grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in-up stagger-2">
-        {/* Recently updated prompts */}
-        <div className="lg:col-span-2">
-          <Card className="shadow-sm border-border/60 h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <CardTitle className="text-xl font-bold">Recently Updated</CardTitle>
-              </div>
-              <Button variant="ghost" size="sm" asChild className="text-xs text-orange-500 h-7 px-2 hover:text-orange-600 hover:bg-orange-500/10">
-                <Link href="/prompts">
-                  View all <ArrowRight className="h-3 w-3 ml-1" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {loading ? (
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-14 w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : !stats?.recentPrompts?.length ? (
-                <div className="py-10 text-center rounded-lg border border-dashed border-border">
-                  <FileText className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No prompts yet</p>
-                  <Button size="sm" className="mt-3" asChild>
-                    <Link href="/prompts/new">Create your first prompt</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {stats.recentPrompts.map((prompt, i) => {
-                    const cfg = STATUS_CONFIG[prompt.status] ?? STATUS_CONFIG.DRAFT;
-                    return (
-                      <Link
-                        key={prompt.id}
-                        href={`/prompts/${prompt.id}`}
-                        className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-accent/60 hover:border-primary/20 border border-transparent transition-all duration-150 group"
-                        style={{ animationDelay: `${i * 40}ms` }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 shrink-0 rounded-lg bg-orange-500/15 flex items-center justify-center text-orange-500">
-                            <FileText className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                              {prompt.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {prompt.category && (
-                                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                  {prompt.category.name}
-                                </span>
-                              )}
-                              <span className="text-[11px] text-muted-foreground">
-                                v{prompt.latest_version_no} ·{" "}
-                                {new Date(prompt.updated_at).toLocaleDateString("en-GB", {
-                                  day: "numeric",
-                                  month: "short",
-                                })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {/* <Badge variant={cfg.variant} className="shrink-0 ml-2 text-[10px]">
-                          {cfg.label}
-                        </Badge> */}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* ── Recently Updated Section ── */}
+      <div 
+        className="relative rounded-[15px] p-8 2xl:p-12 overflow-hidden transition-all duration-500"
+        style={{
+          background: "linear-gradient(#10071C, #10071C) padding-box, linear-gradient(135deg, #F97316 0%, rgba(249, 115, 22, 0.1) 45%, rgba(124, 58, 237, 0.1) 65%, #7c3aed 100%) border-box",
+          border: "1px solid transparent",
+          boxShadow: "0 0 20px rgba(0,0,0,0.4), 0 0 40px rgba(249,115,22,0.05)"
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-1.5 h-7 bg-[#F97316] rounded-full" />
+            <p className="text-2xl font-semibold text-white tracking-tight">Recently Updated</p>
+          </div>
+<Link 
+    href="/prompts" 
+    className="group flex items-center gap-2 text-[#F97316] font-semibold text-sm"
+  >
+    <span className="transition-all duration-300 ease-in-out group-hover:tracking-[0.05em]">
+      View all
+    </span>
+    <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+  </Link>
         </div>
 
-        {/* Right column: stats + quick actions */}
-        <div className="flex flex-col gap-4">
-          {/* Popular Tags card */}
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Tag className="h-5 w-5 text-primary" />
-                <CardTitle className="text-xl font-bold">Tags</CardTitle>
+        <div className="flex flex-col">
+          {stats?.recentPrompts?.map((prompt, i) => (
+            <Link 
+              key={prompt.id} 
+              href={`/prompts/${prompt.id}`}
+              className={`flex items-center justify-between py-6 ${i !== (stats.recentPrompts.length - 1) ? 'border-b border-white/5' : ''} group transition-all`}
+            >
+              <div className="flex items-center gap-6">
+                <div className="h-12 w-12 rounded-full bg-[#F97316] flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.3)] group-hover:scale-110 transition-transform">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-white group-hover:text-[#F97316] transition-colors">{prompt.title}</p>
+                  <p className="text-sm text-white/40 mt-1 font-medium">id: {prompt.id} · v{prompt.latest_version_no}</p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3 pb-4">
-              {loading ? (
-                <div className="flex flex-wrap gap-2">
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-6 w-14" />
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {stats?.popularTags?.map((tag) => (
-                    <Badge key={tag.id} variant="outline" className="flex items-center gap-1 hover:bg-accent/50 cursor-default bg-card">
-                      <Tag className="h-3 w-3 text-muted-foreground mr-0.5" />
-                      <span className="text-xs font-medium">{tag.name}</span>
-                      <span className="text-[10px] text-muted-foreground ml-1">({tag._count.prompts})</span>
-                    </Badge>
-                  ))}
-                  {stats?.popularTags?.length === 0 && (
-                     <p className="text-xs text-muted-foreground text-center py-2 w-full">No tags found</p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Popular Categories */}
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-primary" />
-                <CardTitle className="text-xl font-bold">Categories</CardTitle>
+              <div className="text-[#22C55E] font-bold text-sm tracking-wide">
+                {prompt.status === 'PUBLISHED' ? 'Published' : prompt.status.charAt(0) + prompt.status.slice(1).toLowerCase()}
               </div>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              {loading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {stats?.popularCategories?.map((cat) => (
-                    <div 
-                      key={cat.id} 
-                      className="flex items-center justify-between p-2 hover:bg-accent/50 transition-colors w-full text-left rounded-lg border border-border/60 bg-card cursor-pointer"
-                      onClick={() => setViewingCategoryPrompts(cat)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm font-medium">{cat.name}</span>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {cat.prompts.length} prompts
-                      </Badge>
-                    </div>
-                  ))}
-                  {stats?.popularCategories?.length === 0 && (
-                     <p className="text-xs text-muted-foreground text-center py-2">No categories found</p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </Link>
+          ))}
+          {!stats?.recentPrompts?.length && (
+            <div className="py-20 text-center">
+              <p className="text-white/40 font-medium">No prompts updated recently.</p>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Pop up showing prompts for a category */}
-      {viewingCategoryPrompts && (
-        <div className="fixed inset-0 bg-black/50 z-50">
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card p-6 rounded-lg max-w-md w-full border shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-foreground">
-                Prompts in &ldquo;{viewingCategoryPrompts.name}&rdquo;
-              </h3>
-              <Button size="icon" variant="ghost" onClick={() => setViewingCategoryPrompts(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            {viewingCategoryPrompts.prompts && viewingCategoryPrompts.prompts.length > 0 ? (
-              <ul className="space-y-2 max-h-60 overflow-y-auto">
-                {viewingCategoryPrompts.prompts.map(p => (
-                  <li key={p.id} className="text-sm border-b border-border pb-1.5 last:border-0 last:pb-0">
-                    <Link 
-                      href={`/prompts/${p.id}`} 
-                      className="text-muted-foreground hover:text-primary transition-colors flex items-center justify-between"
-                      onClick={() => setViewingCategoryPrompts(null)}
-                    >
-                      <span className="truncate">{p.title}</span>
-                      <ExternalLink className="h-3.5 w-3.5 shrink-0 ml-2 opacity-50" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No prompts linked to this category.</p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-/* ── Sub-components ── */
-
-function StatCard({
-  label,
-  icon,
-  value,
-  loading,
-  accent,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  value?: number;
-  loading: boolean;
-  accent: "orange" | "green" | "yellow" | "neutral";
+function StatCard({ 
+  label, 
+  value, 
+  icon, 
+  iconBg, 
+  glowColor 
+}: { 
+  label: string; 
+  value: number; 
+  icon: React.ReactNode; 
+  iconBg: string; 
+  glowColor: string; 
 }) {
-  const accentClasses = {
-    orange:  "bg-orange-500/15 text-orange-400",
-    green:   "bg-emerald-500/15 text-emerald-400",
-    yellow:  "bg-yellow-500/15 text-yellow-400",
-    neutral: "bg-white/8 text-muted-foreground",
-  };
-
   return (
-    <Card className="shadow-sm border-border/60 hover:border-primary/30 hover:shadow-md transition-all duration-200">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-            {loading ? (
-              <Skeleton className="h-7 w-14 mt-1" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground">{value ?? 0}</p>
-            )}
-          </div>
-          <div className={`p-2 rounded-lg ${accentClasses[accent]}`}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div 
+      className="relative rounded-[28px] p-10 flex items-center justify-between overflow-hidden hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.6),0_0_50px_var(--glow)] transition-all duration-500 cursor-pointer group"
+      style={{
+        background: `linear-gradient(#10071C, #10071C) padding-box, var(--border-grad) border-box`,
+        border: "1px solid transparent",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+        "--glow": glowColor,
+        "--border-grad": "linear-gradient(145deg, #F97316 0%, #7c3aed 35%, rgba(124, 58, 237, 0.1) 40%, rgba(249, 115, 22, 0.1) 100%)"
+      } as React.CSSProperties}
+    >
+      {/* Shine Effect on Hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: `radial-gradient(circle at 0% 0%, ${glowColor.replace('0.4', '0.2')}, transparent 50%)` }} 
+      />
+      
+      {/* Intense Border Glow on Hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[28px]" 
+        style={{ 
+          padding: '1px',
+          background: `linear-gradient(135deg, ${glowColor} 0%, transparent 50%)`,
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude'
+        }} 
+      />
+      <div className="relative z-10">
+        <p className="text-sm font-medium text-white/40 mb-2 uppercase tracking-widest">{label}</p>
+        <p className="text-3xl font-bold text-white tabular-nums mt-3">{value}</p>
+      </div>
+      <div 
+        className={`relative z-10 h-12 w-12 rounded-full flex items-center justify-center ${iconBg} shadow-lg`}
+        style={{ boxShadow: `0 0 20px ${glowColor}` }}
+      >
+        {icon}
+      </div>
+      {/* Subtle background glow */}
+      <div 
+        className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full blur-[60px] opacity-20"
+        style={{ backgroundColor: glowColor }}
+      />
+    </div>
   );
-};
-
-
+}
