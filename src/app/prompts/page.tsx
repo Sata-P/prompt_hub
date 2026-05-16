@@ -54,10 +54,17 @@ export default function PromptsList() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterModel, setFilterModel] = useState("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
+
+  // Debounce search input (300ms) so we don't hit the API on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   // Load categories and tags once
   useEffect(() => { 
@@ -82,7 +89,7 @@ export default function PromptsList() {
         searchParams.append("page", String(page));
         searchParams.append("limit", "20");
         
-        if (searchQuery) searchParams.append("q", searchQuery);
+        if (debouncedSearchQuery) searchParams.append("q", debouncedSearchQuery);
         if (filterCategory !== "all") searchParams.append("categoryId", filterCategory);
         if (filterStatus !== "all") searchParams.append("status", filterStatus.toUpperCase());
         if (filterModel !== "all") searchParams.append("model", filterModel);
@@ -93,11 +100,11 @@ export default function PromptsList() {
         const res = await fetch(`/api/prompts?${searchParams.toString()}`, {
           signal: controller.signal,
         });
-        
+
         if (!res.ok) throw new Error("Failed to load prompts");
-        
+
         const data = await res.json();
-        
+
         setPrompts(data.data);
         setPagination(data.pagination);
       } catch (err: unknown) {
@@ -113,12 +120,12 @@ export default function PromptsList() {
     return () => {
       controller.abort();
     };
-  }, [searchQuery, filterCategory, filterStatus, filterModel, filterTags, page]);
+  }, [debouncedSearchQuery, filterCategory, filterStatus, filterModel, filterTags, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, filterCategory, filterStatus, filterModel, filterTags]);
+  }, [debouncedSearchQuery, filterCategory, filterStatus, filterModel, filterTags]);
 
   const getStatusText = (status: Prompt["status"]) => {
     switch (status) {
@@ -151,33 +158,33 @@ export default function PromptsList() {
     <div className="pb-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center">
-            <div className="rounded-[12px] bg-primary flex items-center justify-center mr-2 h-8 w-8">
-              <FileText className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2">
+            <div className="rounded-[12px] bg-primary flex items-center justify-center h-8 w-8 xl:h-10 xl:w-10">
+              <FileText className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground gap-2">
+            <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold text-foreground">
               Prompt Library
             </h1>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">Search, filter and manage prompts in the system</p>
+          <p className="mt-1 text-sm xl:text-base text-muted-foreground">Search, filter and manage prompts in the system</p>
         </div>
         <Link href="/prompts/new" className="w-full sm:w-auto block">
-          <Button className="w-full sm:w-auto transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg active:scale-95">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button className="w-full sm:w-auto xl:h-11 xl:text-base xl:px-6 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg active:scale-95">
+            <Plus className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
             New Prompt
           </Button>
         </Link>
       </div>
 
       {/* แถบตัวกรอง */}
-      <div data-slot="card" className="mt-6 rounded-2xl p-5 shadow-sm border bg-card transition-all duration-500 hover:shadow-md space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div data-slot="card" className="mt-6 rounded-2xl p-4 sm:p-5 xl:p-6 shadow-sm border bg-card transition-all duration-500 hover:shadow-md space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
           {/* Search */}
-          <div className="relative md:col-span-2 lg:col-span-2">
+          <div className="relative sm:col-span-2 lg:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search prompts..."
-              className="pl-9 h-12 bg-background text-sm"
+              className="pl-9 h-11 sm:h-12 bg-background text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -185,7 +192,7 @@ export default function PromptsList() {
 
           {/* Category */}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="h-12 bg-background">
+            <SelectTrigger className="h-11 sm:h-12 bg-background">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
@@ -198,7 +205,7 @@ export default function PromptsList() {
 
           {/* Status */}
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-12 bg-background">
+            <SelectTrigger className="h-11 sm:h-12 bg-background">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -208,18 +215,14 @@ export default function PromptsList() {
                 <SelectItem value="review">REVIEW</SelectItem>
               )}
               <SelectItem value="published">APPROVED</SelectItem>
-              {!isAdminOrEditor && (
-                <SelectItem value="rejected">REJECTED</SelectItem>
-              )}
-              {isAdminOrEditor && (
-                <SelectItem value="archived">ARCHIVED</SelectItem>
-              )}
+              <SelectItem value="rejected">REJECTED</SelectItem>
+              <SelectItem value="archived">ARCHIVED</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Model */}
           <Select value={filterModel} onValueChange={setFilterModel}>
-            <SelectTrigger className="h-12 bg-background">
+            <SelectTrigger className="h-11 sm:h-12 bg-background">
               <SelectValue placeholder="All Models" />
             </SelectTrigger>
             <SelectContent>
@@ -234,16 +237,16 @@ export default function PromptsList() {
         </div>
 
         {/* Row 2: Tag filter + clear */}
-        <div className="flex items-start sm:items-center justify-between gap-3 min-h-[48px]">
-          <div className="flex items-center gap-2 flex-wrap flex-1">
-            <span className="text-[15px] text-muted-foreground font-medium">Tags:</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:min-h-[48px]">
+          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+            <span className="text-sm xl:text-base text-muted-foreground font-medium">Tags:</span>
             
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  className="w-[220px] justify-between text-s h-12 bg-background border-border hover:bg-muted/50"
+                  className="w-full sm:w-[220px] xl:w-[260px] justify-between text-sm h-11 sm:h-12 bg-background border-border hover:bg-muted/50"
                 >
                   {filterTags.length > 0
                     ? `${filterTags.length} tag(s) selected`
@@ -291,17 +294,29 @@ export default function PromptsList() {
             {/* Selected Tags Display */}
             {filterTags.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 ml-1">
-                {filterTags.map((tag) => (
-                  <Badge 
-                    key={tag} 
-                    variant="secondary"
-                    className="cursor-pointer text-[11px] font-normal px-2.5 py-0.5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors"
-                    onClick={() => setFilterTags(filterTags.filter(t => t !== tag))}
-                  >
-                    #{tag}
-                    <X className="h-3 w-3 ml-1 opacity-50" />
-                  </Badge>
-                ))}
+                {filterTags.map((tag) => {
+                  const remove = () => setFilterTags(filterTags.filter(t => t !== tag));
+                  return (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Remove tag ${tag}`}
+                      className="cursor-pointer text-[11px] font-normal px-2.5 py-0.5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors focus-visible:ring-2 focus-visible:ring-destructive focus-visible:outline-none"
+                      onClick={remove}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          remove();
+                        }
+                      }}
+                    >
+                      #{tag}
+                      <X className="h-3 w-3 ml-1 opacity-50" aria-hidden="true" />
+                    </Badge>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -323,24 +338,24 @@ export default function PromptsList() {
           <table className="w-full text-base font-medium">
             <thead>
               <tr className="border-b bg-muted/20">
-                <th className="w-[32%] pl-6 pr-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Title</th>
-                <th className="w-[12%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Category</th>
-                <th className="w-[18%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Tags</th>
-                <th className="w-[15%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Model</th>
-                <th className="w-[10%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Status</th>
-                <th className="w-[13%] pl-4 pr-6 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px] whitespace-nowrap">Updated</th>
+                <th className="w-[32%] pl-4 sm:pl-6 xl:pl-8 pr-4 py-3 xl:py-4 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">Title</th>
+                <th className="w-[12%] px-3 xl:px-4 py-3 xl:py-4 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">Category</th>
+                <th className="w-[18%] px-3 xl:px-4 py-3 xl:py-4 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">Tags</th>
+                <th className="w-[15%] px-3 xl:px-4 py-3 xl:py-4 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">Model</th>
+                <th className="w-[10%] px-3 xl:px-4 py-3 xl:py-4 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">Status</th>
+                <th className="w-[13%] pl-3 xl:pl-4 pr-4 sm:pr-6 xl:pr-8 py-3 xl:py-4 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs whitespace-nowrap hidden lg:table-cell">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border" role={loading ? "status" : undefined} aria-busy={loading}>
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
-                    <td className="px-5 py-6"><Skeleton className="h-6 w-48" /></td>
-                    <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
-                    <td className="px-5 py-6"><Skeleton className="h-6 w-28" /></td>
-                    <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
-                    <td className="px-5 py-6"><Skeleton className="h-6 w-20" /></td>
-                    <td className="px-5 py-6"><Skeleton className="h-6 w-32" /></td>
+                    <td className="px-4 xl:px-5 py-5 xl:py-6"><Skeleton className="h-6 w-48" /></td>
+                    <td className="px-3 xl:px-4 py-5 xl:py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-3 xl:px-4 py-5 xl:py-6"><Skeleton className="h-6 w-28" /></td>
+                    <td className="px-3 xl:px-4 py-5 xl:py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-3 xl:px-4 py-5 xl:py-6"><Skeleton className="h-6 w-20" /></td>
+                    <td className="px-3 xl:px-4 py-5 xl:py-6 hidden lg:table-cell"><Skeleton className="h-6 w-32" /></td>
                   </tr>
                 ))
               ) : prompts.length === 0 ? (
@@ -352,18 +367,18 @@ export default function PromptsList() {
               ) : (
                 prompts.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/30 transition-all duration-300 group">
-                    <td className="pl-6 pr-4 py-5">
-                      <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-bold text-lg">
+                    <td className="pl-4 sm:pl-6 xl:pl-8 pr-4 py-4 xl:py-5">
+                      <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-semibold text-base xl:text-lg">
                         {p.title}
                       </Link>
                       {p.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{p.description}</p>
+                        <p className="text-xs xl:text-sm text-muted-foreground mt-1 line-clamp-1">{p.description}</p>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-muted-foreground text-base">
+                    <td className="px-3 xl:px-4 py-4 xl:py-5 text-muted-foreground text-sm xl:text-base">
                       {p.category ? p.category.name : "-"}
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-3 xl:px-4 py-4 xl:py-5">
                       <div className="flex flex-wrap gap-1.5">
                         {p.tags.length > 0 ? (
                           <>
@@ -395,14 +410,14 @@ export default function PromptsList() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-3 xl:px-4 py-4 xl:py-5">
                       <div className="flex flex-wrap gap-1">
                         {p.recommended_models && p.recommended_models.length > 0 ? (
                           <>
                             {p.recommended_models.slice(0, 2).map((model) => (
                               <Tooltip key={model}>
                                 <TooltipTrigger asChild>
-                                  <span className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground text-[13px] whitespace-nowrap cursor-default">
+                                  <span className="bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground text-[13px] whitespace-nowrap cursor-default">
                                     {model}
                                   </span>
                                 </TooltipTrigger>
@@ -433,11 +448,11 @@ export default function PromptsList() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-3 xl:px-4 py-4 xl:py-5">
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[10px] font-bold px-2 py-0",
+                          "text-[10px] xl:text-xs font-bold px-2 py-0",
                           p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
                           p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
                           p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
@@ -447,8 +462,8 @@ export default function PromptsList() {
                         {getStatusText(p.status)}
                       </Badge>
                     </td>
-                    <td className="pl-4 pr-6 py-5 text-muted-foreground text-base whitespace-nowrap">
-                      {new Date(p.updated_at).toISOString().split("T")[0]}
+                    <td className="pl-3 xl:pl-4 pr-4 sm:pr-6 xl:pr-8 py-4 xl:py-5 text-muted-foreground text-xs xl:text-sm whitespace-nowrap hidden lg:table-cell">
+                      {new Date(p.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
                   </tr>
                 ))
@@ -458,11 +473,11 @@ export default function PromptsList() {
         </div>
       </div>
 
-      {/* Card Layout (Mobile) */}
-      <div className="mt-6 space-y-4 md:hidden">
+      {/* Card Layout (Mobile + Small tablet) */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
         {loading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="bg-card border rounded-xl p-5 space-y-4">
+          [...Array(4)].map((_, i) => (
+            <div key={i} className="bg-card border rounded-xl p-5 space-y-4" role="status" aria-busy="true">
               <Skeleton className="h-6 w-3/4" />
               <Skeleton className="h-5 w-1/2" />
               <div className="flex gap-2">
@@ -472,7 +487,7 @@ export default function PromptsList() {
             </div>
           ))
         ) : prompts.length === 0 ? (
-          <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl text-lg">
+          <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed rounded-xl text-lg">
             No prompts found
           </div>
         ) : (
@@ -556,17 +571,17 @@ export default function PromptsList() {
 
       {/* Pagination Controls */}
       {pagination.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            Page {pagination.page} of {pagination.totalPages} (Total {pagination.total} prompts)
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs xl:text-sm text-muted-foreground text-center sm:text-left">
+            Page {pagination.page} of {pagination.totalPages} <span className="opacity-70">({pagination.total} total)</span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="h-9 px-4 transition-all duration-300 hover:scale-105 active:scale-95"
+              className="h-9 xl:h-10 px-4 xl:px-5 flex-1 sm:flex-none transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
@@ -576,7 +591,7 @@ export default function PromptsList() {
               size="sm"
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="h-9 px-4 transition-all duration-300 hover:scale-105 active:scale-95"
+              className="h-9 xl:h-10 px-4 xl:px-5 flex-1 sm:flex-none transition-all duration-300 hover:scale-105 active:scale-95"
             >
               Next
               <ChevronRight className="h-4 w-4 ml-1" />

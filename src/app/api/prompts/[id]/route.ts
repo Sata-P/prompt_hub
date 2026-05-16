@@ -59,7 +59,8 @@ export async function GET(request: Request, { params }: RouteContext) {
       const vs = v.status.toUpperCase();
       if (vs === "PUBLISHED") return true;
       if (vs === "REVIEW") return isOwner || isAdminOrEditor;
-      return isOwner; // DRAFT/REJECTED/ARCHIVED/etc: Only owner
+      if (vs === "REJECTED") return isOwner || isAdminOrEditor; // Admins/editors must see what they rejected
+      return isOwner; // DRAFT/ARCHIVED: Only owner
     });
 
     // 2. Check prompt-level access based on available versions
@@ -159,6 +160,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         let actionName = "UPDATE_PROMPT_STATUS";
         if (status === "REVIEW") actionName = "SEND_FOR_REVIEW";
         else if (status === "DRAFT" && existing.status === "REVIEW") actionName = "CANCEL_REVIEW";
+        else if (status === "DRAFT" && existing.status === "ARCHIVED") actionName = "UNARCHIVE_PROMPT";
+        else if (status === "ARCHIVED") actionName = "ARCHIVE_PROMPT";
         else if (status === "PUBLISHED") actionName = "PUBLISH_PROMPT";
 
         await tx.activity_log.create({

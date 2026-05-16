@@ -203,12 +203,12 @@ export default function SettingsPage() {
     <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
       <div>
         <div className="flex items-center gap-2.5 mb-1">
-          <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
-            <Settings className="h-4 w-4 text-white" />
+          <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+            <Settings className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">System Settings</h1>
+          <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight">System Settings</h1>
         </div>
-        <p className="text-muted-foreground mt-1">Manage categories and tags for all prompts</p>
+        <p className="text-sm xl:text-base text-muted-foreground mt-1">Manage categories and tags for all prompts</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

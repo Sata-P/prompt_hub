@@ -50,20 +50,21 @@ export async function GET(request: Request) {
     const userRole = session?.user?.role?.toUpperCase();
 
     // Visibility rules:
-    // 1. DRAFT/REJECTED: Only owner
-    // 2. REVIEW: Owner, Admin, Editor
-    // 3. PUBLISHED: Everyone
-    
+    // 1. DRAFT: Only owner
+    // 2. REVIEW / REJECTED: Owner, Admin, Editor (admins must see what they rejected)
+    // 3. ARCHIVED: Only owner
+    // 4. PUBLISHED: Everyone IF visibility=PUBLIC. PRIVATE PUBLISHED is owner-only.
     const defaultOr: any[] = [
-      { status: "PUBLISHED" }, // Everyone
+      { status: "PUBLISHED", visibility: "PUBLIC" }, // Public + Published is visible to anyone
     ];
 
     if (userId) {
-      defaultOr.push({ owner_id: userId });    // Owner sees all their own
+      defaultOr.push({ owner_id: userId });    // Owner sees all their own (any status/visibility)
     }
 
     if (userRole === "ADMIN" || userRole === "EDITOR") {
-      defaultOr.push({ status: "REVIEW" }); // Admins/Editors see all pending reviews
+      defaultOr.push({ status: "REVIEW" });   // Admins/Editors see all pending reviews
+      defaultOr.push({ status: "REJECTED" }); // Admins/Editors see prompts they rejected
     }
 
     andConditions.push({ OR: defaultOr });

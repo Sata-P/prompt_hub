@@ -70,10 +70,10 @@ export default function DashboardPage() {
     <div className="max-w-[1600px] mx-auto space-y-10 pb-10">
       {/* ── Page Header ── */}
       <div className="flex items-center gap-2.5">
-        <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
-          <LayoutDashboard className="h-4 w-4 text-white" />
+        <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+          <LayoutDashboard className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold text-white tracking-tight">Dashboard</h1>
       </div>
 
       {/* ── Stats Section ── */}

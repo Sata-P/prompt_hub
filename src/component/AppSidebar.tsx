@@ -14,6 +14,7 @@ import {
   Activity,
   ChevronRight,
   ChevronDown,
+  LogOut,
 } from "lucide-react";
 
 import {
@@ -29,6 +30,12 @@ import {
   useSidebar,
 } from "@/component/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/component/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/component/ui/dropdown-menu";
 
 const navItems = [
   { label: "Dashboard",    icon: LayoutDashboard,     path: "/dashboard" },
@@ -134,20 +141,41 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="mt-auto p-4 border-t border-white/5 bg-transparent">
-        <div className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-white/5 cursor-pointer">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F97316] text-sm font-bold text-white shadow-md shadow-orange-500/20">
-            {user.name?.substring(0, 2).toUpperCase() || "AT"}
-          </div>
-          <div className="flex flex-1 flex-col overflow-hidden text-left">
-            <span className="truncate text-sm font-semibold text-white">
-              {user.name || "admin test"}
-            </span>
-            <span className="truncate text-[10px] text-gray-400 uppercase tracking-wide">
-              {user.role || "admin"}
-            </span>
-          </div>
-          <ChevronDown className="h-4 w-4 text-gray-400" />
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="group flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F97316] text-sm font-bold text-white shadow-md shadow-orange-500/20">
+                {user.name?.substring(0, 2).toUpperCase() || "AT"}
+              </div>
+              <div className="flex flex-1 flex-col overflow-hidden text-left">
+                <span className="truncate text-sm font-semibold text-white">
+                  {user.name || "admin test"}
+                </span>
+                <span className="truncate text-[10px] text-gray-400 uppercase tracking-wide">
+                  {user.role || "admin"}
+                </span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-400 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="end"
+            sideOffset={8}
+            className="w-[240px]"
+          >
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
   );

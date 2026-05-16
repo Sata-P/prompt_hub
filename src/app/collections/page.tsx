@@ -249,24 +249,24 @@ export default function CollectionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
-              <FolderOpen className="h-4 w-4 text-white" />
+            <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+              <FolderOpen className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground">
               Collections
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm xl:text-base text-muted-foreground">
             Group prompts into themed sets for your team
           </p>
         </div>
-        
+
         {isAdmin && (
-          <Button 
-            className="shrink-0 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
+          <Button
+            className="shrink-0 xl:h-11 xl:text-base xl:px-6 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
             onClick={() => { resetForm(); setIsCreateOpen(true); }}
           >
-            <Plus className="mr-2 h-4 w-4" /> Create Collection
+            <Plus className="mr-2 h-4 w-4 xl:h-5 xl:w-5" /> Create Collection
           </Button>
         )}
       </div>

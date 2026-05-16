@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { Copy, Check, Clock, ChevronDown, Trash2, AlertCircle, CheckCircle2, XCircle, ShieldAlert } from "lucide-react";
+import { Copy, Check, Clock, ChevronDown, Trash2, AlertCircle, CheckCircle2, XCircle, ShieldAlert, Archive, ArchiveRestore } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
@@ -160,6 +160,32 @@ export default function PromptDetailPage() {
       window.location.reload();
     } catch (err: any) {
       alert(err.response?.data?.error || "Failed to cancel review.");
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!prompt) return;
+    if (!confirm("Archive this prompt? It will be hidden from active listings but can be restored later.")) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "ARCHIVED" });
+      alert("Prompt archived successfully.");
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to archive prompt.");
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!prompt) return;
+    if (!confirm("Restore this prompt to draft?")) return;
+
+    try {
+      await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
+      alert("Prompt unarchived successfully.");
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Failed to unarchive prompt.");
     }
   };
 
@@ -332,6 +358,32 @@ export default function PromptDetailPage() {
               className="flex-1 sm:flex-none border-yellow-400 text-yellow-700 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-yellow-50"
             >
               Cancel Review
+            </Button>
+          )}
+
+          {Number(userId) === prompt.owner.id &&
+            prompt.status.toUpperCase() !== "ARCHIVED" &&
+            prompt.status.toUpperCase() !== "REVIEW" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleArchive}
+                className="flex-1 sm:flex-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-muted"
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                <span className="sm:inline hidden">Archive</span>
+              </Button>
+            )}
+
+          {Number(userId) === prompt.owner.id && prompt.status.toUpperCase() === "ARCHIVED" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleUnarchive}
+              className="flex-1 sm:flex-none border-primary/20 text-primary transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-primary/5"
+            >
+              <ArchiveRestore className="mr-2 h-4 w-4" />
+              <span className="sm:inline hidden">Unarchive</span>
             </Button>
           )}
 

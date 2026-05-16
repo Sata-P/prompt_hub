@@ -22,6 +22,7 @@ import {
   Search,
   X,
   FlaskConical,
+  Layers,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -89,6 +90,22 @@ type PromptRun = {
 // -------------------------------------------------------
 
 const ITEMS_PER_PAGE = 9;
+
+// Status badge matching the collections/[id] pattern
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
+    DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
+    REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+  };
+  const s = map[status] ?? { label: status, cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+  return (
+    <span className={`inline-flex items-center px-1.5 h-4 rounded text-[10px] font-bold border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+}
 
 function PlaygroundContent() {
   const searchParams = useSearchParams();
@@ -503,24 +520,24 @@ function PlaygroundContent() {
   // -------------------------------------------------------
   if (!promptId) {
     return (
-      <div className="pb-20 max-w-6xl mx-auto space-y-6 pt-4 px-4 fade-in-up">
+      <div className="pb-20 space-y-6 fade-in-up">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
-                <PlayCircle className="h-4 w-4 text-white" />
+              <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+                <PlayCircle className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
+              <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground font-heading">
                 Prompt Playground
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm xl:text-base text-muted-foreground">
               Select a Prompt to test with an AI Model
             </p>
           </div>
           {!loadingList && publicPrompts.length > 0 && (
-            <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3.5 py-1.5 rounded-full">
-              <FlaskConical className="h-3.5 w-3.5" />
+            <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm xl:text-base font-medium px-3.5 py-1.5 xl:px-4 xl:py-2 rounded-full">
+              <FlaskConical className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
               {filteredPrompts.length} prompt{filteredPrompts.length !== 1 ? "s" : ""}
             </div>
           )}
@@ -528,14 +545,14 @@ function PlaygroundContent() {
 
         {/* Search bar */}
         {!loadingList && publicPrompts.length > 0 && (
-          <div className="relative mb-6 max-w-sm">
+          <div className="relative mb-6 max-w-sm xl:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search prompts..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-9 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-9 xl:h-10 pl-9 pr-9 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
             />
             {search && (
               <button
@@ -549,9 +566,19 @@ function PlaygroundContent() {
         )}
 
         {loadingList ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-xl" />
+              <div key={i} className="bg-card border border-border rounded-xl px-6 py-5 space-y-3 h-full min-h-[160px]" role="status" aria-busy="true">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <div className="flex-1" />
+                <div className="pt-3 border-t border-border flex justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
             ))}
           </div>
         ) : publicPrompts.length === 0 ? (
@@ -576,49 +603,74 @@ function PlaygroundContent() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pagedPrompts.map((p) => (
-                <Card
-                  key={p.id}
-                  className="flex flex-col border hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] cursor-pointer transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card group hover:cursor-pointer min-h-[160px]"
-                  onClick={() => router.push(`/playground?promptId=${p.id}`)}
-                >
-                  <CardHeader>
-                    <TooltipProvider>
-                      <Tooltip delayDuration={300}>
-                        <TooltipTrigger asChild>
-                          <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors text-left cursor-help">
-                            {p.title}
-                          </CardTitle>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[300px]">
-                          <p className="font-semibold">{p.title}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    {p.description ? (
-                      <TooltipProvider>
-                        <Tooltip delayDuration={300}>
-                          <TooltipTrigger asChild>
-                            <p className="text-sm text-muted-foreground line-clamp-2 text-left cursor-help">
-                              {p.description}
-                            </p>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-[300px] text-sm whitespace-pre-wrap">
-                            <p>{p.description}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
-                      <p className="text-sm text-muted-foreground/60 italic text-left">
-                        No description available
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {pagedPrompts.map((p) => {
+                const recommendedModel = Array.isArray(p.recommended_models)
+                  ? p.recommended_models[0]
+                  : p.recommended_model ?? null;
+                return (
+                  <div
+                    key={p.id}
+                    data-slot="card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(`/playground?promptId=${p.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/playground?promptId=${p.id}`);
+                      }
+                    }}
+                    className="group relative flex flex-col rounded-xl px-6 py-5 border bg-card transition-all duration-300 ease-in-out hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:scale-[1.01] active:scale-95 cursor-pointer h-full min-h-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[20px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
+                          {p.title}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {p.status && <StatusBadge status={p.status} />}
+                          {p.category && (
+                            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                              {p.category.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {p.description && (
+                      <p className="mt-3 text-sm text-muted-foreground line-clamp-2 text-left">
+                        {p.description}
                       </p>
                     )}
-                  </CardContent>
-                </Card>
-              ))}
+
+                    <div className="flex-1" />
+
+                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <Layers className="h-3 w-3" />
+                          v{p.latest_version_no ?? 1}
+                        </span>
+                        {recommendedModel && (
+                          <span className="hidden sm:block truncate max-w-[100px] opacity-60 text-[11px]">
+                            {recommendedModel}
+                          </span>
+                        )}
+                      </div>
+                      {p.updated_at && (
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Clock className="h-3 w-3" />
+                          {new Date(p.updated_at).toLocaleDateString("en-GB", {
+                            day: "numeric", month: "short", year: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Pagination controls */}
@@ -661,19 +713,19 @@ function PlaygroundContent() {
   // Main Playground UI
   // -------------------------------------------------------
   return (
-    <div className="pb-20 max-w-7xl mx-auto space-y-5 pt-4 px-4 fade-in-up">
+    <div className="pb-20 space-y-5 fade-in-up">
       {/* Header */}
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-4">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Sparkles className="h-4 w-4 xl:h-5 xl:w-5 text-primary" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-heading truncate">
+            <h1 className="text-xl sm:text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground font-heading truncate">
               {promptTitle || "Prompt Playground"}
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm xl:text-base text-muted-foreground">
             Enter variables, select a model, and click Run to test with AI
           </p>
         </div>

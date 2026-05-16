@@ -120,12 +120,12 @@ export default function ActivityLogPage() {
       <div className="flex items-center gap-3 mb-8">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center shrink-0">
-              <Activity className="h-4 w-4 text-white" />
+            <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center shrink-0">
+              <Activity className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
+            <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold text-foreground">Activity Log</h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm xl:text-base text-muted-foreground">
             {isAdmin ? "All system-wide activity across every user" : "Your personal activity history"}
           </p>
         </div>

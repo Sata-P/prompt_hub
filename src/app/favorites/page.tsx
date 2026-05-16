@@ -68,7 +68,10 @@ function PromptCard({
   const totalVars = p?.versions?.reduce((sum, version) => sum + version.promptVariables.length , 0);
 
   return (
-    <div data-slot="card" className="group relative rounded-xl border px-6 py-5 hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card flex flex-col h-full min-h-[160px] cursor-pointer">
+    <div
+      data-slot="card"
+      className="group relative flex flex-col rounded-xl px-6 py-5 border transition-all duration-300 ease-in-out bg-card h-full min-h-[160px] hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:scale-[1.01] active:scale-95 cursor-pointer"
+    >
       {/* Unfavorite button */}
       <button
         onClick={(e) => {
@@ -83,46 +86,45 @@ function PromptCard({
       </button>
 
       <Link href={`/prompts/${p.id}`} className="flex flex-col flex-1">
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="flex items-start gap-3 pr-8">
-            <div className="min-w-0 flex-1">
-              <p className="text-[20px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
-                {p.title}
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <StatusBadge status={p.status} />
-                {p.category && (
-                  <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
-                    {p.category.name}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Tags */}
-          {p.tags?.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {p.tags.slice(0, 4).map((t) => (
-                <span
-                  key={t.id}
-                  className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground"
-                >
-                  <Tag className="h-2.5 w-2.5" />
-                  {t.name}
-                </span>
-              ))}
-              {p.tags.length > 4 && (
-                <span className="text-xs text-muted-foreground px-2 py-0.5">
-                  +{p.tags.length - 4} more
+        <div className="flex items-start gap-3 pr-8">
+          <div className="min-w-0 flex-1">
+            <p className="text-[20px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
+              {p.title}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={p.status} />
+              {p.category && (
+                <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                  {p.category.name}
                 </span>
               )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Footer stats */}
+        {/* Tags */}
+        {p.tags?.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {p.tags.slice(0, 4).map((t) => (
+              <span
+                key={t.id}
+                className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground"
+              >
+                <Tag className="h-2.5 w-2.5" />
+                {t.name}
+              </span>
+            ))}
+            {p.tags.length > 4 && (
+              <span className="text-xs text-muted-foreground px-2 py-0.5">
+                +{p.tags.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Footer stats — matches collections/[id] */}
         <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
@@ -136,8 +138,8 @@ function PromptCard({
               </span>
             )}
             {p.recommended_model && (
-              <span className="hidden sm:flex items-center gap-1 truncate max-w-[120px]">
-                <span className="opacity-60">{p.recommended_model}</span>
+              <span className="hidden sm:block truncate max-w-[100px] opacity-60 text-[11px]">
+                {p.recommended_model}
               </span>
             )}
           </div>
@@ -218,28 +220,28 @@ export default function FavoritesPage() {
 
   /* ── Render ── */
   return (
-    <div className="pb-20 max-w-6xl mx-auto space-y-6 pt-4 px-4 fade-in-up">
+    <div className="pb-20 space-y-6 fade-in-up">
 
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
-              <Star className="h-4 w-4 text-white" />
+            <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
+              <Star className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight text-foreground">
               Favorites
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm xl:text-base text-muted-foreground">
             All prompts you&apos;ve marked as favorite
           </p>
         </div>
 
         {/* Count pill */}
         {!isLoading && favorites.length > 0 && (
-          <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm font-medium px-3.5 py-1.5 rounded-full">
-            <Heart className="h-3.5 w-3.5 fill-primary" />
+          <div className="shrink-0 flex items-center gap-1.5 bg-primary/10 text-primary text-sm xl:text-base font-medium px-3.5 py-1.5 xl:px-4 xl:py-2 rounded-full">
+            <Heart className="h-3.5 w-3.5 xl:h-4 xl:w-4 fill-primary" />
             {favorites.length} prompt{favorites.length > 1 ? "s" : ""}
           </div>
         )}
@@ -247,13 +249,13 @@ export default function FavoritesPage() {
 
       {/* ── Search bar ── */}
       {!isLoading && favorites.length > 0 && (
-        <div className="relative mb-6 max-w-sm">
+        <div className="relative mb-6 max-w-sm xl:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search favorites..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-9 h-9 text-sm bg-background"
+            className="pl-9 pr-9 h-9 xl:h-10 text-sm bg-background"
           />
           {search && (
             <button
@@ -269,7 +271,7 @@ export default function FavoritesPage() {
       {/* ── Content ── */}
       {isLoading ? (
         /* Skeleton grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}
@@ -310,7 +312,7 @@ export default function FavoritesPage() {
       ) : (
         <>
           {/* Card grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
             {paged.map((item) => (
               <PromptCard
                 key={item.id}
