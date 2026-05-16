@@ -205,16 +205,19 @@ export default function PromptDetailPage() {
 
   const handleUnarchive = async () => {
     if (!prompt) return;
+    const newStatus = isAdminOrEditor ? "PUBLISHED" : "DRAFT";
     const ok = await confirm({
-      title: "Restore this prompt to draft?",
-      description: "It will move back to your drafts and become editable again.",
-      confirmLabel: "Restore",
+      title: isAdminOrEditor ? "Restore and publish this prompt?" : "Restore this prompt to draft?",
+      description: isAdminOrEditor
+        ? "It will be unarchived and published immediately."
+        : "It will move back to your drafts and become editable again.",
+      confirmLabel: isAdminOrEditor ? "Restore & Publish" : "Restore",
     });
     if (!ok) return;
 
     try {
-      await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
-      toast.success("Prompt unarchived.");
+      await axios.patch(`/api/prompts/${id}`, { status: newStatus });
+      toast.success(isAdminOrEditor ? "Prompt unarchived and published." : "Prompt unarchived.");
       window.location.reload();
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to unarchive prompt.");
