@@ -63,7 +63,7 @@ export default function DashboardPage() {
           </div>
         </div>
     );
-    
+  }
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-10 pb-10">
