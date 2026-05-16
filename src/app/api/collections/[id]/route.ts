@@ -211,7 +211,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
             return NextResponse.json({ error: "Collection not found" }, { status: 404 });
         }
 
-        if (!isAdmin && collection.visibility !== "PUBLIC") {
+        const isEditor = session.user.role === "EDITOR";
+        if (!isAdmin && !isEditor && collection.visibility !== "PUBLIC") {
             return NextResponse.json({ error: "You do not have permission to view this collection" }, { status: 403 });
         }
 

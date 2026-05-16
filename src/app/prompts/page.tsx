@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Plus, Search, X, BookSearch } from "lucide-react";
+import { Plus, Search, X, FileText, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { Badge } from "@/component/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/component/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/component/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/component/ui/command";
 import { Skeleton } from "@/component/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { PROVIDER_MODELS } from "@/lib/llm";
+import { useSession } from "next-auth/react";
 
 type Category = { id: number; name: string };
 type Tag = { id: number; name: string };
@@ -23,7 +28,7 @@ type Prompt = {
   updated_at: string;
   category: { id: number; name: string } | null;
   tags: { id: number; name: string }[];
-  recommended_model: string | null;
+  recommended_models: string[] | null;
 };
 
 type ApiResponse = {
@@ -41,17 +46,28 @@ type ApiResponse = {
  * รองรับการกรองตามหมวดหมู่ (Category), สถานะ (Status), โมเดล (Model), แท็ก (Tag) และช่องค้นหา (Search)
  */
 export default function PromptsList() {
+  const { data: session } = useSession();
+  const isAdminOrEditor = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
+  
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 20,
+    totalPages: 1,
+  });
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterModel, setFilterModel] = useState("all");
-  const [filterTag, setFilterTag] = useState("all");
+  const [filterTags, setFilterTags] = useState<string[]>([]);
 
   // Load categories and tags once
   useEffect(() => { 
@@ -61,31 +77,58 @@ export default function PromptsList() {
     ]).then(([catsRes, tagsRes]) => {
       setCategories(catsRes.data || []);
       setTags(tagsRes.data || []);
+      // Static union of supported provider models (no API call — no key needed)
+      setAvailableModels([...PROVIDER_MODELS.openai, ...PROVIDER_MODELS.gemini]);
     }).catch(console.error);
   }, []);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const searchParams = new URLSearchParams();
-      if (searchQuery) searchParams.append("q", searchQuery);
-      if (filterCategory !== "all") searchParams.append("categoryId", filterCategory);
-      if (filterStatus !== "all") searchParams.append("status", filterStatus.toUpperCase());
-      if (filterModel !== "all") searchParams.append("model", filterModel);
-      if (filterTag !== "all") searchParams.append("tag", filterTag);
-
-      const promptsRes = await axios.get<ApiResponse>(`/api/prompts?${searchParams.toString()}`);
-      setPrompts(promptsRes.data.data);
-    } catch (err) {
-      console.error("Failed to load prompts", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const searchParams = new URLSearchParams();
+        searchParams.append("page", String(page));
+        searchParams.append("limit", "20");
+        
+        if (searchQuery) searchParams.append("q", searchQuery);
+        if (filterCategory !== "all") searchParams.append("categoryId", filterCategory);
+        if (filterStatus !== "all") searchParams.append("status", filterStatus.toUpperCase());
+        if (filterModel !== "all") searchParams.append("model", filterModel);
+        if (filterTags.length > 0) {
+          filterTags.forEach(t => searchParams.append("tag", t));
+        }
+
+        const res = await fetch(`/api/prompts?${searchParams.toString()}`, {
+          signal: controller.signal,
+        });
+        
+        if (!res.ok) throw new Error("Failed to load prompts");
+        
+        const data = await res.json();
+        
+        setPrompts(data.data);
+        setPagination(data.pagination);
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        console.error("Failed to load prompts", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
-  }, [searchQuery, filterCategory, filterStatus, filterModel, filterTag]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [searchQuery, filterCategory, filterStatus, filterModel, filterTags, page]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterCategory, filterStatus, filterModel, filterTags]);
 
   const getStatusText = (status: Prompt["status"]) => {
     switch (status) {
@@ -98,7 +141,7 @@ export default function PromptsList() {
     filterCategory !== "all" ||
     filterStatus !== "all" ||
     filterModel !== "all" ||
-    filterTag !== "all" ||
+    filterTags.length > 0 ||
     searchQuery !== "";
 
   const clearFilters = () => {
@@ -106,12 +149,12 @@ export default function PromptsList() {
     setFilterCategory("all");
     setFilterStatus("all");
     setFilterModel("all");
-    setFilterTag("all");
+    setFilterTags([]);
   };
 
   return (
     <div className="pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center">
             <div className="rounded-lg bg-primary flex items-center justify-center mr-2 h-8 w-8">
@@ -121,10 +164,10 @@ export default function PromptsList() {
               Prompt Library
             </h1>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">ค้นหา จัดการ และเปิดใช้งาน prompt ในระบบ</p>
+          <p className="mt-1 text-sm text-muted-foreground">Search, filter and manage prompts in the system</p>
         </div>
-        <Link href="/prompts/new">
-          <Button>
+        <Link href="/prompts/new" className="w-full sm:w-auto block">
+          <Button className="w-full sm:w-auto transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg active:scale-95">
             <Plus className="mr-2 h-4 w-4" />
             New Prompt
           </Button>
@@ -132,8 +175,8 @@ export default function PromptsList() {
       </div>
 
       {/* แถบตัวกรอง */}
-      <div className="mt-6 rounded-lg border bg-card p-4 shadow-sm space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div data-slot="card" className="mt-6 rounded-2xl p-5 shadow-sm border bg-card transition-all duration-500 hover:shadow-md space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -166,9 +209,10 @@ export default function PromptsList() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="draft">DRAFT</SelectItem>
-              <SelectItem value="review">REVIEW</SelectItem>
+              {isAdminOrEditor && (
+                <SelectItem value="review">REVIEW</SelectItem>
+              )}
               <SelectItem value="published">APPROVED</SelectItem>
-              <SelectItem value="archived">ARCHIVED</SelectItem>
             </SelectContent>
           </Select>
 
@@ -179,42 +223,92 @@ export default function PromptsList() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Models</SelectItem>
-              <SelectItem value="gpt-4.1">gpt-4.1</SelectItem>
-              <SelectItem value="gpt-4.1-mini">gpt-4.1-mini</SelectItem>
-              <SelectItem value="claude-3.5-sonnet">claude-3.5-sonnet</SelectItem>
+              {availableModels.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  {model.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
         {/* Row 2: Tag filter + clear */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-medium">Tag:</span>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setFilterTag("all")}
-                className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                  filterTag === "all"
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-                }`}
-              >
-                All
-              </button>
-              {tags.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setFilterTag(filterTag === t.name ? "all" : t.name)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                    filterTag === t.name
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-                  }`}
+          <div className="flex items-center gap-2 flex-wrap w-full">
+            <span className="text-xs text-muted-foreground font-medium">Tags:</span>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-[220px] justify-between text-xs h-9 bg-background border-border hover:bg-muted/50"
                 >
-                  #{t.name}
+                  {filterTags.length > 0
+                    ? `${filterTags.length} tag(s) selected`
+                    : "Select tags..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[220px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search tags..." className="text-xs" />
+                  <CommandList>
+                    <CommandEmpty>No tag found.</CommandEmpty>
+                    <CommandGroup>
+                      {tags.map((tag) => {
+                        const isActive = filterTags.includes(tag.name);
+                        return (
+                          <CommandItem
+                            key={tag.id}
+                            value={tag.name}
+                            onSelect={() => {
+                              if (isActive) {
+                                setFilterTags(filterTags.filter((t) => t !== tag.name));
+                              } else {
+                                setFilterTags([...filterTags, tag.name]);
+                              }
+                            }}
+                            className="text-xs cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                isActive ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            #{tag.name}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Selected Tags Display */}
+            {filterTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 ml-1">
+                {filterTags.map((tag) => (
+                  <Badge 
+                    key={tag} 
+                    variant="secondary"
+                    className="cursor-pointer text-[11px] font-normal px-2.5 py-0.5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors"
+                    onClick={() => setFilterTags(filterTags.filter(t => t !== tag))}
+                  >
+                    #{tag}
+                    <X className="h-3 w-3 ml-1 opacity-50" />
+                  </Badge>
+                ))}
+                <button
+                  onClick={() => setFilterTags([])}
+                  className="text-[11px] text-muted-foreground hover:text-destructive transition-colors ml-1 px-2 py-1 rounded-md hover:bg-muted"
+                >
+                  Clear all
                 </button>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {hasActiveFilters && (
@@ -228,64 +322,73 @@ export default function PromptsList() {
         </div>
       </div>
 
-      {/* ตารางแสดงรายการ prompts */}
-      <div className="mt-6 rounded-lg border bg-card overflow-hidden shadow-sm">
+      {/* ตารางแสดงรายการ prompts (Desktop) */}
+      <div data-slot="card" className="mt-8 rounded-2xl border bg-card overflow-hidden shadow-sm hidden md:block transition-all duration-500 hover:shadow-md">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm font-medium">
+          <table className="w-full text-base font-medium">
             <thead>
               <tr className="border-b bg-muted/20">
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Title</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Category</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Tags</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Status</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Model</th>
-                <th className="px-5 py-4 text-left font-bold text-foreground capitalize">Updated</th>
+                <th className="w-[32%] pl-6 pr-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Title</th>
+                <th className="w-[12%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Category</th>
+                <th className="w-[18%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Tags</th>
+                <th className="w-[15%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Model</th>
+                <th className="w-[10%] px-4 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Status</th>
+                <th className="w-[13%] pl-4 pr-6 py-4 text-left font-bold text-muted-foreground uppercase tracking-widest text-[10px] whitespace-nowrap">Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-48" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-24" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-28" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-20" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-24" /></td>
-                    <td className="px-5 py-5"><Skeleton className="h-5 w-32" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-48" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-28" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-24" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-20" /></td>
+                    <td className="px-5 py-6"><Skeleton className="h-6 w-32" /></td>
                   </tr>
                 ))
               ) : prompts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground border-dashed">
+                  <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground border-dashed text-lg">
                     No prompts found matching your criteria
                   </td>
                 </tr>
               ) : (
                 prompts.map((p) => (
-                  <tr key={p.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="px-5 py-4">
-                      <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-medium">
+                  <tr key={p.id} className="hover:bg-muted/30 transition-all duration-300 group">
+                    <td className="pl-6 pr-4 py-5">
+                      <Link href={`/prompts/${p.id}`} className="text-foreground hover:text-primary transition-colors block font-bold text-lg">
                         {p.title}
                       </Link>
                       {p.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{p.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{p.description}</p>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-muted-foreground text-sm">
+                    <td className="px-4 py-5 text-muted-foreground text-base">
                       {p.category ? p.category.name : "-"}
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {p.tags.length > 0
-                          ? p.tags.map((t) => (
+                    <td className="px-4 py-5">
+                      <div className="flex flex-wrap gap-1.5">
+                        {p.tags.length > 0 ? (
+                          <>
+                            {p.tags.slice(0, 3).map((t) => (
                               <span
                                 key={t.id}
                                 className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground"
                               >
                                 #{t.name}
                               </span>
-                            ))
-                          : <span className="text-muted-foreground">-</span>}
+                            ))}
+                            {p.tags.length > 3 && (
+                              <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                +{p.tags.length - 3} more
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-5 py-4">
@@ -298,10 +401,21 @@ export default function PromptsList() {
                         {getStatusText(p.status)}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-muted-foreground text-sm">
-                      {p.recommended_model || "-"}
+                    <td className="px-4 py-5">
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[10px] font-bold px-2 py-0",
+                          p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                          p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                          p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
+                          p.status === 'ARCHIVED' && "bg-red-500/10 text-red-500 border-red-500/20"
+                        )}
+                      >
+                        {getStatusText(p.status)}
+                      </Badge>
                     </td>
-                    <td className="px-5 py-4 text-muted-foreground text-sm">
+                    <td className="pl-4 pr-6 py-5 text-muted-foreground text-base whitespace-nowrap">
                       {new Date(p.updated_at).toISOString().split("T")[0]}
                     </td>
                   </tr>
@@ -311,6 +425,122 @@ export default function PromptsList() {
           </table>
         </div>
       </div>
+
+      {/* Card Layout (Mobile) */}
+      <div className="mt-6 space-y-4 md:hidden">
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="bg-card border rounded-xl p-5 space-y-4">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-5 w-1/2" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+            </div>
+          ))
+        ) : prompts.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl text-lg">
+            No prompts found
+          </div>
+        ) : (
+          prompts.map((p) => (
+            <Link 
+              key={p.id} 
+              href={`/prompts/${p.id}`}
+              className="block bg-card border rounded-2xl p-5 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg hover:border-primary/50 active:scale-95"
+            >
+              <div className="flex justify-between items-start mb-2.5">
+                <h3 className="text-lg font-bold text-foreground line-clamp-1">{p.title}</h3>
+                <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
+                  <Badge variant="outline" className="text-[10px] h-5">
+                    v{p.latest_version_no}
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[9px] px-1.5 h-4 font-bold",
+                      p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                      p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                      p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
+                      p.status === 'ARCHIVED' && "bg-red-500/10 text-red-500 border-red-500/20"
+                    )}
+                  >
+                    {getStatusText(p.status)}
+                  </Badge>
+                </div>
+              </div>
+              
+              {p.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                  {p.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-3 items-center text-xs">
+                {p.category && (
+                  <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-md font-bold">
+                    {p.category.name}
+                  </span>
+                )}
+                {p.recommended_models && p.recommended_models.length > 0 && (
+                  <span className="text-muted-foreground border-l pl-3">
+                    {p.recommended_models.join(", ")}
+                  </span>
+                )}
+                <span className="text-muted-foreground ml-auto font-medium">
+                  {new Date(p.updated_at).toLocaleDateString("en-GB", { day: 'numeric', month: 'short' })}
+                </span>
+              </div>
+
+              {p.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {p.tags.slice(0, 3).map((t) => (
+                    <span key={t.id} className="text-[11px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded">
+                      #{t.name}
+                    </span>
+                  ))}
+                  {p.tags.length > 3 && (
+                    <span className="text-[11px] text-muted-foreground">+{p.tags.length - 3} more</span>
+                  )}
+                </div>
+              )}
+            </Link>
+          ))
+        )}
+      </div>
+
+
+      {/* Pagination Controls */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages} (Total {pagination.total} prompts)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="h-9 px-4 transition-all duration-300 hover:scale-105 active:scale-95"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= pagination.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="h-9 px-4 transition-all duration-300 hover:scale-105 active:scale-95"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

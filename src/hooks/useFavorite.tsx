@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { prisma } from "@/lib/prisma";
-import { getServerAuthSession } from "@/lib/auth";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { number } from "zod";
 
 export const useFavorites = () => {
 

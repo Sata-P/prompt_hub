@@ -47,6 +47,5 @@ export const config = {
     "/api/tags/:path*",
     "/api/dashboard/:path*",
     "/api/playground/:path*",
-    "/api/llm/:path*",
   ],
 };

@@ -121,7 +121,7 @@ function LoginForm() {
           </div>
 
           {/* ปุ่ม submit — disable ตอนกำลังโหลด */}
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-95" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>

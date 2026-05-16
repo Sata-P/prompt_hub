@@ -15,11 +15,15 @@ export async function GET(request: Request) {
     // }
 
     const users = await prisma.users.findMany({
+      where: {
+        status: 'ACTIVATED',
+      },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        status: true,
         created_at: true,
       },
       orderBy: { id: "asc" },

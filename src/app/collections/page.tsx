@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Folder, Plus, MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Folder, FolderOpen, Plus, MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/component/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/component/ui/card";
 import { Skeleton } from "@/component/ui/skeleton";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { Badge } from "@/component/ui/badge"; 
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/component/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/component/ui/dropdown-menu";
@@ -68,15 +68,15 @@ function CollectionCard({
   onDelete: (c: Collection) => void 
 }) {
   return (
-    <Card className="hover:border-primary/40 hover:shadow-md transition-all duration-200 cursor-pointer relative group">
+    <Card className="hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 cursor-pointer relative group">
       <Link href={`/collections/${collection.id}`} className="absolute inset-0 z-0" />
       
       <CardHeader className="relative z-10 pointer-events-none">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm font-semibold">{collection.name}</CardTitle>
+          <CardTitle className="text-lg font-bold">{collection.name}</CardTitle>
           <div className="flex items-center gap-2 pointer-events-auto">
             {collection.visibility === 'PUBLIC' && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-green-500/10 text-green-500 hover:bg-green-500/20">Public</Badge>
+              <Badge variant="secondary" className="text-[12px] h-6 px-2 bg-green-500/10 text-green-500 hover:bg-green-500/20">Public</Badge>
             )}
             
             {isAdmin && (
@@ -90,22 +90,24 @@ function CollectionCard({
                   <DropdownMenuItem onClick={() => onEdit(collection)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(collection)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                  </DropdownMenuItem>
+                  {collection._count?.prompts === 0 && (
+                    <DropdownMenuItem onClick={() => onDelete(collection)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
           </div>
         </div>
-        <CardDescription>{collection.description}</CardDescription>
+        <CardDescription className="text-base">{collection.description}</CardDescription>
       </CardHeader>
 
       <CardContent className="relative z-10 pointer-events-none">
         <div className="flex items-center gap-2 mt-4">
           <div className="flex-1">
-            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-              <Folder className="w-4 h-4" />
+            <p className="text-base text-muted-foreground flex items-center gap-1.5">
+              <Folder className="w-5 h-5" />
               {collection._count?.prompts || 0} Prompts
             </p>
           </div>
@@ -124,7 +126,6 @@ const ITEMS_PER_PAGE = 9;
 export default function CollectionsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
-  const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -155,11 +156,7 @@ export default function CollectionsPage() {
       setCollections(res.data || []);
     } catch (err) {
       console.error("Failed to load collections:", err);
-      toast({
-        title: "Error",
-        description: "Failed to load collections. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load collections. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -180,16 +177,12 @@ export default function CollectionsPage() {
     setIsSubmitting(true);
     try {
       await axios.post("/api/collections", formData);
-      toast({ title: "Success", description: "Collection created successfully." });
+      toast.success("Collection created successfully.");
       setIsCreateOpen(false);
       resetForm();
       fetchData();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to create collection.",
-        variant: "destructive"
-      });
+      toast.error(error.response?.data?.error || "Failed to create collection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -211,16 +204,12 @@ export default function CollectionsPage() {
     setIsSubmitting(true);
     try {
       await axios.patch(`/api/collections/${targetCollection.id}`, formData);
-      toast({ title: "Success", description: "Collection updated successfully." });
+      toast.success("Collection updated successfully.");
       setIsEditOpen(false);
       resetForm();
       fetchData();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to update collection.",
-        variant: "destructive"
-      });
+      toast.error(error.response?.data?.error || "Failed to update collection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -237,16 +226,12 @@ export default function CollectionsPage() {
     setIsSubmitting(true);
     try {
       await axios.delete(`/api/collections/${targetCollection.id}`);
-      toast({ title: "Success", description: "Collection deleted successfully." });
+      toast.success("Collection deleted successfully.");
       setIsDeleteOpen(false);
       resetForm();
       fetchData();
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to delete collection.",
-        variant: "destructive"
-      });
+      toast.error(error.response?.data?.error || "Failed to delete collection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -259,7 +244,7 @@ export default function CollectionsPage() {
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Folder className="h-4 w-4 text-primary" />
+              <FolderOpen className="h-4 w-4 text-primary" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Collections
@@ -272,7 +257,7 @@ export default function CollectionsPage() {
         
         {isAdmin && (
           <Button 
-            className="shrink-0"
+            className="shrink-0 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
             onClick={() => { resetForm(); setIsCreateOpen(true); }}
           >
             <Plus className="mr-2 h-4 w-4" /> Create Collection
@@ -297,7 +282,7 @@ export default function CollectionsPage() {
             Create your first collection to start organising your prompts.
           </p>
           {isAdmin && (
-             <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} variant="outline">
+             <Button onClick={() => { resetForm(); setIsCreateOpen(true); }} variant="outline" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
                <Plus className="mr-2 h-4 w-4" /> Create One
              </Button>
           )}
@@ -323,10 +308,10 @@ export default function CollectionsPage() {
                 Page {page} of {totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   <ChevronLeft className="h-4 w-4" />Previous
                 </Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="transition-all duration-300 hover:scale-105 active:scale-95">
                   Next<ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

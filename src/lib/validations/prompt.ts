@@ -8,8 +8,9 @@ export const CreatePromptSchema = z.object({
     .max(255, "Title must be 255 characters or less"),
   description: z.string().optional(),
   categoryId: z.number().int().positive().optional().nullable(),
-  recommendedModel: z.string().max(100).optional().nullable(),
+  recommendedModels: z.array(z.string().max(100)).optional().default([]),
   visibility: z.enum(["PRIVATE", "PUBLIC"]).optional(),
+  status: z.enum(["DRAFT", "REVIEW", "PUBLISHED", "REJECTED", "ARCHIVED"]).optional(),
   tags: z.array(z.string().min(1).max(100)).optional(),
   // First version content
   templateContent: z
@@ -35,6 +36,7 @@ export const CreatePromptSchema = z.object({
         defaultValue: z.string().optional().nullable(),
         placeholder: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
+        options_json: z.any().optional().nullable(), // For Prisma compatibility in some places
         optionsJson: z.any().optional().nullable(),
         sortOrder: z.number().int().min(0).optional(),
       })
@@ -53,8 +55,9 @@ export const UpdatePromptSchema = z.object({
     .optional(),
   description: z.string().optional().nullable(),
   categoryId: z.number().int().positive().optional().nullable(),
-  recommendedModel: z.string().max(100).optional().nullable(),
+  recommendedModels: z.array(z.string().max(100)).optional().default([]),
   visibility: z.enum(["PRIVATE", "PUBLIC"]).optional(),
+  status: z.enum(["DRAFT", "REVIEW", "PUBLISHED", "REJECTED", "ARCHIVED"]).optional(),
   isTemplateActive: z.boolean().optional(),
   tags: z.array(z.string().min(1).max(100)).optional(),
 });
@@ -69,3 +72,4 @@ export const UpdatePromptStatusSchema = z.object({
 });
 
 export type UpdatePromptStatusInput = z.infer<typeof UpdatePromptStatusSchema>;
+

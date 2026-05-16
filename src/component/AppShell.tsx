@@ -1,12 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { SidebarProvider, SidebarTrigger } from "@/component/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/component/ui/sidebar";
 import { AppSidebar } from "@/component/AppSidebar";
 import { HeaderActions } from "@/component/HeaderActions";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Menu, FileText } from "lucide-react";
 
 /** Routes that should NOT have the sidebar/header shell */
 const PUBLIC_ROUTES = ["/login", "/signup"];
@@ -51,39 +52,37 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-background">
-        {/* ── Sidebar ── */}
+      <div className="flex h-screen w-full overflow-hidden">
+        {/* ── Sidebar (Full Height, Left) ── */}
         <AppSidebar user={session.user} />
 
-        {/* ── Main area ── */}
-        <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-          {/* ── Top bar: minimal, shows page title + actions ── */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#3D2410]/40 bg-[#2C1A0E] px-4 md:px-6 z-20 shadow-sm">
+        {/* ── Right side: header + content stacked ── */}
+        <SidebarInset className="flex flex-col overflow-hidden min-h-0 h-full flex-1">
+          {/* ── Top bar ── */}
+          <header className="min-[1300px]:hidden flex h-16 shrink-0 items-center justify-between border-b border-[#2e1f5e]/60 bg-[#08011a] px-4 z-20 shadow-sm">
+            {/* Left: Brand Logo & Text */}
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-white/60 hover:text-white hover:bg-white/10 rounded-md transition-colors" />
-              <div className="h-4 w-px bg-white/15 hidden sm:block" />
-              <span className="text-sm font-semibold text-white/90 hidden sm:block">
-                {pageTitle}
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F97316] shadow-[0_0_10px_rgba(249,115,22,0.4)]">
+                <FileText className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-base font-bold tracking-tight text-white">
+                Prompt Hub
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* User name */}
-              <span className="text-sm font-medium text-white/60 hidden md:block">
-                {session.user.name || session.user.email}
-              </span>
-              <div className="h-4 w-px bg-white/15 hidden md:block" />
-              <HeaderActions />
-            </div>
+            {/* Right: Hamburger menu only */}
+            <SidebarTrigger className="min-[1300px]:hidden h-10 w-10 shrink-0 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200">
+              <Menu className="h-6 w-6" />
+            </SidebarTrigger>
           </header>
 
           {/* ── Page content ── */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-6xl w-full p-4 md:p-6 lg:p-8">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="mx-auto max-w-[1400px] w-full p-4 min-[1300px]:p-6 lg:p-8">
               {children}
             </div>
-          </main>
-        </div>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

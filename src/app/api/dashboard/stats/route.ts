@@ -4,6 +4,7 @@ import { getServerAuthSession } from "@/lib/auth";
 
 /**
  * GET /api/dashboard/stats
+ * 
  * ดึงสถิติภาพรวมของ dashboard สำหรับผู้ใช้ที่ login อยู่
  *
  * ต้องการ Authentication — ถ้าไม่มี session จะคืน 401
@@ -19,6 +20,7 @@ export async function GET() {
   try {
     // ตรวจสอบ session — ถ้าไม่ได้ login ให้ return 401
     const session = await getServerAuthSession();
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -39,6 +41,10 @@ export async function GET() {
       recentPrompts,
       totalCategories,
       totalTags,
+      totalFavorites,
+      systemTotalPrompts,
+      popularCategories,
+      popularTags,
     ] = await Promise.all([
       // นับ prompt ทั้งหมด (ทุกสถานะ)
       prisma.prompts.count({ where: baseWhere }),
@@ -52,7 +58,7 @@ export async function GET() {
       prisma.prompts.findMany({
         where: baseWhere,
         orderBy: { updated_at: "desc" },
-        take: 5,
+        take: 7,
         select: {
           id: true,
           title: true,
@@ -65,6 +71,39 @@ export async function GET() {
       // นับ categories และ tags ทั้งหมดในระบบ (ไม่กรอง user)
       prisma.categories.count(),
       prisma.tags.count(),
+      // นับ favorite ของ user นี้
+      prisma.favorites.count({ where: { user_id: userId } }),
+      // นับ prompt ทั้งหมดในระบบ (ไม่รวม deleted)
+      prisma.prompts.count({ where: { deleted_at: null } }),
+      // ดึง categories ยอดฮิต 5 อันดับแรกพร้อมจำนวน prompt
+      prisma.categories.findMany({
+        take: 3,
+        include: { 
+          _count: { select: { prompts: true } },
+          prompts: {
+            where: { deleted_at: null },
+            select: { id: true, title: true, status: true },
+            orderBy: { updated_at: 'desc' }
+          }
+        },
+        orderBy: { prompts: { _count: 'desc' } }
+      }),
+      // ดึง tags ยอดฮิต 5 อันดับแรกพร้อมจำนวน prompt
+      prisma.tags.findMany({
+        take: 5,
+        include: { 
+          _count: { select: { prompts: true } },
+          prompts: {
+            take: 5,
+            include: {
+              prompt: {
+                select: { id: true, title: true, status: true }
+              }
+            }
+          }
+        },
+        orderBy: { prompts: { _count: 'desc' } }
+      }),
     ]);
 
     // รวมผลลัพธ์และส่งกลับ
@@ -80,6 +119,10 @@ export async function GET() {
       recentPrompts,
       totalCategories,
       totalTags,
+      totalFavorites,
+      systemTotalPrompts,
+      popularCategories,
+      popularTags,
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

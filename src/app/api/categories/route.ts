@@ -25,7 +25,24 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(categories);
+    const prompts = await prisma.prompts.findMany({
+      where: {
+        category_id: { not: null },
+        deleted_at: null
+      },
+      select: { id: true, title: true, category_id: true }
+    });
+
+    const mappedCategories = categories.map(cat => {
+      const catPrompts = prompts.filter(p => p.category_id !== null && p.category_id === cat.id);
+      return {
+        ...cat,
+        prompts: catPrompts.map(p => ({ id: p.id, title: p.title })),
+        array_count: catPrompts.length
+      };
+    });
+
+    return NextResponse.json(mappedCategories);
   } catch (error) {
     console.error("Error fetching categories:", error);
     return NextResponse.json(

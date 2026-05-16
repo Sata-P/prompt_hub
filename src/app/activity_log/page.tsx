@@ -87,9 +87,9 @@ export default function ActivityLogPage() {
   // แปลง action string เป็นสีและ label ให้อ่านง่าย
   const actionBadge = (action: string) => {
     const upper = action.toUpperCase();
-    if (upper.includes("CREATE"))
+    if (upper.includes("CREATE") || upper.includes("ADD"))
       return { color: "text-green-700 bg-green-50 border-green-200", label: action };
-    if (upper.includes("UPDATE") || upper.includes("EDIT"))
+    if (upper.includes("UPDATE") || upper.includes("EDIT") || upper.includes("CHANGE"))
       return { color: "text-blue-700 bg-blue-50 border-blue-200", label: action };
     if (upper.includes("DELETE") || upper.includes("REMOVE"))
       return { color: "text-red-700 bg-red-50 border-red-200", label: action };
@@ -97,6 +97,17 @@ export default function ActivityLogPage() {
       return { color: "text-purple-700 bg-purple-50 border-purple-200", label: action };
     if (upper.includes("REJECT"))
       return { color: "text-orange-700 bg-orange-50 border-orange-200", label: action };
+      
+    // Additional actions
+    if (upper.includes("UNFAVORITE"))
+      return { color: "text-slate-700 bg-slate-100 border-slate-300", label: action };
+    if (upper.includes("FAVORITE"))
+      return { color: "text-pink-700 bg-pink-50 border-pink-200", label: action };
+    if (upper.includes("REPLY"))
+      return { color: "text-teal-700 bg-teal-50 border-teal-200", label: action };
+    if (upper.includes("REGISTER"))
+      return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: action };
+
     return { color: "text-muted-foreground bg-muted border-border", label: action };
   };
 
@@ -106,11 +117,15 @@ export default function ActivityLogPage() {
   return (
     <div className="pb-20">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Activity className="h-6 w-6 text-primary" />
+      <div className="flex items-center gap-3 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Activity className="h-4 w-4 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
             {isAdmin ? "All system-wide activity across every user" : "Your personal activity history"}
           </p>
         </div>
@@ -125,8 +140,8 @@ export default function ActivityLogPage() {
         </p>
       )}
 
-      {/* Table */}
-      <div className="mt-4 rounded-lg border bg-card overflow-hidden shadow-sm">
+      {/* Table (Desktop) */}
+      <div data-slot="card" className="mt-4 rounded-lg overflow-hidden shadow-sm hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -223,6 +238,60 @@ export default function ActivityLogPage() {
         </div>
       </div>
 
+      {/* Card Layout (Mobile) */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {loading ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="bg-card border rounded-xl p-4 space-y-3">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))
+        ) : logs.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl bg-card">
+            No activity recorded yet.
+          </div>
+        ) : (
+          logs.map((log) => {
+            const badge = actionBadge(log.action);
+            return (
+              <div key={log.id} className="bg-card border rounded-xl p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <span
+                    className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${badge.color}`}
+                  >
+                    {badge.label}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatDate(log.created_at)}
+                  </span>
+                </div>
+
+                {isAdmin && log.user && (
+                  <div className="flex items-center gap-2 py-1 border-y border-border/50">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                      {log.user.name[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold truncate">{log.user.name}</p>
+                    </div>
+                  </div>
+                )}
+
+                {log.details && (
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <pre className="whitespace-pre-wrap font-mono text-[10px] text-muted-foreground leading-tight">
+                      {JSON.stringify(log.details, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
       {/* Pagination */}
       {!loading && pagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
@@ -235,6 +304,7 @@ export default function ActivityLogPage() {
               size="sm"
               disabled={pagination.page <= 1}
               onClick={() => fetchLogs(pagination.page - 1)}
+              className="transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -244,6 +314,7 @@ export default function ActivityLogPage() {
               size="sm"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => fetchLogs(pagination.page + 1)}
+              className="transition-all duration-300 hover:scale-105 active:scale-95"
             >
               Next
               <ChevronRight className="h-4 w-4" />

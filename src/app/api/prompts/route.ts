@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const categoryId = searchParams.get("categoryId")
       ? Number(searchParams.get("categoryId"))
       : undefined;
-    const tag = searchParams.get("tag")?.trim() || undefined;
+    const tags = searchParams.getAll("tag").map(t => t.trim()).filter(t => t !== "");
     const visibility = searchParams.get("visibility") || undefined;
 
     const userId = Number(session.user.id);
@@ -42,28 +42,24 @@ export async function GET(request: Request) {
       { deleted_at: null }, // Exclude soft-deleted
     ];
 
-    const userRole = session.user.role;
+    const userRole = session.user.role?.toUpperCase();
 
-    if (visibility === 'PUBLIC') {
-      andConditions.push({ visibility: 'PUBLIC' });
-    } else if (visibility === 'PRIVATE') {
-      andConditions.push({ visibility: 'PRIVATE' });
-      if (userRole === "ADMIN" || userRole === "EDITOR") {
-        andConditions.push({ OR: [{ owner_id: userId }, { status: 'REVIEW' }] });
-      } else {
-        andConditions.push({ owner_id: userId });
-      }
-    } else {
-      // By default show user's own prompts OR any public prompts
-      const defaultOr: any[] = [
-        { owner_id: userId },
-        { visibility: 'PUBLIC' }
-      ];
-      if (userRole === "ADMIN" || userRole === "EDITOR") {
-        defaultOr.push({ status: 'REVIEW' });
-      }
-      andConditions.push({ OR: defaultOr });
+    // Visibility rules:
+    // 1. DRAFT/REJECTED: Only owner
+    // 2. REVIEW: Owner, Admin, Editor
+    // 3. PUBLISHED: Everyone
+    
+    // Simplified visibility logic
+    const defaultOr: any[] = [
+      { status: "PUBLISHED" }, // Everyone
+      { owner_id: userId },    // Owner sees all their own
+    ];
+
+    if (userRole === "ADMIN" || userRole === "EDITOR") {
+      defaultOr.push({ status: "REVIEW" }); // Admins/Editors see all pending reviews
     }
+
+    andConditions.push({ OR: defaultOr });
 
     if (q) {
       andConditions.push({
@@ -78,17 +74,24 @@ export async function GET(request: Request) {
       andConditions.push({ status });
     }
 
+    const model = searchParams.get("model")?.trim() || undefined;
+    if (model) {
+      andConditions.push({ recommended_models: { has: model } });
+    }
+
     if (categoryId) {
       andConditions.push({ category_id: categoryId });
     }
 
-    if (tag) {
+    if (tags.length > 0) {
       andConditions.push({
-        tags: {
-          some: {
-            tag: { name: { equals: tag, mode: "insensitive" } },
+        OR: tags.map(t => ({
+          tags: {
+            some: {
+              tag: { name: { equals: t, mode: "insensitive" } },
+            },
           },
-        },
+        })),
       });
     }
 
@@ -185,11 +188,11 @@ export async function POST(request: Request) {
           title: data.title,
           description: data.description ?? null,
           category_id: data.categoryId ?? null,
-          recommended_model: data.recommendedModel ?? null,
+          recommended_models: data.recommendedModels,
           visibility: data.visibility ?? "PUBLIC",
           owner_id: userId,
           latest_version_no: 1,
-          status: "PUBLISHED",
+          status: data.status ?? (session.user.role === "ADMIN" || session.user.role === "EDITOR" ? "PUBLISHED" : "REVIEW"),
           tags: {
             create: tagRecords.map((t) => ({
               tag_id: t.id,
@@ -208,7 +211,7 @@ export async function POST(request: Request) {
           output_format: data.outputFormat ?? null,
           changelog: "Initial version",
           created_by: userId,
-          status: "PUBLISHED",
+          status: data.status ?? (session.user.role === "ADMIN" || session.user.role === "EDITOR" ? "PUBLISHED" : "REVIEW"),
         },
       });
 

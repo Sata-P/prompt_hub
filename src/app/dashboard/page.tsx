@@ -5,23 +5,13 @@ import Link from "next/link";
 import axios from "axios";
 import {
   FileText,
-  Plus,
   Clock,
   CheckCircle2,
-  AlertCircle,
   Archive,
-  PlayCircle,
-  FolderOpen,
-  Tag,
-  TrendingUp,
-  Star,
   ArrowRight,
 } from "lucide-react";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
-import { Button } from "@/component/ui/button";
 import { Skeleton } from "@/component/ui/skeleton";
-import { Badge } from "@/component/ui/badge";
 import { useSession } from "next-auth/react";
 
 type DashboardStats = {
@@ -41,19 +31,7 @@ type DashboardStats = {
     updated_at: string;
     category?: { name: string; color?: string } | null;
   }[];
-  totalCategories: number;
-  totalTags: number;
-};
-
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: "success" | "warning" | "secondary" | "outline" | "default" }
-> = {
-  PUBLISHED: { label: "Published", variant: "success" },
-  DRAFT:     { label: "Draft",     variant: "secondary" },
-  REVIEW:    { label: "Review",    variant: "warning" },
-  ARCHIVED:  { label: "Archived",  variant: "outline" },
-  REJECTED:  { label: "Rejected",  variant: "default" },
+  systemTotalPrompts: number;
 };
 
 export default function DashboardPage() {
@@ -69,341 +47,149 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <div className="min-h-full">
-      {/* ── Page header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 fade-in-up">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Welcome back,{" "}
-            <span className="font-medium text-foreground">
-              {session?.user?.name?.split(" ")[0] || "there"}
-            </span>
-            . Here&apos;s what&apos;s happening.
-          </p>
+  if (loading) {
+    return (
+      <div className="space-y-10">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/prompts">
-              <FileText className="h-4 w-4" />
-              View All
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/prompts/new">
-              <Plus className="h-4 w-4" />
-              New Prompt
-            </Link>
-          </Button>
-        </div>
+        <Skeleton className="h-96 rounded-3xl" />
       </div>
+    );
+  }
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in-up stagger-1">
+  return (
+    <div className="space-y-10">
+      {/* ── Page Header ── */}
+      <h1 className="text-4xl font-bold text-white tracking-tight">Dashboard</h1>
+
+      {/* ── Stats Section ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           label="Total Prompts"
-          icon={<FileText className="h-4 w-4" />}
-          value={stats?.totalPrompts}
-          loading={loading}
-          accent="orange"
+          value={stats?.totalPrompts ?? 0}
+          icon={<FileText className="h-6 w-6 text-white" />}
+          iconBg="bg-[#F97316]"
+          glowColor="rgba(249,115,22,0.4)"
         />
         <StatCard
           label="Published"
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          value={stats?.byStatus.PUBLISHED}
-          loading={loading}
-          accent="green"
+          value={stats?.byStatus?.PUBLISHED ?? 0}
+          icon={<CheckCircle2 className="h-6 w-6 text-white" />}
+          iconBg="bg-[#22C55E]"
+          glowColor="rgba(34,197,94,0.4)"
         />
         <StatCard
           label="In Draft"
-          icon={<AlertCircle className="h-4 w-4" />}
-          value={stats?.byStatus.DRAFT}
-          loading={loading}
-          accent="yellow"
+          value={stats?.byStatus?.DRAFT ?? 0}
+          icon={<Clock className="h-6 w-6 text-white" />}
+          iconBg="bg-[#EB9109]"
+          glowColor="rgba(234,179,8,0.4)"
         />
         <StatCard
           label="Archived"
-          icon={<Archive className="h-4 w-4" />}
-          value={stats?.byStatus.ARCHIVED}
-          loading={loading}
-          accent="neutral"
+          value={stats?.byStatus?.ARCHIVED ?? 0}
+          icon={<Archive className="h-6 w-6 text-white" />}
+          iconBg="bg-[#A855F7]"
+          glowColor="rgba(168,85,247,0.4)"
         />
       </div>
 
-      {/* ── Main content grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in-up stagger-2">
-        {/* Recently updated prompts */}
-        <div className="lg:col-span-2">
-          <Card className="shadow-sm border-border/60 h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Recently Updated</CardTitle>
-              </div>
-              <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground h-7 px-2">
-                <Link href="/prompts">
-                  View all <ArrowRight className="h-3 w-3 ml-1" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {loading ? (
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-14 w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : !stats?.recentPrompts?.length ? (
-                <div className="py-10 text-center rounded-lg border border-dashed border-border">
-                  <FileText className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No prompts yet</p>
-                  <Button size="sm" className="mt-3" asChild>
-                    <Link href="/prompts/new">Create your first prompt</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {stats.recentPrompts.map((prompt, i) => {
-                    const cfg = STATUS_CONFIG[prompt.status] ?? STATUS_CONFIG.DRAFT;
-                    return (
-                      <Link
-                        key={prompt.id}
-                        href={`/prompts/${prompt.id}`}
-                        className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-accent/60 hover:border-primary/20 border border-transparent transition-all duration-150 group"
-                        style={{ animationDelay: `${i * 40}ms` }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 shrink-0 rounded-md bg-primary/10 flex items-center justify-center">
-                            <FileText className="h-3.5 w-3.5 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                              {prompt.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {prompt.category && (
-                                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                  {prompt.category.name}
-                                </span>
-                              )}
-                              <span className="text-[11px] text-muted-foreground">
-                                v{prompt.latest_version_no} ·{" "}
-                                {new Date(prompt.updated_at).toLocaleDateString("en-GB", {
-                                  day: "numeric",
-                                  month: "short",
-                                })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <Badge variant={cfg.variant} className="shrink-0 ml-2 text-[10px]">
-                          {cfg.label}
-                        </Badge>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* ── Recently Updated Section ── */}
+      <div 
+        className="relative rounded-[32px] p-8 overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_40px_rgba(249,115,22,0.1)] transition-all duration-500 cursor-pointer group"
+        style={{
+          background: "linear-gradient(#10071C, #10071C) padding-box, linear-gradient(135deg, #F97316 0%, rgba(249, 115, 22, 0.1) 45%, rgba(124, 58, 237, 0.1) 65%, #7c3aed 100%) border-box",
+          border: "1px solid transparent",
+          boxShadow: "0 0 20px rgba(0,0,0,0.4), 0 0 40px rgba(249,115,22,0.05)"
+        }}
+      >
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-4">
+            <div className="w-1.5 h-7 bg-[#F97316] rounded-full" />
+            <h2 className="text-2xl font-bold text-white tracking-tight">Recently Updated</h2>
+          </div>
+          <Link 
+            href="/prompts" 
+            className="flex items-center gap-2 text-[#F97316] font-bold text-sm hover:translate-x-1 transition-transform"
+          >
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
 
-        {/* Right column: stats + quick actions */}
-        <div className="flex flex-col gap-4">
-          {/* Overview card */}
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-semibold">Overview</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              <OverviewRow
-                icon={<Tag className="h-3.5 w-3.5" />}
-                label="Categories"
-                value={stats?.totalCategories}
-                loading={loading}
-                href="/settings"
-              />
-              <OverviewRow
-                icon={<Star className="h-3.5 w-3.5" />}
-                label="Tags"
-                value={stats?.totalTags}
-                loading={loading}
-                href="/settings"
-              />
-              <OverviewRow
-                icon={<AlertCircle className="h-3.5 w-3.5 text-yellow-500" />}
-                label="In Review"
-                value={stats?.byStatus.REVIEW}
-                loading={loading}
-                href="/prompts"
-              />
-
-              {session?.user?.role === "ADMIN" && (
-                <div className="pt-1">
-                  <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-                    <Link href="/settings">Manage Categories & Tags</Link>
-                  </Button>
+        <div className="space-y-0">
+          {stats?.recentPrompts?.map((prompt, i) => (
+            <Link 
+              key={prompt.id} 
+              href={`/prompts/${prompt.id}`}
+              className={`flex items-center justify-between py-6 ${i !== (stats.recentPrompts.length - 1) ? 'border-b border-white/5' : ''} group transition-all`}
+            >
+              <div className="flex items-center gap-6">
+                <div className="h-12 w-12 rounded-full bg-[#F97316] flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.3)] group-hover:scale-110 transition-transform">
+                  <FileText className="h-6 w-6 text-white" />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick actions */}
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              <QuickAction
-                href="/prompts/new"
-                icon={<Plus className="h-4 w-4" />}
-                label="New Prompt"
-                description="Start from a blank template"
-                primary
-              />
-              <QuickAction
-                href="/playground"
-                icon={<PlayCircle className="h-4 w-4" />}
-                label="Open Playground"
-                description="Test prompts with AI models"
-              />
-              <QuickAction
-                href="/collections"
-                icon={<FolderOpen className="h-4 w-4" />}
-                label="Browse Collections"
-                description="Grouped prompt libraries"
-              />
-            </CardContent>
-          </Card>
+                <div>
+                  <h3 className="text-lg font-bold text-white group-hover:text-[#F97316] transition-colors">{prompt.title}</h3>
+                  <p className="text-sm text-white/40 mt-1 font-medium">id: {prompt.id} · v{prompt.latest_version_no}</p>
+                </div>
+              </div>
+              <div className="text-[#22C55E] font-bold text-sm tracking-wide">
+                {prompt.status === 'PUBLISHED' ? 'Published' : prompt.status.charAt(0) + prompt.status.slice(1).toLowerCase()}
+              </div>
+            </Link>
+          ))}
+          {!stats?.recentPrompts?.length && (
+            <div className="py-20 text-center">
+              <p className="text-white/40 font-medium">No prompts updated recently.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ── Sub-components ── */
-
-function StatCard({
-  label,
-  icon,
-  value,
-  loading,
-  accent,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  value?: number;
-  loading: boolean;
-  accent: "orange" | "green" | "yellow" | "neutral";
-}) {
-  const accentClasses = {
-    orange:  "bg-orange-50 text-primary border-orange-100",
-    green:   "bg-green-50  text-green-600  border-green-100",
-    yellow:  "bg-yellow-50 text-yellow-600 border-yellow-100",
-    neutral: "bg-muted     text-muted-foreground border-border",
-  };
-  const valueClasses = {
-    orange:  "text-primary",
-    green:   "text-green-600",
-    yellow:  "text-yellow-600",
-    neutral: "text-foreground",
-  };
-
-  return (
-    <Card className="shadow-sm border-border/60 hover:border-primary/30 hover:shadow-md transition-all duration-200">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-            {loading ? (
-              <Skeleton className="h-7 w-14 mt-1" />
-            ) : (
-              <p className={`text-2xl font-bold ${valueClasses[accent]}`}>{value ?? 0}</p>
-            )}
-          </div>
-          <div className={`p-2 rounded-lg border ${accentClasses[accent]}`}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function OverviewRow({
-  icon,
-  label,
-  value,
-  loading,
-  href,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: number;
-  loading: boolean;
-  href?: string;
+function StatCard({ 
+  label, 
+  value, 
+  icon, 
+  iconBg, 
+  glowColor 
+}: { 
+  label: string; 
+  value: number; 
+  icon: React.ReactNode; 
+  iconBg: string; 
+  glowColor: string; 
 }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
-      <div className="flex items-center gap-2 text-muted-foreground text-sm">
-        {icon}
-        <span>{label}</span>
-      </div>
-      {loading ? (
-        <Skeleton className="h-4 w-8" />
-      ) : (
-        <Link href={href ?? "#"} className="text-sm font-bold text-foreground hover:text-primary transition-colors">
-          {value ?? 0}
-        </Link>
-      )}
-    </div>
-  );
-}
-
-function QuickAction({
-  href,
-  icon,
-  label,
-  description,
-  primary,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  description: string;
-  primary?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={[
-        "flex items-center gap-3 p-3 rounded-lg border transition-all duration-150 group",
-        primary
-          ? "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
-          : "border-border/60 hover:border-primary/20 hover:bg-accent/60",
-      ].join(" ")}
+    <div 
+      className="relative rounded-[28px] p-8 flex items-center justify-between overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4),0_0_30px_var(--glow)] transition-all duration-300 cursor-pointer group"
+      style={{
+        background: "linear-gradient(#10071C, #10071C) padding-box, linear-gradient(145deg, #F97316 0%, #7c3aed 30%,rgba(249, 115, 22, 0.1) 40%, rgba(124, 58, 237, 0.1) 55%) border-box",
+        border: "1px solid transparent",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+        "--glow": glowColor
+      } as React.CSSProperties}
     >
-      <div
-        className={[
-          "h-8 w-8 shrink-0 rounded-md flex items-center justify-center transition-colors",
-          primary
-            ? "bg-primary text-white"
-            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary",
-        ].join(" ")}
+      <div className="relative z-10">
+        <p className="text-sm font-semibold text-white/40 mb-2 uppercase tracking-widest">{label}</p>
+        <p className="text-5xl font-bold text-white tabular-nums">{value}</p>
+      </div>
+      <div 
+        className={`relative z-10 h-14 w-14 rounded-full flex items-center justify-center ${iconBg} shadow-lg`}
+        style={{ boxShadow: `0 0 20px ${glowColor}` }}
       >
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className={`text-sm font-medium ${primary ? "text-primary" : "text-foreground"}`}>
-          {label}
-        </p>
-        <p className="text-[11px] text-muted-foreground truncate">{description}</p>
-      </div>
-      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0 group-hover:text-primary transition-colors" />
-    </Link>
+      {/* Subtle background glow */}
+      <div 
+        className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full blur-[60px] opacity-20"
+        style={{ backgroundColor: glowColor }}
+      />
+    </div>
   );
 }

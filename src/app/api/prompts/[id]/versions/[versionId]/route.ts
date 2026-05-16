@@ -169,9 +169,105 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       );
     }
     console.error("Error updating version:", error);
-    return NextResponse.json(
-      { error: "Failed to update version" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      error: "Failed to update version"
+    }, {
+      status: 500
+    });
+  }
+}
+
+/**
+ * DELETE /api/prompts/[id]/versions/[versionId]
+ * Delete a specific version of a prompt.
+ * Cannot delete the only version of a prompt.
+ */
+export async function DELETE(request: Request, { params }: RouteContext) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, versionId } = await params;
+    const promptId = Number(id);
+    const vId = Number(versionId);
+    const userId = Number(session.user.id);
+    const userRole = session.user.role;
+
+    if (isNaN(promptId) || isNaN(vId)) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+
+    // Check version existence and total count
+    const versionToDelete = await prisma.prompt_versions.findFirst({
+      where: { id: vId, prompt_id: promptId },
+      include: { prompt: true }
+    });
+
+    if (!versionToDelete) {
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    }
+
+    // Permission check: Owner, Admin, or Editor
+    const isOwner = versionToDelete.prompt.owner_id === userId;
+    const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
+    if (!isOwner && !isAdminOrEditor) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const totalVersions = await prisma.prompt_versions.count({
+      where: { prompt_id: promptId }
+    });
+
+    if (totalVersions <= 1) {
+      return NextResponse.json({ error: "Cannot delete the only version of a prompt. Delete the prompt instead." }, { status: 400 });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete variables associated with this version
+      await tx.prompt_variables.deleteMany({
+        where: { prompt_version_id: vId }
+      });
+
+      // 2. Delete the version
+      await tx.prompt_versions.delete({
+        where: { id: vId }
+      });
+
+      // 3. Update prompt's latest_version_no if we deleted the current latest
+      if (versionToDelete.version_no === versionToDelete.prompt.latest_version_no) {
+        const remainingLatest = await tx.prompt_versions.findFirst({
+          where: { prompt_id: promptId },
+          orderBy: { version_no: "desc" },
+          select: { version_no: true }
+        });
+        
+        if (remainingLatest) {
+          await tx.prompts.update({
+            where: { id: promptId },
+            data: { latest_version_no: remainingLatest.version_no }
+          });
+        }
+      }
+
+      // Log activity
+      await tx.activity_log.create({
+        data: {
+          user_id: userId,
+          action: "DELETE_VERSION",
+          details: {
+            promptId,
+            versionId: vId,
+            versionNo: versionToDelete.version_no,
+          }
+        }
+      });
+    });
+
+    return NextResponse.json({ message: "Version deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting version:", error);
+    return NextResponse.json({ error: "Failed to delete version" }, { status: 500 });
   }
 }
