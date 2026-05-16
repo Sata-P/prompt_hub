@@ -54,11 +54,11 @@ export async function GET() {
       prisma.prompts.count({ where: { ...baseWhere, status: "PUBLISHED" } }),
       prisma.prompts.count({ where: { ...baseWhere, status: "REJECTED" } }),
       prisma.prompts.count({ where: { ...baseWhere, status: "ARCHIVED" } }),
-      // ดึง 5 prompt ล่าสุดพร้อมข้อมูล category
+      // ดึง 4 prompt ล่าสุดพร้อมข้อมูล category
       prisma.prompts.findMany({
         where: baseWhere,
         orderBy: { updated_at: "desc" },
-        take: 7,
+        take: 4,
         select: {
           id: true,
           title: true,

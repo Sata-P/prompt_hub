@@ -78,7 +78,7 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
 
           {/* ── Page content ── */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="mx-auto max-w-[1400px] w-full p-4 min-[1300px]:p-6 lg:p-8">
+            <div className="mx-auto max-w-[1800px] w-full p-4 min-[1300px]:p-10">
               {children}
             </div>
           </div>

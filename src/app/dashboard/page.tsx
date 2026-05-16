@@ -49,25 +49,29 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="space-y-10">
-        <Skeleton className="h-10 w-48" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
-          ))}
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-48" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl" />
+            ))}
+          </div>
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
         </div>
-        <Skeleton className="h-96 rounded-3xl" />
-      </div>
     );
-  }
+    
 
   return (
-    <div className="space-y-10">
+    <div className="max-w-[1600px] mx-auto space-y-10 pb-10">
       {/* ── Page Header ── */}
       <h1 className="text-4xl font-bold text-white tracking-tight">Dashboard</h1>
 
       {/* ── Stats Section ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 2xl:gap-10">
         <StatCard
           label="Total Prompts"
           value={stats?.totalPrompts ?? 0}
@@ -100,27 +104,30 @@ export default function DashboardPage() {
 
       {/* ── Recently Updated Section ── */}
       <div 
-        className="relative rounded-[32px] p-8 overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_40px_rgba(249,115,22,0.1)] transition-all duration-500 cursor-pointer group"
+        className="relative rounded-[15px] p-8 2xl:p-12 overflow-hidden transition-all duration-500"
         style={{
           background: "linear-gradient(#10071C, #10071C) padding-box, linear-gradient(135deg, #F97316 0%, rgba(249, 115, 22, 0.1) 45%, rgba(124, 58, 237, 0.1) 65%, #7c3aed 100%) border-box",
           border: "1px solid transparent",
           boxShadow: "0 0 20px rgba(0,0,0,0.4), 0 0 40px rgba(249,115,22,0.05)"
         }}
       >
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="w-1.5 h-7 bg-[#F97316] rounded-full" />
-            <h2 className="text-2xl font-bold text-white tracking-tight">Recently Updated</h2>
+            <p className="text-2xl font-semibold text-white tracking-tight">Recently Updated</p>
           </div>
-          <Link 
-            href="/prompts" 
-            className="flex items-center gap-2 text-[#F97316] font-bold text-sm hover:translate-x-1 transition-transform"
-          >
-            View all <ArrowRight className="h-4 w-4" />
-          </Link>
+<Link 
+    href="/prompts" 
+    className="group flex items-center gap-2 text-[#F97316] font-semibold text-sm"
+  >
+    <span className="transition-all duration-300 ease-in-out group-hover:tracking-[0.05em]">
+      View all
+    </span>
+    <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+  </Link>
         </div>
 
-        <div className="space-y-0">
+        <div className="flex flex-col">
           {stats?.recentPrompts?.map((prompt, i) => (
             <Link 
               key={prompt.id} 
@@ -132,7 +139,7 @@ export default function DashboardPage() {
                   <FileText className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-[#F97316] transition-colors">{prompt.title}</h3>
+                  <p className="text-lg font-bold text-white group-hover:text-[#F97316] transition-colors">{prompt.title}</p>
                   <p className="text-sm text-white/40 mt-1 font-medium">id: {prompt.id} · v{prompt.latest_version_no}</p>
                 </div>
               </div>
@@ -167,20 +174,36 @@ function StatCard({
 }) {
   return (
     <div 
-      className="relative rounded-[28px] p-8 flex items-center justify-between overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4),0_0_30px_var(--glow)] transition-all duration-300 cursor-pointer group"
+      className="relative rounded-[28px] p-10 flex items-center justify-between overflow-hidden hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.6),0_0_50px_var(--glow)] transition-all duration-500 cursor-pointer group"
       style={{
-        background: "linear-gradient(#10071C, #10071C) padding-box, linear-gradient(145deg, #F97316 0%, #7c3aed 30%,rgba(249, 115, 22, 0.1) 40%, rgba(124, 58, 237, 0.1) 55%) border-box",
+        background: `linear-gradient(#10071C, #10071C) padding-box, var(--border-grad) border-box`,
         border: "1px solid transparent",
         boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-        "--glow": glowColor
+        "--glow": glowColor,
+        "--border-grad": "linear-gradient(145deg, #F97316 0%, #7c3aed 35%, rgba(124, 58, 237, 0.1) 40%, rgba(249, 115, 22, 0.1) 100%)"
       } as React.CSSProperties}
     >
+      {/* Shine Effect on Hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: `radial-gradient(circle at 0% 0%, ${glowColor.replace('0.4', '0.2')}, transparent 50%)` }} 
+      />
+      
+      {/* Intense Border Glow on Hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[28px]" 
+        style={{ 
+          padding: '1px',
+          background: `linear-gradient(135deg, ${glowColor} 0%, transparent 50%)`,
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude'
+        }} 
+      />
       <div className="relative z-10">
-        <p className="text-sm font-semibold text-white/40 mb-2 uppercase tracking-widest">{label}</p>
-        <p className="text-5xl font-bold text-white tabular-nums">{value}</p>
+        <p className="text-sm font-medium text-white/40 mb-2 uppercase tracking-widest">{label}</p>
+        <p className="text-3xl font-bold text-white tabular-nums mt-3">{value}</p>
       </div>
       <div 
-        className={`relative z-10 h-14 w-14 rounded-full flex items-center justify-center ${iconBg} shadow-lg`}
+        className={`relative z-10 h-12 w-12 rounded-full flex items-center justify-center ${iconBg} shadow-lg`}
         style={{ boxShadow: `0 0 20px ${glowColor}` }}
       >
         {icon}
