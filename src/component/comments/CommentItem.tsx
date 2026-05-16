@@ -9,6 +9,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { cn } from "@/lib/utils";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 export type Comment = {
   id: number;
@@ -216,11 +217,22 @@ const CommentItem = memo(function CommentItem({
   const [isReplying, setIsReplying]   = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [isEditing, setIsEditing]     = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const sanitizedContent = useMemo(
     () => DOMPurify.sanitize(comment.content),
     [comment.content],
   );
+
+  const handleDelete = useCallback(async () => {
+    const ok = await confirm({
+      title: "Delete this comment?",
+      description: "This action cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (ok) await onDelete(comment.id);
+  }, [confirm, onDelete, comment.id]);
 
   const handleReplySubmit = useCallback(async (html: string, file: File | null) => {
     // If the editor is empty (e.g. only <p></p>) and there's no file, do nothing.
@@ -320,7 +332,7 @@ const CommentItem = memo(function CommentItem({
                   Edit
                 </button>
                 <button
-                  onClick={() => confirm("Delete this comment?") && onDelete(comment.id)}
+                  onClick={handleDelete}
                   className="hover:text-red-600 transition-colors"
                 >
                   Delete
@@ -367,6 +379,7 @@ const CommentItem = memo(function CommentItem({
           </div>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 });

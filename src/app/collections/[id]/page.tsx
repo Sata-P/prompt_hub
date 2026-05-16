@@ -34,6 +34,7 @@ import {
 } from "@/component/ui/dialog";
 import axios from "axios";
 import { toast } from "sonner";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 // ─── Types ───────────────────────────────────────────────────
 type CollectionPrompt = {
@@ -216,6 +217,7 @@ export default function CollectionDetailsPage() {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [page, setPage] = useState(1);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   // Multi-selection state
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -292,7 +294,13 @@ export default function CollectionDetailsPage() {
 
   const handleBulkRemove = async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Remove ${selectedIds.length} prompt(s) from the collection?`)) return;
+    const ok = await confirm({
+      title: `Remove ${selectedIds.length} prompt${selectedIds.length === 1 ? "" : "s"} from this collection?`,
+      description: "The prompts themselves will not be deleted — they'll just leave this collection.",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       // Assuming the API supports bulk delete or we run them in parallel
@@ -348,7 +356,13 @@ export default function CollectionDetailsPage() {
   };
 
   const handleRemovePrompt = async (promptId: number) => {
-    if (!confirm("Remove this prompt from the collection?")) return;
+    const ok = await confirm({
+      title: "Remove this prompt from the collection?",
+      description: "The prompt itself will not be deleted.",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/collections/${collectionId}/prompts/${promptId}`);
       setCollection((prev) => {
@@ -692,6 +706,8 @@ export default function CollectionDetailsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {confirmDialog}
     </div>
   );
 }

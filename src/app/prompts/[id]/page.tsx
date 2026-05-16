@@ -6,12 +6,14 @@ import Link from "next/link";
 import axios from "axios";
 import { Copy, Check, Clock, ChevronDown, Trash2, AlertCircle, CheckCircle2, XCircle, ShieldAlert, Archive, ArchiveRestore } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/component/ui/card";
 import { Button } from "@/component/ui/button";
 import { Badge } from "@/component/ui/badge";
 import { Skeleton } from "@/component/ui/skeleton";
 import { useFavorites } from "@/hooks/useFavorite";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
 import CommentSection from "@/component/comments/CommentSection";
 
@@ -57,6 +59,7 @@ export default function PromptDetailPage() {
   const userRole = session?.user?.role;
 
   const {toggleFavorite, isFavorite} = useFavorites();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [prompt, setPrompt] = useState<PromptDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -74,12 +77,19 @@ export default function PromptDetailPage() {
     (prompt && userId && Number(userId) === prompt.owner.id);
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this prompt? This action cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this prompt?",
+      description: "This action cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/prompts/${id}`);
+      toast.success("Prompt deleted.");
       router.push("/prompts");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete prompt.");
+      toast.error(err.response?.data?.error || "Failed to delete prompt.");
     }
   };
 
@@ -118,99 +128,126 @@ export default function PromptDetailPage() {
 
   const handleReview = async (action: "APPROVE" | "REJECT") => {
     if (!selectedVersionId) return;
-    if (!confirm(`Are you sure you want to ${action.toLowerCase()} this version?`)) return;
+    const isReject = action === "REJECT";
+    const ok = await confirm({
+      title: isReject ? "Reject this version?" : "Approve this version?",
+      description: isReject
+        ? "The author will need to make changes and submit again."
+        : "This version will become the published version of the prompt.",
+      confirmLabel: isReject ? "Reject" : "Approve",
+      destructive: isReject,
+    });
+    if (!ok) return;
 
     try {
       await axios.post(`/api/prompts/${id}/versions/${selectedVersionId}/review`, { action });
-      alert(`Version ${action === "APPROVE" ? "approved" : "rejected"} successfully.`);
-      window.location.reload(); 
+      toast.success(`Version ${isReject ? "rejected" : "approved"} successfully.`);
+      window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.error || `Failed to ${action.toLowerCase()} version.`);
+      toast.error(err.response?.data?.error || `Failed to ${action.toLowerCase()} version.`);
     }
   };
 
   const handleSendForReview = async () => {
     if (!prompt) return;
-    if (!confirm("Send this prompt for review?")) return;
+    const ok = await confirm({
+      title: "Send this prompt for review?",
+      description: "An admin or editor will review it before it can be published.",
+      confirmLabel: "Send for Review",
+    });
+    if (!ok) return;
 
     try {
       await axios.patch(`/api/prompts/${id}`, { status: "REVIEW" });
-      
-      // Also update the latest version status to REVIEW if it's DRAFT or REJECTED
-      const latestVer = prompt.versions[0];
-      if (latestVer && (latestVer.status === "DRAFT" || latestVer.status === "REJECTED")) {
-        // We might need an API to update version status directly or just rely on the prompt status update
-        // For now, the prompt status update is enough as it signals intent to admins.
-      }
-      
-      alert("Prompt sent for review successfully!");
+      toast.success("Prompt sent for review.");
       window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to send for review.");
+      toast.error(err.response?.data?.error || "Failed to send for review.");
     }
   };
 
   const handleCancelReview = async () => {
     if (!prompt) return;
-    if (!confirm("Are you sure you want to cancel the review for this prompt?")) return;
+    const ok = await confirm({
+      title: "Cancel the review?",
+      description: "The prompt will return to draft status.",
+      confirmLabel: "Cancel Review",
+      cancelLabel: "Keep in Review",
+    });
+    if (!ok) return;
 
     try {
       await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
-      alert("Review cancelled successfully.");
+      toast.success("Review cancelled.");
       window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to cancel review.");
+      toast.error(err.response?.data?.error || "Failed to cancel review.");
     }
   };
 
   const handleArchive = async () => {
     if (!prompt) return;
-    if (!confirm("Archive this prompt? It will be hidden from active listings but can be restored later.")) return;
+    const ok = await confirm({
+      title: "Archive this prompt?",
+      description: "It will be hidden from active listings but can be restored later.",
+      confirmLabel: "Archive",
+    });
+    if (!ok) return;
 
     try {
       await axios.patch(`/api/prompts/${id}`, { status: "ARCHIVED" });
-      alert("Prompt archived successfully.");
+      toast.success("Prompt archived.");
       window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to archive prompt.");
+      toast.error(err.response?.data?.error || "Failed to archive prompt.");
     }
   };
 
   const handleUnarchive = async () => {
     if (!prompt) return;
-    if (!confirm("Restore this prompt to draft?")) return;
+    const ok = await confirm({
+      title: "Restore this prompt to draft?",
+      description: "It will move back to your drafts and become editable again.",
+      confirmLabel: "Restore",
+    });
+    if (!ok) return;
 
     try {
       await axios.patch(`/api/prompts/${id}`, { status: "DRAFT" });
-      alert("Prompt unarchived successfully.");
+      toast.success("Prompt unarchived.");
       window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to unarchive prompt.");
+      toast.error(err.response?.data?.error || "Failed to unarchive prompt.");
     }
   };
 
   const handleDeleteVersion = async (versionId: number, versionNo: number) => {
     if (!prompt) return;
-    if (!confirm(`Are you sure you want to delete version v${versionNo}?`)) return;
+    const ok = await confirm({
+      title: `Delete version v${versionNo}?`,
+      description: "This action cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/prompts/${id}/versions/${versionId}`);
-      alert("Version deleted successfully.");
-      
+      toast.success(`Version v${versionNo} deleted.`);
+
       // If we deleted the currently selected version, reset to another one
       if (versionId === selectedVersionId) {
-        // Find the next available version (excluding the one we just deleted)
         const remaining = prompt.versions.filter(v => v.id !== versionId);
         if (remaining.length > 0) {
           setSelectedVersionId(remaining[0].id);
         }
       }
-      
+
       // Reload prompt data to refresh list
       const res = await axios.get<PromptDetail>(`/api/prompts/${id}`);
       setPrompt(res.data);
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete version.");
+      toast.error(err.response?.data?.error || "Failed to delete version.");
     }
   };
 
@@ -642,6 +679,8 @@ export default function PromptDetailPage() {
       <div className="mt-8">
         <CommentSection promptId={prompt.id} />
       </div>
+
+      {confirmDialog}
     </div>
   );
 }

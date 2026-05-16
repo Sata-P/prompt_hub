@@ -6,6 +6,7 @@ import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert, ExternalLink, 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/component/ui/card";
 import { Button } from "@/component/ui/button";
@@ -14,6 +15,7 @@ import { Badge } from "@/component/ui/badge";
 import { Input } from "@/component/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/component/ui/alert-dialog";
 import { ScrollArea } from "@/component/ui/scroll-area";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 type Category = {
   id: number;
@@ -63,6 +65,7 @@ export default function SettingsPage() {
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [viewingCategoryPrompts, setViewingCategoryPrompts] = useState<Category | null>(null);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   // Search and Pagination States
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -129,20 +132,28 @@ export default function SettingsPage() {
       setCategories(prev => [...prev, res.data.category ?? res.data].sort((a, b) => a.name.localeCompare(b.name)));
       setNewCategoryName("");
       setIsAddingCategory(false);
+      toast.success("Category created.");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to create category");
+      toast.error(err.response?.data?.error || "Failed to create category");
     } finally {
       setCategorySaving(false);
     }
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+    const ok = await confirm({
+      title: "Delete this category?",
+      description: "Prompts using this category will lose their category assignment.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/categories/${id}`);
       setCategories(prev => prev.filter(c => c.id !== id));
+      toast.success("Category deleted.");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete category");
+      toast.error(err.response?.data?.error || "Failed to delete category");
     }
   };
 
@@ -158,20 +169,28 @@ export default function SettingsPage() {
       });
       setNewTagName("");
       setIsAddingTag(false);
+      toast.success("Tag created.");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to create tag");
+      toast.error(err.response?.data?.error || "Failed to create tag");
     } finally {
       setTagSaving(false);
     }
   };
 
   const handleDeleteTag = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this tag?")) return;
+    const ok = await confirm({
+      title: "Delete this tag?",
+      description: "Prompts using this tag will lose it.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/tags/${id}`);
       setTags(prev => prev.filter(t => t.id !== id));
+      toast.success("Tag deleted.");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to delete tag");
+      toast.error(err.response?.data?.error || "Failed to delete tag");
     }
   };
 
@@ -179,8 +198,9 @@ export default function SettingsPage() {
     try {
       const res = await axios.patch(`/api/users/${userId}/role`, { role: newRole });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: res.data.role } : u));
+      toast.success("Role updated.");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to update role");
+      toast.error(err.response?.data?.error || "Failed to update role");
     }
   };
 
@@ -188,8 +208,9 @@ export default function SettingsPage() {
     try {
       await axios.delete(`/api/users/${id}`);
       setUsers(prev => prev.filter(u => u.id !== id));
+      toast.success("User deactivated.");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to deactivate user");
+      toast.error(err.response?.data?.error || "Failed to deactivate user");
     }
   };
 
@@ -622,6 +643,8 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {confirmDialog}
     </>
   );
 }
