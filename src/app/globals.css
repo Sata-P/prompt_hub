@@ -48,49 +48,49 @@
   --font-size-label: 0.75rem;
 }
 
-/* ── Dark Navy + Orange Design System ── */
+/* ── Soft'Debut Orange Design System — Dark ── */
 :root {
-  /* Background: deep navy-purple */
-  --background: #08011a;
-  --foreground: #EEE9FF;
+  /* Background: deep warm dark */
+  --background: #0D0B08;
+  --foreground: #F5F0EB;
 
-  /* Surface / Card: dark purple with subtle transparency */
-  --card: #10071C;
-  --card-foreground: #EEE9FF;
-  --popover: #160d33;
-  --popover-foreground: #EEE9FF;
+  /* Surface / Card */
+  --card: #1A1512;
+  --card-foreground: #F5F0EB;
+  --popover: #1A1512;
+  --popover-foreground: #F5F0EB;
 
   /* Primary: vibrant orange */
   --primary: #F97316;
   --primary-foreground: #ffffff;
 
-  /* Secondary: muted purple */
-  --secondary: #2a1f4e;
-  --secondary-foreground: #c4b5fd;
+  /* Secondary */
+  --secondary: #2D2219;
+  --secondary-foreground: #F5F0EB;
 
-  /* Muted: deep purple */
-  --muted: #1c1040;
-  --muted-foreground: #9d8ec4;
+  /* Muted: dark warm */
+  --muted: #231A12;
+  --muted-foreground: #A8956B;
 
-  /* Accent: violet-purple */
-  --accent: #2d1b5e;
-  --accent-foreground: #c4b5fd;
+  /* Accent: dark orange tint */
+  --accent: rgba(249, 115, 22, 0.12);
+  --accent-foreground: #FB923C;
 
   /* Destructive: rose */
   --destructive: #e53e3e;
   --destructive-foreground: #ffffff;
 
-  /* Borders & inputs: purple-tinted */
-  --border: #2e1f5e;
-  --input: #1e1245;
+  /* Borders & inputs */
+  --border: #2D2219;
+  --input: #231A12;
   --ring: #F97316;
 
-  /* Radius: 10px */
-  --radius: 0.625rem;
+  /* Radius: 8px */
+  --radius: 0.5rem;
 
-  /* ── Sidebar: deep navy-purple gradient with orange bottom ── */
-  --sidebar: #0A0A14;
-  --sidebar-foreground: #94A3B8;
+  /* ── Sidebar: deep warm dark ── */
+  --sidebar: #1C1410;
+  --sidebar-foreground: #FAF7F5;
   --sidebar-primary: #F97316;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: rgba(249, 115, 22, 0.12);
@@ -303,8 +303,8 @@ pre,
   font-family: var(--font-mono), monospace;
   font-size: 1.1rem;
   line-height: 1.7;
-  background: #130a2e;
-  border: 1px solid rgba(88, 28, 135, 0.5);
+  background: #231A12;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
   white-space: pre-wrap;
