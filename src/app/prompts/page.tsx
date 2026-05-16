@@ -114,8 +114,8 @@ export default function PromptsList() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center">
-            <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8" >
-            <BookSearch className="h-4 w-4 text-primary" />
+            <div className="rounded-lg bg-primary flex items-center justify-center mr-2 h-8 w-8">
+              <BookSearch className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground gap-2">
               Prompt Library
@@ -280,7 +280,7 @@ export default function PromptsList() {
                           ? p.tags.map((t) => (
                               <span
                                 key={t.id}
-                                className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground"
+                                className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground"
                               >
                                 #{t.name}
                               </span>
@@ -288,12 +288,15 @@ export default function PromptsList() {
                           : <span className="text-muted-foreground">-</span>}
                       </div>
                     </td>
-                    <td className={`px-5 py-4 text-xs uppercase tracking-wider font-semibold ${
-                      p.status === 'PUBLISHED' ? 'text-green-600' :
-                      p.status === 'REVIEW' ? 'text-orange-500' :
-                      'text-muted-foreground'
-                    }`}>
-                      {getStatusText(p.status)}
+                    <td className="px-5 py-4">
+                      <span className={`inline-block text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full ${
+                        p.status === 'PUBLISHED' ? 'bg-green-500/15 text-green-400 border border-green-500/30' :
+                        p.status === 'REVIEW' ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30' :
+                        p.status === 'DRAFT' ? 'bg-muted text-muted-foreground border border-border' :
+                        'bg-muted text-muted-foreground border border-border'
+                      }`}>
+                        {getStatusText(p.status)}
+                      </span>
                     </td>
                     <td className="px-5 py-4 text-muted-foreground text-sm">
                       {p.recommended_model || "-"}

@@ -39,47 +39,47 @@
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
 }
 
-/* ── Soft'Debut Orange Design System ── */
+/* ── Soft'Debut Orange Design System — Dark ── */
 :root {
-  /* Background: warm off-white (from Stitch #FFFAF7) */
-  --background: #FFFAF7;
-  --foreground: #1C1410;
+  /* Background: deep warm dark */
+  --background: #0D0B08;
+  --foreground: #F5F0EB;
 
   /* Surface / Card */
-  --card: #FFFFFF;
-  --card-foreground: #1C1410;
-  --popover: #FFFFFF;
-  --popover-foreground: #1C1410;
+  --card: #1A1512;
+  --card-foreground: #F5F0EB;
+  --popover: #1A1512;
+  --popover-foreground: #F5F0EB;
 
   /* Primary: Orange #F97316 */
   --primary: #F97316;
   --primary-foreground: #FFFFFF;
 
-  /* Secondary: warm medium gray */
-  --secondary: #78716C;
-  --secondary-foreground: #FFFFFF;
+  /* Secondary */
+  --secondary: #2D2219;
+  --secondary-foreground: #F5F0EB;
 
-  /* Muted: warm light gray */
-  --muted: #F5F0EB;
-  --muted-foreground: #78716C;
+  /* Muted: dark warm */
+  --muted: #231A12;
+  --muted-foreground: #A8956B;
 
-  /* Accent: light orange tint */
-  --accent: #FFF3E8;
-  --accent-foreground: #C2410C;
+  /* Accent: dark orange tint */
+  --accent: rgba(249, 115, 22, 0.12);
+  --accent-foreground: #FB923C;
 
   /* Destructive */
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
   /* Borders & inputs */
-  --border: #E8E0D8;
-  --input: #F0EBE5;
+  --border: #2D2219;
+  --input: #231A12;
   --ring: #F97316;
 
-  /* Radius: 8px (Stitch ROUND_EIGHT) */
+  /* Radius: 8px */
   --radius: 0.5rem;
 
-  /* ── Sidebar: deep warm dark (Stitch #1C1410) ── */
+  /* ── Sidebar: deep warm dark ── */
   --sidebar: #1C1410;
   --sidebar-foreground: #FAF7F5;
   --sidebar-primary: #F97316;
@@ -171,7 +171,7 @@ code, pre, .font-mono {
   font-family: var(--font-mono), monospace;
   font-size: 0.875rem;
   line-height: 1.7;
-  background: #FDF8F4;
+  background: #231A12;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
