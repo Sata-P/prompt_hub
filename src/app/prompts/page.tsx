@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/component/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/component/ui/command";
 import { Skeleton } from "@/component/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/component/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { PROVIDER_MODELS } from "@/lib/llm";
 import { useSession } from "next-auth/react";
@@ -31,16 +32,6 @@ type Prompt = {
   recommended_models: string[] | null;
 };
 
-type ApiResponse = {
-  data: Prompt[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-};
-
 /**
  * หน้าแสดงรายการ Prompts ทั้งหมด
  * รองรับการกรองตามหมวดหมู่ (Category), สถานะ (Status), โมเดล (Model), แท็ก (Tag) และช่องค้นหา (Search)
@@ -48,7 +39,6 @@ type ApiResponse = {
 export default function PromptsList() {
   const { data: session } = useSession();
   const isAdminOrEditor = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
-  
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -110,8 +100,8 @@ export default function PromptsList() {
         
         setPrompts(data.data);
         setPagination(data.pagination);
-      } catch (err: any) {
-        if (err.name === "AbortError") return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
         console.error("Failed to load prompts", err);
       } finally {
         setLoading(false);
@@ -152,13 +142,18 @@ export default function PromptsList() {
     setFilterTags([]);
   };
 
+  const modelNameMap = Object.fromEntries(
+    [...PROVIDER_MODELS.openai, ...PROVIDER_MODELS.gemini].map((m) => [m.id, m.name])
+  );
+
   return (
+    <TooltipProvider>
     <div className="pb-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center">
-            <div className="rounded-lg bg-primary/10 flex items-center justify-center mr-2 h-8 w-8 shrink-0" >
-            <FileText className="h-4 w-4 text-primary" />
+            <div className="rounded-[12px] bg-primary flex items-center justify-center mr-2 h-8 w-8">
+              <FileText className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground gap-2">
               Prompt Library
@@ -178,11 +173,11 @@ export default function PromptsList() {
       <div data-slot="card" className="mt-6 rounded-2xl p-5 shadow-sm border bg-card transition-all duration-500 hover:shadow-md space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
-          <div className="relative md:col-span-2">
+          <div className="relative md:col-span-2 lg:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search prompts..."
-              className="pl-9 h-10 bg-background"
+              className="pl-9 h-12 bg-background text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -190,7 +185,7 @@ export default function PromptsList() {
 
           {/* Category */}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="h-10 bg-background">
+            <SelectTrigger className="h-12 bg-background">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
@@ -203,7 +198,7 @@ export default function PromptsList() {
 
           {/* Status */}
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-10 bg-background">
+            <SelectTrigger className="h-12 bg-background">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -213,12 +208,18 @@ export default function PromptsList() {
                 <SelectItem value="review">REVIEW</SelectItem>
               )}
               <SelectItem value="published">APPROVED</SelectItem>
+              {!isAdminOrEditor && (
+                <SelectItem value="rejected">REJECTED</SelectItem>
+              )}
+              {isAdminOrEditor && (
+                <SelectItem value="archived">ARCHIVED</SelectItem>
+              )}
             </SelectContent>
           </Select>
 
           {/* Model */}
           <Select value={filterModel} onValueChange={setFilterModel}>
-            <SelectTrigger className="h-10 bg-background">
+            <SelectTrigger className="h-12 bg-background">
               <SelectValue placeholder="All Models" />
             </SelectTrigger>
             <SelectContent>
@@ -233,16 +234,16 @@ export default function PromptsList() {
         </div>
 
         {/* Row 2: Tag filter + clear */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap w-full">
-            <span className="text-xs text-muted-foreground font-medium">Tags:</span>
+        <div className="flex items-start sm:items-center justify-between gap-3 min-h-[48px]">
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            <span className="text-[15px] text-muted-foreground font-medium">Tags:</span>
             
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  className="w-[220px] justify-between text-xs h-9 bg-background border-border hover:bg-muted/50"
+                  className="w-[220px] justify-between text-s h-12 bg-background border-border hover:bg-muted/50"
                 >
                   {filterTags.length > 0
                     ? `${filterTags.length} tag(s) selected`
@@ -301,12 +302,6 @@ export default function PromptsList() {
                     <X className="h-3 w-3 ml-1 opacity-50" />
                   </Badge>
                 ))}
-                <button
-                  onClick={() => setFilterTags([])}
-                  className="text-[11px] text-muted-foreground hover:text-destructive transition-colors ml-1 px-2 py-1 rounded-md hover:bg-muted"
-                >
-                  Clear all
-                </button>
               </div>
             )}
           </div>
@@ -314,7 +309,7 @@ export default function PromptsList() {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-3 w-3" /> Clear filters
             </button>
@@ -372,18 +367,27 @@ export default function PromptsList() {
                       <div className="flex flex-wrap gap-1.5">
                         {p.tags.length > 0 ? (
                           <>
-                            {p.tags.slice(0, 3).map((t) => (
+                            {p.tags.slice(0, 4).map((t) => (
                               <span
                                 key={t.id}
-                                className="text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground"
+                                className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground"
                               >
                                 #{t.name}
                               </span>
                             ))}
-                            {p.tags.length > 3 && (
-                              <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                                +{p.tags.length - 3} more
-                              </span>
+                            {p.tags.length > 4 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-[10px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full cursor-default">
+                                    +{p.tags.length - 4} more
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="flex flex-col gap-0.5">
+                                  {p.tags.map((t) => (
+                                    <span key={t.id}>#{t.name}</span>
+                                  ))}
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                           </>
                         ) : (
@@ -391,12 +395,47 @@ export default function PromptsList() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-5 text-muted-foreground text-base">
-                      {p.recommended_models?.length ? p.recommended_models.join(", ") : "-"}
+                    <td className="px-4 py-5">
+                      <div className="flex flex-wrap gap-1">
+                        {p.recommended_models && p.recommended_models.length > 0 ? (
+                          <>
+                            {p.recommended_models.slice(0, 2).map((model) => (
+                              <Tooltip key={model}>
+                                <TooltipTrigger asChild>
+                                  <span className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground text-[13px] whitespace-nowrap cursor-default">
+                                    {model}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="flex flex-col gap-0.5">
+                                  {p.recommended_models!.map((m) => (
+                                    <span key={m}>{modelNameMap[m] ?? m}</span>
+                                  ))}
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                            {p.recommended_models.length > 2 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-[13px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full cursor-default">
+                                    +{p.recommended_models.length - 2} more
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="flex flex-col gap-0.5">
+                                  {p.recommended_models.map((m) => (
+                                    <span key={m}>{modelNameMap[m] ?? m}</span>
+                                  ))}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-5">
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={cn(
                           "text-[10px] font-bold px-2 py-0",
                           p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
@@ -452,7 +491,7 @@ export default function PromptsList() {
                   <Badge 
                     variant="outline" 
                     className={cn(
-                      "text-[9px] px-1.5 h-4 font-bold",
+                      "text-[10px] px-1.5 h-4 font-bold",
                       p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
                       p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
                       p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
@@ -488,13 +527,24 @@ export default function PromptsList() {
 
               {p.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {p.tags.slice(0, 3).map((t) => (
-                    <span key={t.id} className="text-[11px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded">
+                  {p.tags.slice(0, 4).map((t) => (
+                    <span key={t.id} className="text-[13px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded">
                       #{t.name}
                     </span>
                   ))}
-                  {p.tags.length > 3 && (
-                    <span className="text-[11px] text-muted-foreground">+{p.tags.length - 3} more</span>
+                  {p.tags.length > 4 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-[13px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded cursor-default">
+                          +{p.tags.length - 4} more
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="flex flex-col gap-0.5">
+                        {p.tags.map((t) => (
+                          <span key={t.id}>#{t.name}</span>
+                        ))}
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               )}
@@ -535,5 +585,6 @@ export default function PromptsList() {
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 }

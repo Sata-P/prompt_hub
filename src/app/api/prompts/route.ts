@@ -19,22 +19,27 @@ import { z } from "zod";
 export async function GET(request: Request) {
   try {
     const session = await getServerAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
+    
+    // Extract query parameters
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 20));
     const q = searchParams.get("q")?.trim() || "";
     const status = searchParams.get("status") || undefined;
-    const categoryId = searchParams.get("categoryId")
-      ? Number(searchParams.get("categoryId"))
-      : undefined;
+    const categoryId = searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined;
     const tags = searchParams.getAll("tag").map(t => t.trim()).filter(t => t !== "");
     const visibility = searchParams.get("visibility") || undefined;
+    const model = searchParams.get("model")?.trim() || undefined;
 
-    const userId = Number(session.user.id);
+    // Determine if this is a request for public content only
+    const isPublicOnly = visibility === "PUBLIC" && status === "PUBLISHED";
+
+    // If not public only and no session, return 401
+    if (!session?.user && !isPublicOnly) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session?.user?.id ? Number(session.user.id) : undefined;
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -42,18 +47,20 @@ export async function GET(request: Request) {
       { deleted_at: null }, // Exclude soft-deleted
     ];
 
-    const userRole = session.user.role?.toUpperCase();
+    const userRole = session?.user?.role?.toUpperCase();
 
     // Visibility rules:
     // 1. DRAFT/REJECTED: Only owner
     // 2. REVIEW: Owner, Admin, Editor
     // 3. PUBLISHED: Everyone
     
-    // Simplified visibility logic
     const defaultOr: any[] = [
       { status: "PUBLISHED" }, // Everyone
-      { owner_id: userId },    // Owner sees all their own
     ];
+
+    if (userId) {
+      defaultOr.push({ owner_id: userId });    // Owner sees all their own
+    }
 
     if (userRole === "ADMIN" || userRole === "EDITOR") {
       defaultOr.push({ status: "REVIEW" }); // Admins/Editors see all pending reviews
@@ -61,6 +68,7 @@ export async function GET(request: Request) {
 
     andConditions.push({ OR: defaultOr });
 
+    // Apply filters from query params
     if (q) {
       andConditions.push({
         OR: [
@@ -74,12 +82,15 @@ export async function GET(request: Request) {
       andConditions.push({ status });
     }
 
-    const model = searchParams.get("model")?.trim() || undefined;
+    if (visibility) {
+      andConditions.push({ visibility });
+    }
+
     if (model) {
       andConditions.push({ recommended_models: { has: model } });
     }
 
-    if (categoryId) {
+    if (categoryId && !isNaN(categoryId)) {
       andConditions.push({ category_id: categoryId });
     }
 

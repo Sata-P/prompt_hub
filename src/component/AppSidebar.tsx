@@ -106,22 +106,22 @@ export function AppSidebar({
                       tooltip={item.label}
                       isActive={isActive}
                       className={[
-                        "relative h-11 rounded-xl px-3 text-sm font-medium transition-all duration-200",
+                        "relative h-[52px] rounded-xl px-4 text-[15px] font-medium transition-all duration-200 hover:cursor-pointer",
                         isActive
-                          ? "bg-gradient-to-l from-[#FF6B00] to-[#FF6B00]/20 text-white"
-                          : "text-gray-400 hover:text-white hover:bg-white/5",
+                          ? "bg-gradient-to-l from-[#FF6B00] to-[#FF6B00]/20 text-white shadow-lg shadow-orange-500/50"
+                          : "text-gray-400 hover:text-white hover:bg-white/5 hover:font-semibold",
                       ].join(" ")}
                     >
-                      <Link href={item.path} className="flex items-center gap-3">
+                      <Link href={item.path} className="flex items-center gap-3.5">
                         <item.icon
                           className={[
-                            "h-5 w-5 shrink-0",
+                            "h-[22px] w-[22px] shrink-0",
                             isActive ? "text-white" : "text-gray-400"
                           ].join(" ")}
                         />
                         <span className="flex-1 truncate">{item.label}</span>
                         {isActive && (
-                          <ChevronRight className="h-4 w-4 text-white" strokeWidth={2} />
+                          <ChevronRight className="h-4 w-4 text-white" strokeWidth={2.5} />
                         )}
                       </Link>
                     </SidebarMenuButton>

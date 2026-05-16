@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert, ExternalLink, Search } from "lucide-react";
+import { Folder, Hash, Plus, Trash2, X, Save, Users, ShieldAlert, ExternalLink, Search, Settings } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -202,7 +202,12 @@ export default function SettingsPage() {
     <>
     <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
+        <div className="flex items-center gap-2.5 mb-1">
+          <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
+            <Settings className="h-4 w-4 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">System Settings</h1>
+        </div>
         <p className="text-muted-foreground mt-1">Manage categories and tags for all prompts</p>
       </div>
 

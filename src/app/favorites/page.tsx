@@ -43,14 +43,18 @@ type FavoritePrompt = {
 
 /* ─── Helper Components ──────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; variant: "success" | "warning" | "secondary" | "outline" | "default" }> = {
-    PUBLISHED: { label: "Published", variant: "success" },
-    DRAFT:     { label: "Draft",     variant: "secondary" },
-    REVIEW:    { label: "Review",    variant: "warning" },
-    ARCHIVED:  { label: "Archived",  variant: "outline" },
+  const map: Record<string, { label: string; cls: string }> = {
+    PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
+    DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
+    REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
   };
-  const s = map[status] ?? { label: status, variant: "default" };
-  return <Badge variant={s.variant}>{s.label}</Badge>;
+  const s = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
+  return (
+    <span className={`inline-flex items-center px-1.5 h-4 rounded text-[10px] font-bold border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
 }
 
 function PromptCard({
@@ -64,67 +68,59 @@ function PromptCard({
   const totalVars = p?.versions?.reduce((sum, version) => sum + version.promptVariables.length , 0);
 
   return (
-    <div data-slot="card" className="group relative rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card">
+    <div data-slot="card" className="group relative rounded-xl border px-6 py-5 hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card flex flex-col h-full min-h-[160px] cursor-pointer">
       {/* Unfavorite button */}
       <button
         onClick={(e) => {
           e.preventDefault();
           onUnfavorite(p.id);
         }}
-        className="absolute top-4 right-4 p-1.5 rounded-lg text-primary opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-all duration-200"
+        className="absolute top-4 right-4 p-1.5 rounded-lg text-primary opacity-0 group-hover:opacity-100 hover:bg-primary/10 transition-all duration-200 z-10"
         title="Remove from favorites"
         aria-label="Remove from favorites"
       >
         <Heart className="h-4 w-4 fill-primary" />
       </button>
 
-      <Link href={`/prompts/${p.id}`} className="block">
-        {/* Header */}
-        <div className="flex items-start gap-3 pr-8">
-          {/* Icon orb */}
-          <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-            <BookOpen className="h-4 w-4 text-primary" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+      <Link href={`/prompts/${p.id}`} className="flex flex-col flex-1">
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="flex items-start gap-3 pr-8">
+            <div className="min-w-0 flex-1">
+              <p className="text-[20px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
                 {p.title}
-              </h3>
-              {/* <StatusBadge status={p.status} /> */}
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <StatusBadge status={p.status} />
+                {p.category && (
+                  <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                    {p.category.name}
+                  </span>
+                )}
+              </div>
             </div>
-            {p.category && (
-              <p className="text-xs text-muted-foreground">{p.category.name}</p>
-            )}
           </div>
+
+          {/* Tags */}
+          {p.tags?.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {p.tags.slice(0, 4).map((t) => (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground"
+                >
+                  <Tag className="h-2.5 w-2.5" />
+                  {t.name}
+                </span>
+              ))}
+              {p.tags.length > 4 && (
+                <span className="text-xs text-muted-foreground px-2 py-0.5">
+                  +{p.tags.length - 4} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
-
-        {/* Description */}
-        {p.description && (
-          <p className="mt-3 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {p.description}
-          </p>
-        )}
-
-        {/* Tags */}
-        {p.tags?.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {p.tags.slice(0, 4).map((t) => (
-              <span
-                key={t.id}
-                className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground"
-              >
-                <Tag className="h-2.5 w-2.5" />
-                {t.name}
-              </span>
-            ))}
-            {p.tags.length > 4 && (
-              <span className="text-xs text-muted-foreground px-2 py-0.5">
-                +{p.tags.length - 4} more
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Footer stats */}
         <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
@@ -157,9 +153,8 @@ function PromptCard({
 
 function CardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-xl px-6 py-5 space-y-3">
       <div className="flex items-start gap-3">
-        <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
         <div className="flex-1 space-y-1.5">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/3" />
@@ -223,14 +218,14 @@ export default function FavoritesPage() {
 
   /* ── Render ── */
   return (
-    <div className="pb-20">
+    <div className="pb-20 max-w-6xl mx-auto space-y-6 pt-4 px-4 fade-in-up">
 
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Star className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
+              <Star className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Favorites
@@ -274,7 +269,7 @@ export default function FavoritesPage() {
       {/* ── Content ── */}
       {isLoading ? (
         /* Skeleton grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}
@@ -315,7 +310,7 @@ export default function FavoritesPage() {
       ) : (
         <>
           {/* Card grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
             {paged.map((item) => (
               <PromptCard
                 key={item.id}

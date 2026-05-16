@@ -300,11 +300,13 @@ export default function EditPromptPage() {
             </Button>
           </div>
 
-          {error && title && (
-             <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-6 font-medium">
-               {error}
-             </div>
-          )}
+          <Card className="border shadow-sm overflow-hidden">
+            <CardContent className="p-6 md:p-10">
+              {error && title && (
+                <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-8 font-medium">
+                  {error}
+                </div>
+              )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-8 xl:gap-12 items-start">
             <div className="space-y-6 lg:sticky lg:top-6">
@@ -620,8 +622,10 @@ export default function EditPromptPage() {
               </section>
             </div>
           </div>
-        </form>
-      </main>
-    </div>
+        </CardContent>
+      </Card>
+    </form>
+  </main>
+</div>
   );
 }

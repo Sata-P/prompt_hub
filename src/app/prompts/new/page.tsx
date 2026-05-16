@@ -242,12 +242,14 @@ export default function CreatePromptPage() {
             </Button>
           </div>
 
-          {/* Error message (แสดงเฉพาะเมื่อมี error) */}
-          {error && (
-             <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-6 font-medium flex items-center gap-2">
-               <ShieldAlert className="h-5 w-5" /> {error}
-             </div>
-          )}
+          <Card className="border shadow-sm overflow-hidden">
+            <CardContent className="p-6 md:p-10">
+              {/* Error message (แสดงเฉพาะเมื่อมี error) */}
+              {error && (
+                <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-8 font-medium flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" /> {error}
+                </div>
+              )}
 
           {/* Layout 2 คอลัมน์: ซ้าย = ข้อมูลทั่วไป, ขวา = template content (Asymmetrical Grid) */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-8 xl:gap-12 items-start">
@@ -575,8 +577,10 @@ export default function CreatePromptPage() {
               </section>
             </div>
           </div>
-        </form>
-      </main>
-    </div>
+        </CardContent>
+      </Card>
+    </form>
+  </main>
+</div>
   );
 }

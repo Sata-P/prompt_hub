@@ -13,10 +13,6 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(request: Request, { params }: RouteContext) {
   try {
     const session = await getServerAuthSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const promptId = Number(id);
 
@@ -53,10 +49,10 @@ export async function GET(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
     }
 
-    const userId = Number(session.user.id);
-    const userRole = session.user.role?.toUpperCase();
+    const userId = session?.user?.id ? Number(session.user.id) : undefined;
+    const userRole = session?.user?.role?.toUpperCase();
     const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
-    const isOwner = prompt.owner_id === userId;
+    const isOwner = userId ? prompt.owner_id === userId : false;
 
     // 1. Filter versions based on status first
     const visibleVersions = prompt.versions.filter(v => {
@@ -71,6 +67,10 @@ export async function GET(request: Request, { params }: RouteContext) {
     const canViewPrompt = visibleVersions.length > 0;
 
     if (!canViewPrompt) {
+      // If not logged in, return 401, otherwise 404
+      if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
     }
 

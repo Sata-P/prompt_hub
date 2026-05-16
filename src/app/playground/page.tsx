@@ -25,6 +25,12 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/component/ui/tooltip";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/component/ui/card";
 import { Button } from "@/component/ui/button";
@@ -239,12 +245,16 @@ function PlaygroundContent() {
           "/api/prompts?visibility=PUBLIC&status=PUBLISHED&limit=20",
           { signal: controller.signal }
         );
-        if (!res.ok) throw new Error("Failed to fetch public prompts");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to fetch public prompts (${res.status})`);
+        }
         const data = await res.json();
         setPublicPrompts(data.data || []);
       } catch (err: any) {
         if (err.name === "AbortError") return;
-        console.error("Failed to fetch public prompts:", err);
+        console.error("Playground: Failed to fetch public prompts:", err);
+        toast.error(err.message || "Could not load public prompts");
       } finally {
         if (!controller.signal.aborted) {
           setLoadingList(false);
@@ -497,8 +507,8 @@ function PlaygroundContent() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <PlayCircle className="h-4 w-4 text-primary" />
+              <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
+                <PlayCircle className="h-4 w-4 text-white" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground font-heading">
                 Prompt Playground
@@ -570,18 +580,42 @@ function PlaygroundContent() {
               {pagedPrompts.map((p) => (
                 <Card
                   key={p.id}
-                  className="hover:border-primary/50 cursor-pointer transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg active:scale-95 bg-card group"
+                  className="flex flex-col border hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] cursor-pointer transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card group hover:cursor-pointer min-h-[160px]"
                   onClick={() => router.push(`/playground?promptId=${p.id}`)}
                 >
                   <CardHeader>
-                    <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors">
-                      {p.title}
-                    </CardTitle>
+                    <TooltipProvider>
+                      <Tooltip delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          <CardTitle className="text-lg line-clamp-1 text-foreground group-hover:text-primary transition-colors text-left cursor-help">
+                            {p.title}
+                          </CardTitle>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[300px]">
+                          <p className="font-semibold">{p.title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {p.description || "No description available"}
-                    </p>
+                  <CardContent className="flex-1">
+                    {p.description ? (
+                      <TooltipProvider>
+                        <Tooltip delayDuration={300}>
+                          <TooltipTrigger asChild>
+                            <p className="text-sm text-muted-foreground line-clamp-2 text-left cursor-help">
+                              {p.description}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-[300px] text-sm whitespace-pre-wrap">
+                            <p>{p.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <p className="text-sm text-muted-foreground/60 italic text-left">
+                        No description available
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               ))}

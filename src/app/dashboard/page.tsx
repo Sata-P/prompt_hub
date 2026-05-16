@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Archive,
   ArrowRight,
+  LayoutDashboard,
 } from "lucide-react";
 
 import { Skeleton } from "@/component/ui/skeleton";
@@ -68,7 +69,12 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-10 pb-10">
       {/* ── Page Header ── */}
-      <h1 className="text-4xl font-bold text-white tracking-tight">Dashboard</h1>
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
+          <LayoutDashboard className="h-4 w-4 text-white" />
+        </div>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+      </div>
 
       {/* ── Stats Section ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 2xl:gap-10">

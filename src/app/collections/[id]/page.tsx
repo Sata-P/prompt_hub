@@ -11,7 +11,6 @@ import {
   Lock,
   BookOpen,
   Clock,
-  Play,
   Search,
   X,
   ChevronLeft,
@@ -20,8 +19,11 @@ import {
   Layers,
   Trash2,
   LayoutGrid,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { Button } from "@/component/ui/button";
+import { Checkbox } from "@/component/ui/checkbox";
 import { Input } from "@/component/ui/input";
 import { Skeleton } from "@/component/ui/skeleton";
 import {
@@ -66,15 +68,14 @@ const ITEMS_PER_PAGE = 9;
 // ─── Status Badge ────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    PUBLISHED: { label: "Published", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-    APPROVED:  { label: "Approved",  cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-    DRAFT:     { label: "Draft",     cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" },
-    REVIEW:    { label: "Review",    cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-    ARCHIVED:  { label: "Archived",  cls: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
+    PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
+    DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
+    REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
   };
-  const s = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
+  const s = map[status] ?? { label: status, cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${s.cls}`}>
+    <span className={`inline-flex items-center px-1.5 h-4 rounded text-[10px] font-bold border ${s.cls}`}>
       {s.label}
     </span>
   );
@@ -85,53 +86,77 @@ function PromptCard({
   item,
   isAdmin,
   onRemove,
+  isSelectionMode,
+  isSelected,
+  onToggleSelect,
 }: {
   item: CollectionPrompt;
   isAdmin: boolean;
   onRemove: (promptId: number) => void;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (promptId: number) => void;
 }) {
   const p = item.prompt;
   return (
-    <div data-slot="card" className="group relative flex flex-col rounded-xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 bg-card">
-      {/* Remove button (admin) */}
-      {isAdmin && (
+    <div
+      data-slot="card"
+      className={`group relative flex flex-col rounded-xl px-6 py-5 border transition-all duration-300 ease-in-out bg-card h-full min-h-[160px] ${
+        isSelected 
+          ? "border-[#FF6B00] shadow-[0_0_15px_rgba(255,107,0,0.3)] scale-[1.01]" 
+          : "hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:scale-[1.01]"
+      } ${isSelectionMode ? "cursor-pointer" : "active:scale-95"}`}
+      onClick={() => isSelectionMode && onToggleSelect(p.id)}
+    >
+      {/* Selection Checkbox */}
+      {isSelectionMode && (
+        <div className="absolute top-4 right-4 z-10">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(p.id)}
+            className="h-5 w-5 rounded-md border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+          />
+        </div>
+      )}
+
+      {/* Remove button (admin) - only show when not in selection mode */}
+      {isAdmin && !isSelectionMode && (
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onRemove(p.id);
           }}
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
           title="Remove from collection"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
         </button>
       )}
 
-      <Link href={`/prompts/${p.id}`} className="flex flex-col flex-1">
+      <Link
+        href={`/prompts/${p.id}`}
+        className="flex flex-col flex-1"
+        onClick={(e) => isSelectionMode && e.preventDefault()}
+      >
         <div className="flex items-start gap-3">
-          <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-            <BookOpen className="h-4 w-4 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1 pr-5">
-            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                {p.title}
-              </h3>
-            </div>
+          <div className="min-w-0 flex-1">
+            <p className={`text-[20px] font-semibold tracking-tight transition-colors truncate mb-1 ${isSelected ? "text-primary" : "text-foreground group-hover:text-primary"}`}>
+              {p.title}
+            </p>
             <div className="flex items-center gap-2 flex-wrap">
-              {/* <StatusBadge status={p.status} /> */}
+              <StatusBadge status={p.status} />
               {p.category && (
-                <span className="text-xs text-muted-foreground">{p.category.name}</span>
+                <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                  {p.category.name}
+                </span>
               )}
             </div>
           </div>
         </div>
 
-        {p.description && (
-          <p className="mt-3 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {p.description}
-          </p>
-        )}
+        {/* Tags space filler to keep height consistent if needed, but here we just follow fav style */}
+        <div className="flex-1" />
 
         <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
@@ -153,35 +178,24 @@ function PromptCard({
           </span>
         </div>
       </Link>
-
-      {/* Run button */}
-      <Link
-        href={`/playground?promptId=${p.id}`}
-        className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
-      >
-        <Play className="h-3 w-3" /> Run in Playground
-      </Link>
     </div>
   );
 }
 
 function PromptCardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-xl px-6 py-5 space-y-3 h-full min-h-[160px]">
       <div className="flex items-start gap-3">
-        <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
         <div className="flex-1 space-y-1.5">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/3" />
         </div>
       </div>
-      <Skeleton className="h-3 w-full" />
-      <Skeleton className="h-3 w-4/5" />
+      <div className="flex-1" />
       <div className="pt-3 border-t border-border flex justify-between">
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-3 w-20" />
       </div>
-      <Skeleton className="h-7 w-full rounded-lg" />
     </div>
   );
 }
@@ -203,10 +217,24 @@ export default function CollectionDetailsPage() {
   const deferredSearch = useDeferredValue(search);
   const [page, setPage] = useState(1);
 
+  // Multi-selection state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
   // Add Prompt Dialog
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [availablePrompts, setAvailablePrompts] = useState<any[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
+  const [addPromptSearch, setAddPromptSearch] = useState("");
+
+  const filteredAvailablePrompts = useMemo(() => {
+    const q = addPromptSearch.toLowerCase().trim();
+    if (!q) return availablePrompts;
+    return availablePrompts.filter(p => 
+      (p.title || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q)
+    );
+  }, [availablePrompts, addPromptSearch]);
 
   // ── Fetch collection ────────────────────────────────────
   useEffect(() => {
@@ -223,6 +251,11 @@ export default function CollectionDetailsPage() {
 
   // Reset page on search change
   useEffect(() => { setPage(1); }, [deferredSearch]);
+
+  // Reset selection when exiting selection mode
+  useEffect(() => {
+    if (!isSelectionMode) setSelectedIds([]);
+  }, [isSelectionMode]);
 
   // ── Filter & paginate ───────────────────────────────────
   const filteredPrompts = useMemo(() => {
@@ -241,6 +274,49 @@ export default function CollectionDetailsPage() {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return filteredPrompts.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPrompts, page]);
+
+  // ── Selection handlers ──────────────────────────────────
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === pagedPrompts.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(pagedPrompts.map((cp) => cp.prompt_id));
+    }
+  };
+
+  const handleBulkRemove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Remove ${selectedIds.length} prompt(s) from the collection?`)) return;
+
+    try {
+      // Assuming the API supports bulk delete or we run them in parallel
+      await Promise.all(
+        selectedIds.map((id) =>
+          axios.delete(`/api/collections/${collectionId}/prompts/${id}`)
+        )
+      );
+
+      setCollection((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          prompts: prev.prompts.filter((cp) => !selectedIds.includes(cp.prompt_id)),
+        };
+      });
+
+      toast.success(`${selectedIds.length} prompt(s) removed.`);
+      setSelectedIds([]);
+      setIsSelectionMode(false);
+    } catch {
+      toast.error("Failed to remove some prompts.");
+    }
+  };
 
   // ── Add prompt dialog ───────────────────────────────────
   const handleOpenAddPrompt = async () => {
@@ -344,8 +420,8 @@ export default function CollectionDetailsPage() {
       <div data-slot="card" className="rounded-2xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           {/* Icon */}
-          <div className="shrink-0 h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm border border-primary/10">
-            <FolderOpen className="h-7 w-7 text-primary" />
+          <div className="shrink-0 h-14 w-14 rounded-2xl bg-primary flex items-center justify-center shadow-sm border border-primary/10">
+            <FolderOpen className="h-7 w-7 text-white" />
           </div>
 
           {/* Info */}
@@ -409,16 +485,67 @@ export default function CollectionDetailsPage() {
       <div className="space-y-4">
         {/* Section header */}
         <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Prompts</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {filteredPrompts.length === promptCount
-                ? `${promptCount} prompt${promptCount !== 1 ? "s" : ""}`
-                : `${filteredPrompts.length} of ${promptCount} prompts`}
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Prompts</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {filteredPrompts.length === promptCount
+                  ? `${promptCount} prompt${promptCount !== 1 ? "s" : ""}`
+                  : `${filteredPrompts.length} of ${promptCount} prompts`}
+              </p>
+            </div>
+
+            {isAdmin && promptCount > 0 && (
+              <div className="flex items-center gap-2">
+                {isSelectionMode ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsSelectionMode(false)}
+                      className="text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleSelectAll}
+                      className="text-xs gap-1.5"
+                    >
+                      {selectedIds.length === pagedPrompts.length ? (
+                        <Square className="h-3.5 w-3.5" />
+                      ) : (
+                        <CheckSquare className="h-3.5 w-3.5" />
+                      )}
+                      {selectedIds.length === pagedPrompts.length ? "Deselect All" : "Select All"}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={selectedIds.length === 0}
+                      onClick={handleBulkRemove}
+                      className="text-xs gap-1.5 shadow-sm"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove ({selectedIds.length})
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsSelectionMode(true)}
+                    className="text-xs gap-1.5"
+                  >
+                    <CheckSquare className="h-3.5 w-3.5" /> Select Multiple
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
-          {promptCount > 0 && (
+          {!isSelectionMode && promptCount > 0 && (
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
@@ -479,6 +606,9 @@ export default function CollectionDetailsPage() {
                   item={item}
                   isAdmin={isAdmin}
                   onRemove={handleRemovePrompt}
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedIds.includes(item.prompt_id)}
+                  onToggleSelect={toggleSelect}
                 />
               ))}
             </div>
@@ -503,23 +633,42 @@ export default function CollectionDetailsPage() {
         )}
       </div>
 
-      {/* ── Add Prompt Dialog ── */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-white">Add Prompts to Collection</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 pt-2">
+
+          {/* Search bar inside dialog */}
+          <div className="relative mt-2 mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search prompts to add..."
+              value={addPromptSearch}
+              onChange={(e) => setAddPromptSearch(e.target.value)}
+              className="pl-9 pr-9 h-10 text-sm bg-background border-border/60 focus:border-primary/50"
+            />
+            {addPromptSearch && (
+              <button
+                onClick={() => setAddPromptSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {loadingPrompts ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
               </div>
-            ) : availablePrompts.length === 0 ? (
+            ) : filteredAvailablePrompts.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-10 border border-dashed rounded-lg">
-                No more prompts to add to this collection.
+                {addPromptSearch ? `No prompts match "${addPromptSearch}"` : "No more prompts to add to this collection."}
               </p>
             ) : (
-              availablePrompts.map((p) => (
+              filteredAvailablePrompts.map((p) => (
                 <div
                   key={p.id}
                   className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-muted/30 transition-colors"
@@ -530,7 +679,11 @@ export default function CollectionDetailsPage() {
                       {p.description || "No description"}
                     </span>
                   </div>
-                  <Button size="sm" variant="outline" className="shrink-0 border-primary/50 text-primary hover:bg-primary/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => handleAddPrompt(p.id)}>
+                  <Button 
+                    size="sm" 
+                    className="shrink-0 bg-[#FF6B00] hover:bg-[#FF6B00]/90 text-white border-none transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 shadow-sm" 
+                    onClick={() => handleAddPrompt(p.id)}
+                  >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add
                   </Button>
                 </div>

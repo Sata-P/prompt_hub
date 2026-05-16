@@ -32,23 +32,17 @@ type Collection = {
 
 function CardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+    <div className="bg-card border border-border rounded-xl px-6 py-5 space-y-3 h-full min-h-[160px]">
       <div className="flex items-start gap-3">
-        <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
         <div className="flex-1 space-y-1.5">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/3" />
         </div>
       </div>
-      <Skeleton className="h-3 w-full" />
-      <Skeleton className="h-3 w-4/5" />
-      <div className="flex gap-1.5 mt-1">
-        <Skeleton className="h-5 w-14 rounded-full" />
-        <Skeleton className="h-5 w-14 rounded-full" />
-      </div>
+      <div className="flex-1" />
       <div className="pt-3 border-t border-border flex justify-between">
-        <Skeleton className="h-3 w-20" />
         <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-20" />
       </div>
     </div>
   );
@@ -68,18 +62,31 @@ function CollectionCard({
   onDelete: (c: Collection) => void 
 }) {
   return (
-    <Card className="hover:border-primary/40 hover:shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] active:scale-95 cursor-pointer relative group">
+    <div className="group relative flex flex-col rounded-xl px-6 py-5 border bg-card transition-all duration-300 ease-in-out hover:!border-[#FF6B00] hover:!shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:scale-[1.01] active:scale-95 cursor-pointer min-h-[160px]">
       <Link href={`/collections/${collection.id}`} className="absolute inset-0 z-0" />
       
-      <CardHeader className="relative z-10 pointer-events-none">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg font-bold">{collection.name}</CardTitle>
-          <div className="flex items-center gap-2 pointer-events-auto">
-            {collection.visibility === 'PUBLIC' && (
-              <Badge variant="secondary" className="text-[12px] h-6 px-2 bg-green-500/10 text-green-500 hover:bg-green-500/20">Public</Badge>
-            )}
+      <div className="flex-1 flex flex-col relative z-10 pointer-events-none">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[20px] text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors truncate mb-1">
+              {collection.name}
+            </p>
             
-            {isAdmin && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {collection.visibility === 'PUBLIC' ? (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                  Public
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-slate-500/10 text-slate-400 border-slate-500/20">
+                  Private
+                </span>
+              )}
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div className="pointer-events-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 bg-background/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
@@ -97,23 +104,22 @@ function CollectionCard({
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-        <CardDescription className="text-base">{collection.description}</CardDescription>
-      </CardHeader>
+      </div>
 
-      <CardContent className="relative z-10 pointer-events-none">
-        <div className="flex items-center gap-2 mt-4">
-          <div className="flex-1">
-            <p className="text-base text-muted-foreground flex items-center gap-1.5">
-              <Folder className="w-5 h-5" />
-              {collection._count?.prompts || 0} Prompts
-            </p>
-          </div>
+      {/* Footer stats */}
+      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground relative z-10 pointer-events-none">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5">
+            <Folder className="h-3.5 w-3.5" />
+            <strong className="text-foreground">{collection._count?.prompts || 0}</strong>
+            {collection._count?.prompts === 1 ? " prompt" : " prompts"}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -243,8 +249,8 @@ export default function CollectionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FolderOpen className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 rounded-[10px] bg-primary flex items-center justify-center">
+              <FolderOpen className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Collections
