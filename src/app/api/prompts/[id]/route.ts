@@ -145,10 +145,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           data: updateData,
         });
 
-        // If sending for review or canceling to draft, sync the latest version status
-        if (status === "REVIEW" || status === "DRAFT") {
+        // Sync the latest version status when moving between workflow states
+        if (status === "REVIEW" || status === "DRAFT" || status === "PUBLISHED") {
           await tx.prompt_versions.updateMany({
-            where: { 
+            where: {
               prompt_id: promptId,
               version_no: updated.latest_version_no
             },
@@ -161,6 +161,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         if (status === "REVIEW") actionName = "SEND_FOR_REVIEW";
         else if (status === "DRAFT" && existing.status === "REVIEW") actionName = "CANCEL_REVIEW";
         else if (status === "DRAFT" && existing.status === "ARCHIVED") actionName = "UNARCHIVE_PROMPT";
+        else if (status === "PUBLISHED" && existing.status === "ARCHIVED") actionName = "UNARCHIVE_PROMPT";
         else if (status === "ARCHIVED") actionName = "ARCHIVE_PROMPT";
         else if (status === "PUBLISHED") actionName = "PUBLISH_PROMPT";
 
