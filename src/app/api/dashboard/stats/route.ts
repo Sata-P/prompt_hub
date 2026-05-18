@@ -38,6 +38,8 @@ export async function GET() {
       publishedCount,
       rejectedCount,
       archivedCount,
+      systemPublishedCount,
+      systemReviewCount,
       recentPrompts,
       totalCategories,
       totalTags,
@@ -54,6 +56,19 @@ export async function GET() {
       prisma.prompts.count({ where: { ...baseWhere, status: "PUBLISHED" } }),
       prisma.prompts.count({ where: { ...baseWhere, status: "REJECTED" } }),
       prisma.prompts.count({ where: { ...baseWhere, status: "ARCHIVED" } }),
+      // นับ prompt ของระบบที่ "publicly visible" — มี version PUBLISHED, ไม่ archived, public
+      prisma.prompts.count({
+        where: {
+          deleted_at: null,
+          visibility: "PUBLIC",
+          status: { not: "ARCHIVED" },
+          versions: { some: { status: "PUBLISHED" } },
+        },
+      }),
+      // นับ prompt ที่อยู่ใน review ของระบบทั้งหมด — แสดงให้เฉพาะ admin/editor
+      prisma.prompts.count({
+        where: { deleted_at: null, status: "REVIEW" },
+      }),
       // ดึง 4 prompt ล่าสุดพร้อมข้อมูล category
       prisma.prompts.findMany({
         where: baseWhere,
@@ -115,6 +130,10 @@ export async function GET() {
         PUBLISHED: publishedCount,
         REJECTED: rejectedCount,
         ARCHIVED: archivedCount,
+      },
+      systemByStatus: {
+        PUBLISHED: systemPublishedCount,
+        REVIEW: systemReviewCount,
       },
       recentPrompts,
       totalCategories,

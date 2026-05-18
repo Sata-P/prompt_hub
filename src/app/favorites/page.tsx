@@ -22,6 +22,7 @@ import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { Skeleton } from "@/component/ui/skeleton";
 import { useFavorites } from "@/hooks/useFavorite";
+import { useSession } from "next-auth/react";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type FavoritePrompt = {
@@ -32,6 +33,7 @@ type FavoritePrompt = {
     title: string;
     description: string | null;
     status: string;
+    owner_id: number;
     recommended_model: string | null;
     latest_version_no: number;
     updated_at: string;
@@ -47,7 +49,8 @@ function StatusBadge({ status }: { status: string }) {
     PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
     DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
     REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+    REJECTED:  { label: "REJECTED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
   };
   const s = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
   return (
@@ -59,13 +62,26 @@ function StatusBadge({ status }: { status: string }) {
 
 function PromptCard({
   item,
+  currentUserId,
+  isAdminOrEditor,
   onUnfavorite,
 }: {
   item: FavoritePrompt;
+  currentUserId: number | null;
+  isAdminOrEditor: boolean;
   onUnfavorite: (id: number) => void;
 }) {
   const p = item.prompt;
   const totalVars = p?.versions?.reduce((sum, version) => sum + version.promptVariables.length , 0);
+  // Owner sees every workflow state. Admin/Editor sees REVIEW/REJECTED on
+  // others' prompts (they can act on those). Everyone else only ever sees
+  // the PUBLISHED version on the detail page, so the badge says APPROVED.
+  const isOwner = currentUserId === p.owner_id;
+  const displayStatus = isOwner
+    ? p.status
+    : isAdminOrEditor && (p.status === "REVIEW" || p.status === "REJECTED")
+      ? p.status
+      : "PUBLISHED";
 
   return (
     <div
@@ -92,7 +108,7 @@ function PromptCard({
               {p.title}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={p.status} />
+              <StatusBadge status={displayStatus} />
               {p.category && (
                 <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
                   {p.category.name}
@@ -182,6 +198,10 @@ const ITEMS_PER_PAGE = 9;
 
 export default function FavoritesPage() {
   const { favoriteID, loading: favLoading, toggleFavorite } = useFavorites();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id ? Number(session.user.id) : null;
+  const isAdminOrEditor =
+    session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
   const [favorites, setFavorites] = useState<FavoritePrompt[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -317,6 +337,8 @@ export default function FavoritesPage() {
               <PromptCard
                 key={item.id}
                 item={item}
+                currentUserId={currentUserId}
+                isAdminOrEditor={isAdminOrEditor}
                 onUnfavorite={(id) => toggleFavorite(id)}
               />
             ))}

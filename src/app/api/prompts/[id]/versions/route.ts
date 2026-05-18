@@ -39,6 +39,11 @@ export async function GET(request: Request, { params }: RouteContext) {
     const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
     const isOwner = prompt.owner_id === userId;
 
+    // Archived prompts are visible only to their owner
+    if (prompt.status.toUpperCase() === "ARCHIVED" && !isOwner) {
+      return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
+    }
+
     const versions = await prisma.prompt_versions.findMany({
       where: { prompt_id: promptId },
       orderBy: { version_no: "desc" },
@@ -171,13 +176,14 @@ export async function POST(request: Request, { params }: RouteContext) {
           });
         }
 
-        // Ensure prompt status is DRAFT (only if NOT admin/editor)
+        // Ensure prompt status is DRAFT (only if NOT admin/editor).
+        // Visibility is left untouched — if an older version is already PUBLISHED,
+        // the prompt should remain publicly listed via that version.
         if (!isAdminOrEditor) {
           await tx.prompts.update({
             where: { id: promptId },
-            data: { 
+            data: {
               status: "DRAFT",
-              visibility: "PRIVATE" 
             },
           });
         }
@@ -231,15 +237,16 @@ export async function POST(request: Request, { params }: RouteContext) {
         });
       }
 
-      // Update prompt's latest_version_no and status
+      // Update prompt's latest_version_no and status.
+      // Visibility is left untouched — if an older version is already PUBLISHED,
+      // the prompt should remain publicly listed via that version.
       await tx.prompts.update({
         where: { id: promptId },
-        data: { 
+        data: {
           latest_version_no: newVersionNo,
           // Only reset to DRAFT if NOT admin/editor
           ...(!isAdminOrEditor && {
             status: "DRAFT",
-            visibility: "PRIVATE"
           }),
         },
       });

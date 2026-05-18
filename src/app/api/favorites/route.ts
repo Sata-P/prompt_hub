@@ -9,8 +9,19 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const userId = Number(session.user.id);
         const favorites = await prisma.favorites.findMany({
-            where: { user_id: Number(session.user.id) },
+            where: {
+                user_id: userId,
+                prompt: {
+                    deleted_at: null,
+                    // Hide archived prompts unless the user owns them
+                    OR: [
+                        { status: { not: "ARCHIVED" } },
+                        { owner_id: userId },
+                    ],
+                },
+            },
             include: {
                 prompt: true,
             },

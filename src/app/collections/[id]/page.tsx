@@ -46,6 +46,7 @@ type CollectionPrompt = {
     description: string | null;
     status: string;
     visibility: string;
+    owner_id: number;
     recommended_model: string | null;
     latest_version_no: number;
     updated_at: string;
@@ -72,7 +73,8 @@ function StatusBadge({ status }: { status: string }) {
     PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
     DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
     REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+    REJECTED:  { label: "REJECTED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
   };
   const s = map[status] ?? { label: status, cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
   return (
@@ -86,6 +88,7 @@ function StatusBadge({ status }: { status: string }) {
 function PromptCard({
   item,
   isAdmin,
+  currentUserId,
   onRemove,
   isSelectionMode,
   isSelected,
@@ -93,12 +96,22 @@ function PromptCard({
 }: {
   item: CollectionPrompt;
   isAdmin: boolean;
+  currentUserId: number | null;
   onRemove: (promptId: number) => void;
   isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (promptId: number) => void;
 }) {
   const p = item.prompt;
+  // Owner sees every workflow state. Admin/Editor sees REVIEW/REJECTED on
+  // others' prompts (they can act on those). Everyone else only ever sees the
+  // PUBLISHED version on the detail page, so the badge says APPROVED.
+  const isOwner = currentUserId === p.owner_id;
+  const displayStatus = isOwner
+    ? p.status
+    : isAdmin && (p.status === "REVIEW" || p.status === "REJECTED")
+      ? p.status
+      : "PUBLISHED";
   return (
     <div
       data-slot="card"
@@ -146,7 +159,7 @@ function PromptCard({
               {p.title}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={p.status} />
+              <StatusBadge status={displayStatus} />
               {p.category && (
                 <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
                   {p.category.name}
@@ -210,6 +223,7 @@ export default function CollectionDetailsPage() {
   const collectionId = params?.id as string;
   const isAdmin =
     session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
+  const currentUserId = session?.user?.id ? Number(session.user.id) : null;
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [loading, setLoading] = useState(true);
@@ -619,6 +633,7 @@ export default function CollectionDetailsPage() {
                   key={item.prompt_id}
                   item={item}
                   isAdmin={isAdmin}
+                  currentUserId={currentUserId}
                   onRemove={handleRemovePrompt}
                   isSelectionMode={isSelectionMode}
                   isSelected={selectedIds.includes(item.prompt_id)}

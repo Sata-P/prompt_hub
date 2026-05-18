@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Plus, Search, X, FileText, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/component/ui/button";
@@ -23,7 +24,8 @@ type Prompt = {
   id: number;
   title: string;
   description: string | null;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REVIEW";
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REVIEW" | "REJECTED";
+  owner_id: number;
   latest_version_no: number;
   created_at: string;
   updated_at: string;
@@ -36,9 +38,13 @@ type Prompt = {
  * หน้าแสดงรายการ Prompts ทั้งหมด
  * รองรับการกรองตามหมวดหมู่ (Category), สถานะ (Status), โมเดล (Model), แท็ก (Tag) และช่องค้นหา (Search)
  */
+const STATUS_VALUES = new Set(["draft", "review", "published", "rejected", "archived"]);
+
 export default function PromptsList() {
   const { data: session } = useSession();
   const isAdminOrEditor = session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
+  const currentUserId = session?.user?.id ? Number(session.user.id) : null;
+  const searchParams = useSearchParams();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -52,11 +58,17 @@ export default function PromptsList() {
     totalPages: 1,
   });
 
+  // Seed the status filter from `?status=...` so dashboard cards can deep-link.
+  const initialStatus = (() => {
+    const raw = searchParams.get("status")?.toLowerCase();
+    return raw && STATUS_VALUES.has(raw) ? raw : "all";
+  })();
+
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState(initialStatus);
   const [filterModel, setFilterModel] = useState("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
 
@@ -126,6 +138,15 @@ export default function PromptsList() {
   useEffect(() => {
     setPage(1);
   }, [debouncedSearchQuery, filterCategory, filterStatus, filterModel, filterTags]);
+
+  // Owner sees every workflow state. Admin/Editor sees REVIEW/REJECTED on
+  // others' prompts (they can act on those). Everyone else only ever sees the
+  // PUBLISHED version on the detail page, so the badge says APPROVED.
+  const displayStatusFor = (p: Prompt): Prompt["status"] => {
+    if (currentUserId === p.owner_id) return p.status;
+    if (isAdminOrEditor && (p.status === "REVIEW" || p.status === "REJECTED")) return p.status;
+    return "PUBLISHED";
+  };
 
   const getStatusText = (status: Prompt["status"]) => {
     switch (status) {
@@ -210,12 +231,16 @@ export default function PromptsList() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">DRAFT</SelectItem>
+              {!isAdminOrEditor && (
+                <SelectItem value="draft">DRAFT</SelectItem>
+              )}
               {isAdminOrEditor && (
                 <SelectItem value="review">REVIEW</SelectItem>
               )}
               <SelectItem value="published">APPROVED</SelectItem>
-              <SelectItem value="rejected">REJECTED</SelectItem>
+              {!isAdminOrEditor && (
+                <SelectItem value="rejected">REJECTED</SelectItem>
+              )}
               <SelectItem value="archived">ARCHIVED</SelectItem>
             </SelectContent>
           </Select>
@@ -449,18 +474,24 @@ export default function PromptsList() {
                       </div>
                     </td>
                     <td className="px-3 xl:px-4 py-4 xl:py-5">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] xl:text-xs font-bold px-2 py-0",
-                          p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
-                          p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
-                          p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
-                          p.status === 'ARCHIVED' && "bg-red-500/10 text-red-500 border-red-500/20"
-                        )}
-                      >
-                        {getStatusText(p.status)}
-                      </Badge>
+                      {(() => {
+                        const ds = displayStatusFor(p);
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] xl:text-xs font-bold px-2 py-0",
+                              ds === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                              ds === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                              ds === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
+                              ds === 'REJECTED' && "bg-red-500/10 text-red-500 border-red-500/20",
+                              ds === 'ARCHIVED' && "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                            )}
+                          >
+                            {getStatusText(ds)}
+                          </Badge>
+                        );
+                      })()}
                     </td>
                     <td className="pl-3 xl:pl-4 pr-4 sm:pr-6 xl:pr-8 py-4 xl:py-5 text-muted-foreground text-xs xl:text-sm whitespace-nowrap hidden lg:table-cell">
                       {new Date(p.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
@@ -503,18 +534,24 @@ export default function PromptsList() {
                   <Badge variant="outline" className="text-[10px] h-5">
                     v{p.latest_version_no}
                   </Badge>
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "text-[10px] px-1.5 h-4 font-bold",
-                      p.status === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
-                      p.status === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
-                      p.status === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
-                      p.status === 'ARCHIVED' && "bg-red-500/10 text-red-500 border-red-500/20"
-                    )}
-                  >
-                    {getStatusText(p.status)}
-                  </Badge>
+                  {(() => {
+                    const ds = displayStatusFor(p);
+                    return (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] px-1.5 h-4 font-bold",
+                          ds === 'DRAFT' && "bg-slate-500/10 text-slate-500 border-slate-500/20",
+                          ds === 'REVIEW' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                          ds === 'PUBLISHED' && "bg-green-500/10 text-green-500 border-green-500/20",
+                          ds === 'REJECTED' && "bg-red-500/10 text-red-500 border-red-500/20",
+                          ds === 'ARCHIVED' && "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                        )}
+                      >
+                        {getStatusText(ds)}
+                      </Badge>
+                    );
+                  })()}
                 </div>
               </div>
               

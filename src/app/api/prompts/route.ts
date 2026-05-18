@@ -53,9 +53,16 @@ export async function GET(request: Request) {
     // 1. DRAFT: Only owner
     // 2. REVIEW / REJECTED: Owner, Admin, Editor (admins must see what they rejected)
     // 3. ARCHIVED: Only owner
-    // 4. PUBLISHED: Everyone IF visibility=PUBLIC. PRIVATE PUBLISHED is owner-only.
+    // 4. PUBLIC: Visible to everyone as long as the prompt has at least one PUBLISHED
+    //    version and is not archived. The PUBLISHED version is what gets displayed —
+    //    a newer DRAFT/REVIEW version on top should NOT remove the older published
+    //    version from public listings.
     const defaultOr: any[] = [
-      { status: "PUBLISHED", visibility: "PUBLIC" }, // Public + Published is visible to anyone
+      {
+        visibility: "PUBLIC",
+        status: { not: "ARCHIVED" },
+        versions: { some: { status: "PUBLISHED" } },
+      },
     ];
 
     if (userId) {
@@ -80,7 +87,23 @@ export async function GET(request: Request) {
     }
 
     if (status) {
-      andConditions.push({ status });
+      if (status === "PUBLISHED") {
+        // "APPROVED" filter — show any prompt with a PUBLISHED version,
+        // regardless of the prompt's current workflow status (it may have a
+        // newer DRAFT/REVIEW on top). Archived prompts are excluded.
+        andConditions.push({
+          status: { not: "ARCHIVED" },
+          versions: { some: { status: "PUBLISHED" } },
+        });
+      } else {
+        andConditions.push({ status });
+      }
+      // DRAFT / REJECTED / ARCHIVED are owner-only views by product policy —
+      // non-owners (including admin/editor) should never see other users' work
+      // in these states via the library filter.
+      if (userId && (status === "DRAFT" || status === "REJECTED" || status === "ARCHIVED")) {
+        andConditions.push({ owner_id: userId });
+      }
     }
 
     if (visibility) {

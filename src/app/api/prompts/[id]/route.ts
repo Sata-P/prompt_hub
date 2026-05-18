@@ -54,13 +54,21 @@ export async function GET(request: Request, { params }: RouteContext) {
     const isAdminOrEditor = userRole === "ADMIN" || userRole === "EDITOR";
     const isOwner = userId ? prompt.owner_id === userId : false;
 
+    // Archived prompts are visible only to their owner
+    if (prompt.status.toUpperCase() === "ARCHIVED" && !isOwner) {
+      if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
+    }
+
     // 1. Filter versions based on status first
     const visibleVersions = prompt.versions.filter(v => {
       const vs = v.status.toUpperCase();
       if (vs === "PUBLISHED") return true;
       if (vs === "REVIEW") return isOwner || isAdminOrEditor;
       if (vs === "REJECTED") return isOwner || isAdminOrEditor; // Admins/editors must see what they rejected
-      return isOwner; // DRAFT/ARCHIVED: Only owner
+      return isOwner; // DRAFT: Only owner
     });
 
     // 2. Check prompt-level access based on available versions
@@ -131,6 +139,54 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const body = await request.json();
 
+    // Archive / unarchive toggle — does not touch version status
+    if (typeof body.archived === "boolean" && Object.keys(body).length === 1) {
+      const archive = body.archived as boolean;
+
+      if (archive && existing.status === "REVIEW") {
+        return NextResponse.json(
+          { error: "Cannot archive a prompt that is pending review" },
+          { status: 400 }
+        );
+      }
+
+      const updatedPrompt = await prisma.$transaction(async (tx) => {
+        let nextStatus: string;
+        if (archive) {
+          nextStatus = "ARCHIVED";
+        } else {
+          // Restore prompt.status to the latest version's status, leaving versions untouched
+          const latestVersion = await tx.prompt_versions.findFirst({
+            where: { prompt_id: promptId, version_no: existing.latest_version_no },
+            select: { status: true },
+          });
+          nextStatus = latestVersion?.status ?? "DRAFT";
+        }
+
+        const updated = await tx.prompts.update({
+          where: { id: promptId },
+          data: { status: nextStatus },
+        });
+
+        await tx.activity_log.create({
+          data: {
+            user_id: userId,
+            action: archive ? "ARCHIVE_PROMPT" : "UNARCHIVE_PROMPT",
+            details: {
+              promptId,
+              title: existing.title,
+              previousStatus: existing.status,
+              newStatus: nextStatus,
+            },
+          },
+        });
+
+        return updated;
+      });
+
+      return NextResponse.json(updatedPrompt);
+    }
+
     if (body.status && Object.keys(body).length === 1) {
       const { status } = UpdatePromptStatusSchema.parse(body);
 
@@ -160,9 +216,6 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         let actionName = "UPDATE_PROMPT_STATUS";
         if (status === "REVIEW") actionName = "SEND_FOR_REVIEW";
         else if (status === "DRAFT" && existing.status === "REVIEW") actionName = "CANCEL_REVIEW";
-        else if (status === "DRAFT" && existing.status === "ARCHIVED") actionName = "UNARCHIVE_PROMPT";
-        else if (status === "PUBLISHED" && existing.status === "ARCHIVED") actionName = "UNARCHIVE_PROMPT";
-        else if (status === "ARCHIVED") actionName = "ARCHIVE_PROMPT";
         else if (status === "PUBLISHED") actionName = "PUBLISH_PROMPT";
 
         await tx.activity_log.create({
