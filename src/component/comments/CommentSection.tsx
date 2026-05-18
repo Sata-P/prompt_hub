@@ -4,29 +4,54 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import CommentItem, { Comment } from "./CommentItem";
 import { Button } from "@/component/ui/button";
-import { MessageSquare, Bold, Italic, List, ListOrdered, Paperclip, X, File as FileIcon, Loader2 } from "lucide-react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { MessageSquare, Bold, Italic, List, ListOrdered, Paperclip, X, File as FileIcon, Loader2, Image as ImageIcon } from "lucide-react";
+import { useEditor, EditorContent, type Editor, type ChainedCommands } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { imageExtension } from "./imageExtension";
+import { InsertHtmlButton } from "./InsertHtmlButton";
+
+const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+async function uploadImage(file: File): Promise<string | null> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/upload", { method: "POST", body: form });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return typeof data?.url === "string" ? data.url : null;
+}
 
 type CommentSectionProps = { promptId: number };
 
 // ── Toolbar ─────────────────────────────────────────────────────────────────
 // onMouseDown preventDefault is the key fix: prevents the editor from losing
 // focus when a toolbar button is clicked.
-const MenuBar = ({ editor, onAttach }: { editor: any; onAttach: () => void }) => {
-  if (!editor) return null;
+type MenuBarProps = {
+  editor: Editor | null;
+  onAttach: () => void;
+  onInsertImage: () => void;
+};
 
-  const buttons = [
-    { icon: Bold,         cmd: "toggleBold",        active: "bold",        label: "Bold" },
-    { icon: Italic,       cmd: "toggleItalic",      active: "italic",      label: "Italic" },
-    { icon: List,         cmd: "toggleBulletList",  active: "bulletList",  label: "Bullet list" },
-    { icon: ListOrdered,  cmd: "toggleOrderedList", active: "orderedList", label: "Ordered list" },
-  ] as const;
+type ToolbarButton = {
+  icon: typeof Bold;
+  run: (c: ChainedCommands) => ChainedCommands;
+  label: string;
+};
+
+const TOOLBAR_BUTTONS: ToolbarButton[] = [
+  { icon: Bold,        run: (c) => c.toggleBold(),        label: "Bold" },
+  { icon: Italic,      run: (c) => c.toggleItalic(),      label: "Italic" },
+  { icon: List,        run: (c) => c.toggleBulletList(),  label: "Bullet list" },
+  { icon: ListOrdered, run: (c) => c.toggleOrderedList(), label: "Ordered list" },
+];
+
+const MenuBar = ({ editor, onAttach, onInsertImage }: MenuBarProps) => {
+  if (!editor) return null;
 
   return (
     <div className="flex flex-wrap gap-1 p-1.5 border-b border-border/50 bg-muted/30">
-      {buttons.map((btn) => (
+      {TOOLBAR_BUTTONS.map((btn) => (
         <Button
           key={btn.label}
           variant="ghost"
@@ -35,7 +60,7 @@ const MenuBar = ({ editor, onAttach }: { editor: any; onAttach: () => void }) =>
           title={btn.label}
           // ← This single line fixes the toolbar: keeps editor focused
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => (editor.chain().focus() as any)[btn.cmd]().run()}
+          onClick={() => btn.run(editor.chain().focus()).run()}
           className="h-8 w-8 transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50"
         >
           <btn.icon className="h-4 w-4" />
@@ -48,6 +73,18 @@ const MenuBar = ({ editor, onAttach }: { editor: any; onAttach: () => void }) =>
         variant="ghost"
         size="icon"
         type="button"
+        title="Insert image"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onInsertImage}
+        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted/50"
+      >
+        <ImageIcon className="h-4 w-4" />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        type="button"
         title="Attach file"
         onMouseDown={(e) => e.preventDefault()}
         onClick={onAttach}
@@ -55,6 +92,8 @@ const MenuBar = ({ editor, onAttach }: { editor: any; onAttach: () => void }) =>
       >
         <Paperclip className="h-4 w-4" />
       </Button>
+
+      <InsertHtmlButton editor={editor} size="md" />
     </div>
   );
 };
@@ -68,11 +107,13 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
   const [canPost, setCanPost]       = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder: "Write a comment\u2026" }),
+      imageExtension,
     ],
     content: "",
     // Required in Next.js to avoid SSR/hydration mismatch
@@ -245,8 +286,29 @@ export default function CommentSection({ promptId }: CommentSectionProps) {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && setSelectedFile(e.target.files[0])}
           />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (!f || !editor) return;
+              if (!IMAGE_MIME.has(f.type)) {
+                console.warn("Unsupported image type:", f.type);
+                return;
+              }
+              const url = await uploadImage(f);
+              if (url) editor.chain().focus().setImage({ src: url, alt: f.name }).run();
+            }}
+          />
 
-          <MenuBar editor={editor} onAttach={() => fileInputRef.current?.click()} />
+          <MenuBar
+            editor={editor}
+            onAttach={() => fileInputRef.current?.click()}
+            onInsertImage={() => imageInputRef.current?.click()}
+          />
           <EditorContent editor={editor} />
 
           {selectedFile && (

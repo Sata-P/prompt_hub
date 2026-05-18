@@ -2,14 +2,40 @@
 
 import { useState, useMemo, memo, useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { UserCircle, Reply, Bold, Italic, List, ListOrdered, File, Download, Paperclip, X } from "lucide-react";
+import { UserCircle, Reply, Bold, Italic, List, ListOrdered, File, Download, Paperclip, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/component/ui/button";
-import DOMPurify from "dompurify";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type ChainedCommands } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import { cn } from "@/lib/utils";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { sanitizeCommentHtml } from "@/lib/sanitize";
+import { imageExtension } from "./imageExtension";
+import { InsertHtmlButton } from "./InsertHtmlButton";
+
+const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+async function uploadImage(file: File): Promise<string | null> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/upload", { method: "POST", body: form });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return typeof data?.url === "string" ? data.url : null;
+}
+
+
+type ToolbarButton = {
+  icon: typeof Bold;
+  run: (c: ChainedCommands) => ChainedCommands;
+  label: string;
+};
+
+const TOOLBAR_BUTTONS: ToolbarButton[] = [
+  { icon: Bold,        run: (c) => c.toggleBold(),        label: "Bold" },
+  { icon: Italic,      run: (c) => c.toggleItalic(),      label: "Italic" },
+  { icon: List,        run: (c) => c.toggleBulletList(),  label: "Bullet list" },
+  { icon: ListOrdered, run: (c) => c.toggleOrderedList(), label: "Ordered list" },
+];
 
 export type Comment = {
   id: number;
@@ -42,10 +68,14 @@ function EditEditor({
   onSave: (html: string) => void;
   onCancel: () => void;
 }) {
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [isEmpty, setIsEmpty] = useState(false);
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, imageExtension],
     content: initialContent,
     immediatelyRender: false,
+    onCreate: ({ editor }) => setIsEmpty(editor.isEmpty),
+    onUpdate: ({ editor }) => setIsEmpty(editor.isEmpty),
     editorProps: {
       attributes: {
         class:
@@ -54,19 +84,25 @@ function EditEditor({
     },
   });
 
-  const toolbarButtons = [
-    { icon: Bold,         cmd: "toggleBold",        active: "bold",        label: "Bold" },
-    { icon: Italic,       cmd: "toggleItalic",      active: "italic",      label: "Italic" },
-    { icon: List,         cmd: "toggleBulletList",  active: "bulletList",  label: "Bullet list" },
-    { icon: ListOrdered,  cmd: "toggleOrderedList", active: "orderedList", label: "Ordered list" },
-  ] as const;
-
   return (
-    
+
     <div className="mt-2 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (!f || !editor || !IMAGE_MIME.has(f.type)) return;
+          const url = await uploadImage(f);
+          if (url) editor.chain().focus().setImage({ src: url, alt: f.name }).run();
+        }}
+      />
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-border/50 bg-muted/20">
-        {toolbarButtons.map((btn) => (
+        {TOOLBAR_BUTTONS.map((btn) => (
           <Button
             key={btn.label}
             variant="ghost"
@@ -75,12 +111,25 @@ function EditEditor({
             title={btn.label}
             // preventDefault keeps editor focused when clicking toolbar
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => (editor?.chain().focus() as any)[btn.cmd]().run()}
+            onClick={() => editor && btn.run(editor.chain().focus()).run()}
             className="h-7 w-7 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <btn.icon className="h-3.5 w-3.5" />
           </Button>
         ))}
+        <div className="w-px h-4 bg-border/50 mx-0.5 self-center" />
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          title="Insert image"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => imageInputRef.current?.click()}
+          className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-muted/50"
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+        </Button>
+        <InsertHtmlButton editor={editor} size="sm" />
       </div>
 
       <EditorContent editor={editor} />
@@ -92,7 +141,7 @@ function EditEditor({
         <Button
           size="sm"
           className="rounded-full px-4"
-          disabled={!editor || editor.isEmpty}
+          disabled={!editor || isEmpty}
           onClick={() => editor && onSave(editor.getHTML())}
         >
           Save
@@ -111,11 +160,15 @@ function ReplyEditor({
   onCancel: () => void;
 }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const editor = useEditor({
-    extensions: [StarterKit, Placeholder.configure({ placeholder: "Write a reply..." })],
+    extensions: [StarterKit, Placeholder.configure({ placeholder: "Write a reply..." }), imageExtension],
     content: "",
     immediatelyRender: false,
+    onCreate: ({ editor }) => setIsEmpty(editor.isEmpty),
+    onUpdate: ({ editor }) => setIsEmpty(editor.isEmpty),
     editorProps: {
       attributes: {
         class:
@@ -123,13 +176,6 @@ function ReplyEditor({
       },
     },
   });
-
-  const toolbarButtons = [
-    { icon: Bold,         cmd: "toggleBold",        active: "bold",        label: "Bold" },
-    { icon: Italic,       cmd: "toggleItalic",      active: "italic",      label: "Italic" },
-    { icon: List,         cmd: "toggleBulletList",  active: "bulletList",  label: "Bullet list" },
-    { icon: ListOrdered,  cmd: "toggleOrderedList", active: "orderedList", label: "Ordered list" },
-  ] as const;
 
   return (
     <div className="mt-3 flex flex-col w-full max-w-md border border-border rounded-xl overflow-hidden bg-card/50 shadow-sm">
@@ -139,9 +185,22 @@ function ReplyEditor({
         className="hidden"
         onChange={(e) => e.target.files?.[0] && setSelectedFile(e.target.files[0])}
       />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (!f || !editor || !IMAGE_MIME.has(f.type)) return;
+          const url = await uploadImage(f);
+          if (url) editor.chain().focus().setImage({ src: url, alt: f.name }).run();
+        }}
+      />
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-border/50 bg-muted/20">
-        {toolbarButtons.map((btn) => (
+        {TOOLBAR_BUTTONS.map((btn) => (
           <Button
             key={btn.label}
             variant="ghost"
@@ -149,13 +208,24 @@ function ReplyEditor({
             type="button"
             title={btn.label}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => (editor?.chain().focus() as any)[btn.cmd]().run()}
+            onClick={() => editor && btn.run(editor.chain().focus()).run()}
             className="h-7 w-7 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <btn.icon className="h-3.5 w-3.5" />
           </Button>
         ))}
         <div className="w-px h-4 bg-border/50 mx-0.5 self-center" />
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          title="Insert image"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => imageInputRef.current?.click()}
+          className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-muted/50"
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -167,6 +237,7 @@ function ReplyEditor({
         >
           <Paperclip className="h-3.5 w-3.5" />
         </Button>
+        <InsertHtmlButton editor={editor} size="sm" />
       </div>
 
       <EditorContent editor={editor} />
@@ -191,9 +262,9 @@ function ReplyEditor({
         <Button
           size="sm"
           className="rounded-full px-4"
-          disabled={(!editor || editor.isEmpty) && !selectedFile}
+          disabled={(!editor || isEmpty) && !selectedFile}
           onClick={() => {
-            if (editor && (!editor.isEmpty || selectedFile)) {
+            if (editor && (!isEmpty || selectedFile)) {
               onSave(editor.getHTML(), selectedFile);
             }
           }}
@@ -220,7 +291,7 @@ const CommentItem = memo(function CommentItem({
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const sanitizedContent = useMemo(
-    () => DOMPurify.sanitize(comment.content),
+    () => sanitizeCommentHtml(comment.content),
     [comment.content],
   );
 

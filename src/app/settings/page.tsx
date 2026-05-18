@@ -221,48 +221,53 @@ export default function SettingsPage() {
   // We omit the outer div wrapper so it takes the structure of AppLayout
   return (
     <>
-    <div className="pb-20 max-w-5xl mx-auto space-y-8 fade-in-up">
-      <div>
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="h-8 w-8 xl:h-10 xl:w-10 rounded-[10px] bg-primary flex items-center justify-center">
-            <Settings className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
+    <div className="pb-20 fade-in-up">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="rounded-[12px] bg-primary flex items-center justify-center h-8 w-8 xl:h-10 xl:w-10">
+              <Settings className="h-4 w-4 xl:h-5 xl:w-5 text-white" />
+            </div>
+            <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold text-foreground">
+              System Settings
+            </h1>
           </div>
-          <h1 className="text-2xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight">System Settings</h1>
+          <p className="mt-1 text-sm xl:text-base text-muted-foreground">Manage categories and tags for all prompts</p>
         </div>
-        <p className="text-sm xl:text-base text-muted-foreground mt-1">Manage categories and tags for all prompts</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 xl:gap-10">
         {/* Categories Manager */}
         <Card className="flex flex-col h-full border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4">
+            <div className="min-w-0">
               <CardTitle className="flex items-center gap-2">
-                <Folder className="h-5 w-5 text-blue-500" /> Categories
+                <Folder className="h-5 w-5 text-blue-500 shrink-0" /> Categories
               </CardTitle>
               <CardDescription className="mt-1.5">Group prompts by usage type</CardDescription>
             </div>
             {!isAddingCategory && (
-              <Button size="sm" variant="ghost" className="h-8 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => setIsAddingCategory(true)}>
+              <Button size="sm" variant="ghost" className="h-8 shrink-0 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => setIsAddingCategory(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             )}
           </CardHeader>
           <CardContent className="flex-1 space-y-4">
             {isAddingCategory && (
-              <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border">
-                <Input 
-                  placeholder="New category name..." 
+              <div className="flex items-center gap-2 bg-muted/50 p-2 sm:p-3 rounded-lg border">
+                <Input
+                  placeholder="New category name..."
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   disabled={categorySaving}
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleCreateCategory()}
+                  className="min-w-0"
                 />
-                <Button size="sm" onClick={handleCreateCategory} disabled={categorySaving || !newCategoryName.trim()} className="transition-all duration-300 hover:scale-105 active:scale-95">
+                <Button size="sm" onClick={handleCreateCategory} disabled={categorySaving || !newCategoryName.trim()} className="shrink-0 transition-all duration-300 hover:scale-105 active:scale-95">
                   <Save className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => setIsAddingCategory(false)} disabled={categorySaving} className="transition-all duration-300 hover:scale-105 active:scale-95">
+                <Button size="icon" variant="ghost" onClick={() => setIsAddingCategory(false)} disabled={categorySaving} className="shrink-0 transition-all duration-300 hover:scale-105 active:scale-95">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -272,7 +277,7 @@ export default function SettingsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search categories..."
-                className="pl-9 bg-background h-9"
+                className="pl-9 bg-background h-9 xl:h-10 xl:text-base"
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
               />
@@ -289,7 +294,7 @@ export default function SettingsPage() {
                 {categories.length === 0 ? "No categories created yet." : "No categories found."}
               </div>
             ) : (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-[300px] sm:h-[360px] lg:h-[400px] xl:h-[480px] 2xl:h-[560px] pr-2 sm:pr-4">
                 <ul className="space-y-2">
                   {filteredCategories.map(cat => (
                     <li key={cat.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/30 transition-colors">
@@ -336,34 +341,35 @@ export default function SettingsPage() {
 
         {/* Tags Manager */}
         <Card className="flex flex-col h-full border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4">
+            <div className="min-w-0">
               <CardTitle className="flex items-center gap-2">
-                <Hash className="h-5 w-5 text-green-500" /> Tags
+                <Hash className="h-5 w-5 text-green-500 shrink-0" /> Tags
               </CardTitle>
               <CardDescription className="mt-1.5">Manage all tags used across prompts</CardDescription>
             </div>
             {!isAddingTag && (
-              <Button size="sm" variant="ghost" className="h-8 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => setIsAddingTag(true)}>
+              <Button size="sm" variant="ghost" className="h-8 shrink-0 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95" onClick={() => setIsAddingTag(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add
               </Button>
             )}
           </CardHeader>
           <CardContent className="flex-1 space-y-4">
             {isAddingTag && (
-              <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border">
-                <Input 
-                  placeholder="Type new tag..." 
+              <div className="flex items-center gap-2 bg-muted/50 p-2 sm:p-3 rounded-lg border">
+                <Input
+                  placeholder="Type new tag..."
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   disabled={tagSaving}
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleCreateTag()}
+                  className="min-w-0"
                 />
-                <Button size="sm" onClick={handleCreateTag} disabled={tagSaving || !newTagName.trim()} className="transition-all duration-300 hover:scale-105 active:scale-95">
+                <Button size="sm" onClick={handleCreateTag} disabled={tagSaving || !newTagName.trim()} className="shrink-0 transition-all duration-300 hover:scale-105 active:scale-95">
                   <Save className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => setIsAddingTag(false)} disabled={tagSaving} className="transition-all duration-300 hover:scale-105 active:scale-95">
+                <Button size="icon" variant="ghost" onClick={() => setIsAddingTag(false)} disabled={tagSaving} className="shrink-0 transition-all duration-300 hover:scale-105 active:scale-95">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -373,7 +379,7 @@ export default function SettingsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search tags..."
-                className="pl-9 bg-background h-9"
+                className="pl-9 bg-background h-9 xl:h-10 xl:text-base"
                 value={tagSearchQuery}
                 onChange={(e) => setTagSearchQuery(e.target.value)}
               />
@@ -391,7 +397,7 @@ export default function SettingsPage() {
                 {tags.length === 0 ? "No tags created yet." : "No tags found."}
               </div>
             ) : (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-[300px] sm:h-[360px] lg:h-[400px] xl:h-[480px] 2xl:h-[560px] pr-2 sm:pr-4">
                 <div className="flex flex-wrap gap-2">
                   {filteredTags.map(tag => (
                     <Badge key={tag.id} variant="secondary" className="px-3 py-1 flex items-center gap-1.5 group">
@@ -412,20 +418,21 @@ export default function SettingsPage() {
 
         {/* Users Manager */}
         <Card className="flex flex-col h-full border shadow-sm md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4">
+            <div className="min-w-0">
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-purple-500" /> Users & Roles Management
+                <Users className="h-5 w-5 text-purple-500 shrink-0" />
+                <span className="truncate">Users & Roles Management</span>
               </CardTitle>
               <CardDescription className="mt-1.5">Change access rights (Role) of users in the system</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="relative max-w-sm">
+            <div className="relative w-full max-w-sm xl:max-w-md">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search users by name or email..."
-                className="pl-9 bg-background h-9"
+                className="pl-9 bg-background h-9 xl:h-10 xl:text-base"
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
               />
@@ -444,21 +451,21 @@ export default function SettingsPage() {
               <>
                 {/* Desktop View */}
                 <div className="rounded-md border overflow-hidden hidden md:block">
-                  <table className="w-full text-sm text-left">
+                  <table className="w-full text-sm xl:text-base text-left">
                     <thead className="bg-muted/50 border-b">
                       <tr>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Email</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
-                        <th className="px-4 py-3 font-medium text-muted-foreground text-right w-[180px]">Actions</th>
+                        <th className="px-4 xl:px-6 py-3 xl:py-4 font-medium text-muted-foreground">Name</th>
+                        <th className="px-4 xl:px-6 py-3 xl:py-4 font-medium text-muted-foreground">Email</th>
+                        <th className="px-4 xl:px-6 py-3 xl:py-4 font-medium text-muted-foreground">Role</th>
+                        <th className="px-4 xl:px-6 py-3 xl:py-4 font-medium text-muted-foreground text-right w-[180px] xl:w-[220px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedUsers.map(user => (
                         <tr key={user.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="px-4 py-3 font-medium">{user.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 xl:px-6 py-3 xl:py-4 font-medium">{user.name}</td>
+                          <td className="px-4 xl:px-6 py-3 xl:py-4 text-muted-foreground">{user.email}</td>
+                          <td className="px-4 xl:px-6 py-3 xl:py-4">
                             <div className="flex gap-2">
                               <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'EDITOR' ? 'default' : 'secondary'}>
                                 {user.role}
@@ -470,9 +477,9 @@ export default function SettingsPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-right flex items-center justify-end gap-2">
-                            <select 
-                              className="text-sm rounded-md border border-input bg-background px-2 py-1.5 w-24 focus:ring-1 focus:ring-primary focus:outline-none"
+                          <td className="px-4 xl:px-6 py-3 xl:py-4 text-right flex items-center justify-end gap-2">
+                            <select
+                              className="text-sm xl:text-base rounded-md border border-input bg-background px-2 py-1.5 xl:py-2 w-24 xl:w-28 focus:ring-1 focus:ring-primary focus:outline-none"
                               value={user.role}
                               onChange={(e) => handleUpdateRole(user.id, e.target.value)}
                               disabled={user.id === Number(session?.user?.id) || user.status === 'deactivated'}
@@ -552,11 +559,11 @@ export default function SettingsPage() {
 
                 {/* Pagination Controls */}
                 {totalUserPages > 1 && (
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       Page {userPage} of {totalUserPages}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
                       <Button
                         variant="outline"
                         size="sm"
@@ -612,8 +619,8 @@ export default function SettingsPage() {
 
       {/* Pop up showing prompts for a category - outside fade-in-up to fix fixed positioning */}
       {viewingCategoryPrompts && (
-        <div className="fixed inset-0 bg-black/50 z-50">
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card p-6 rounded-lg max-w-md w-full border shadow-lg">
+        <div className="fixed inset-0 bg-black/50 z-50 p-4">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card p-4 sm:p-6 rounded-lg w-[calc(100vw-2rem)] max-w-md border shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-foreground">
                 Prompts in &ldquo;{viewingCategoryPrompts.name}&rdquo;
