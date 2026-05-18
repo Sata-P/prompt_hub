@@ -187,15 +187,18 @@ export default function PromptDetailPage() {
 
   const handleArchive = async () => {
     if (!prompt) return;
+    const isPublished = prompt.status.toUpperCase() === "PUBLISHED";
     const ok = await confirm({
       title: "Archive this prompt?",
-      description: "It will be hidden from active listings but can be restored later.",
+      description: isPublished
+        ? "This prompt is currently published. Archiving will hide it from everyone except you — other users will lose access immediately. Version statuses are kept untouched, so unarchiving restores it to its previous state."
+        : "It will be hidden from other users. Version statuses are kept untouched, so unarchiving restores it to its previous state.",
       confirmLabel: "Archive",
     });
     if (!ok) return;
 
     try {
-      await axios.patch(`/api/prompts/${id}`, { status: "ARCHIVED" });
+      await axios.patch(`/api/prompts/${id}`, { archived: true });
       toast.success("Prompt archived.");
       window.location.reload();
     } catch (err: any) {
@@ -205,19 +208,16 @@ export default function PromptDetailPage() {
 
   const handleUnarchive = async () => {
     if (!prompt) return;
-    const newStatus = isAdminOrEditor ? "PUBLISHED" : "DRAFT";
     const ok = await confirm({
-      title: isAdminOrEditor ? "Restore and publish this prompt?" : "Restore this prompt to draft?",
-      description: isAdminOrEditor
-        ? "It will be unarchived and published immediately."
-        : "It will move back to your drafts and become editable again.",
-      confirmLabel: isAdminOrEditor ? "Restore & Publish" : "Restore",
+      title: "Restore this prompt?",
+      description: "It will be restored to its previous status before archiving.",
+      confirmLabel: "Restore",
     });
     if (!ok) return;
 
     try {
-      await axios.patch(`/api/prompts/${id}`, { status: newStatus });
-      toast.success(isAdminOrEditor ? "Prompt unarchived and published." : "Prompt unarchived.");
+      await axios.patch(`/api/prompts/${id}`, { archived: false });
+      toast.success("Prompt unarchived.");
       window.location.reload();
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to unarchive prompt.");

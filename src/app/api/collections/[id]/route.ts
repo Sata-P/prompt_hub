@@ -185,13 +185,26 @@ export async function PATCH(request: Request, { params }: RouteContext) {
             where: { id: collectionId },
             include: {
                 prompts: {
-                    where: isAdmin ? undefined : {
+                    where: {
                         prompt: {
-                            OR: [
-                                { visibility: "PUBLIC" },
-                                { owner_id: userId }
-                            ]
-                        }
+                            AND: [
+                                // Archived prompts are visible only to their owner
+                                {
+                                    OR: [
+                                        { status: { not: "ARCHIVED" } },
+                                        { owner_id: userId },
+                                    ],
+                                },
+                                ...(isAdmin
+                                    ? []
+                                    : [{
+                                        OR: [
+                                            { visibility: "PUBLIC" },
+                                            { owner_id: userId },
+                                        ],
+                                    }]),
+                            ],
+                        },
                     },
                     include: {
                         prompt: {

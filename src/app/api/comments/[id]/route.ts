@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerAuthSession } from "@/lib/auth";
+import { sanitizeCommentHtml } from "@/lib/sanitize";
+
+const MAX_COMMENT_BYTES = 50_000;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -92,6 +95,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     if (!content || typeof content !== "string" || content.trim() === "") {
       return NextResponse.json({ error: "Content is required" }, { status: 400 });
     }
+    if (content.length > MAX_COMMENT_BYTES) {
+      return NextResponse.json({ error: "Content too large" }, { status: 413 });
+    }
+    const safeContent = sanitizeCommentHtml(content).trim();
+    if (!safeContent || safeContent === "<p></p>") {
+      return NextResponse.json({ error: "Content is required" }, { status: 400 });
+    }
 
     const comment = await prisma.prompt_comments.findUnique({
       where: { id: commentId },
@@ -109,7 +119,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     const updatedComment = await prisma.$transaction(async (tx) => {
       const updated = await tx.prompt_comments.update({
         where: { id: commentId },
-        data: { content: content.trim() },
+        data: { content: safeContent },
         include: {
           user: { select: { id: true, name: true, email: true } },
         },

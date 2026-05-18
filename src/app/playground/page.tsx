@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense, useCallback, useMemo, useDeferredValue } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Check,
   Copy,
@@ -97,7 +98,8 @@ function StatusBadge({ status }: { status: string }) {
     PUBLISHED: { label: "APPROVED", cls: "bg-green-500/10 text-green-500 border-green-500/20" },
     DRAFT:     { label: "DRAFT",    cls: "bg-slate-500/10 text-slate-500 border-slate-500/20" },
     REVIEW:    { label: "REVIEW",   cls: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-    ARCHIVED:  { label: "ARCHIVED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+    REJECTED:  { label: "REJECTED", cls: "bg-red-500/10 text-red-500 border-red-500/20" },
+    ARCHIVED:  { label: "ARCHIVED", cls: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
   };
   const s = map[status] ?? { label: status, cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
   return (
@@ -110,6 +112,10 @@ function StatusBadge({ status }: { status: string }) {
 function PlaygroundContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id ? Number(session.user.id) : null;
+  const isAdminOrEditor =
+    session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR";
   const promptId = searchParams.get("promptId");
   const versionId = searchParams.get("versionId");
 
@@ -629,7 +635,17 @@ function PlaygroundContent() {
                           {p.title}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
-                          {p.status && <StatusBadge status={p.status} />}
+                          {p.status && (() => {
+                            // Owner sees actual status; admin/editor sees REVIEW/REJECTED
+                            // on others' prompts; everyone else sees APPROVED.
+                            const isOwner = currentUserId === p.owner_id;
+                            const displayStatus = isOwner
+                              ? p.status
+                              : isAdminOrEditor && (p.status === "REVIEW" || p.status === "REJECTED")
+                                ? p.status
+                                : "PUBLISHED";
+                            return <StatusBadge status={displayStatus} />;
+                          })()}
                           {p.category && (
                             <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
                               {p.category.name}

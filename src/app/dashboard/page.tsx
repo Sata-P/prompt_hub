@@ -10,6 +10,7 @@ import {
   Archive,
   ArrowRight,
   LayoutDashboard,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Skeleton } from "@/component/ui/skeleton";
@@ -23,6 +24,10 @@ type DashboardStats = {
     PUBLISHED: number;
     REJECTED: number;
     ARCHIVED: number;
+  };
+  systemByStatus: {
+    PUBLISHED: number;
+    REVIEW: number;
   };
   recentPrompts: {
     id: number;
@@ -39,6 +44,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
+  const role = session?.user?.role?.toUpperCase();
+  const isAdminOrEditor = role === "ADMIN" || role === "EDITOR";
 
   useEffect(() => {
     axios
@@ -81,27 +88,42 @@ export default function DashboardPage() {
         <StatCard
           label="Total Prompts"
           value={stats?.totalPrompts ?? 0}
+          href="/prompts"
           icon={<FileText className="h-6 w-6 text-white" />}
           iconBg="bg-[#F97316]"
           glowColor="rgba(249,115,22,0.4)"
         />
         <StatCard
           label="Published"
-          value={stats?.byStatus?.PUBLISHED ?? 0}
+          value={stats?.systemByStatus?.PUBLISHED ?? 0}
+          href="/prompts?status=published"
           icon={<CheckCircle2 className="h-6 w-6 text-white" />}
           iconBg="bg-[#22C55E]"
           glowColor="rgba(34,197,94,0.4)"
         />
-        <StatCard
-          label="In Draft"
-          value={stats?.byStatus?.DRAFT ?? 0}
-          icon={<Clock className="h-6 w-6 text-white" />}
-          iconBg="bg-[#EB9109]"
-          glowColor="rgba(234,179,8,0.4)"
-        />
+        {isAdminOrEditor ? (
+          <StatCard
+            label="In Review"
+            value={stats?.systemByStatus?.REVIEW ?? 0}
+            href="/prompts?status=review"
+            icon={<ShieldAlert className="h-6 w-6 text-white" />}
+            iconBg="bg-[#EB9109]"
+            glowColor="rgba(234,179,8,0.4)"
+          />
+        ) : (
+          <StatCard
+            label="In Draft"
+            value={stats?.byStatus?.DRAFT ?? 0}
+            href="/prompts?status=draft"
+            icon={<Clock className="h-6 w-6 text-white" />}
+            iconBg="bg-[#EB9109]"
+            glowColor="rgba(234,179,8,0.4)"
+          />
+        )}
         <StatCard
           label="Archived"
           value={stats?.byStatus?.ARCHIVED ?? 0}
+          href="/prompts?status=archived"
           icon={<Archive className="h-6 w-6 text-white" />}
           iconBg="bg-[#A855F7]"
           glowColor="rgba(168,85,247,0.4)"
@@ -165,21 +187,23 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ 
-  label, 
-  value, 
-  icon, 
-  iconBg, 
-  glowColor 
-}: { 
-  label: string; 
-  value: number; 
-  icon: React.ReactNode; 
-  iconBg: string; 
-  glowColor: string; 
+function StatCard({
+  label,
+  value,
+  icon,
+  iconBg,
+  glowColor,
+  href,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  iconBg: string;
+  glowColor: string;
+  href?: string;
 }) {
-  return (
-    <div 
+  const card = (
+    <div
       className="relative rounded-[28px] p-10 flex items-center justify-between overflow-hidden hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.6),0_0_50px_var(--glow)] transition-all duration-500 cursor-pointer group"
       style={{
         background: `linear-gradient(#10071C, #10071C) padding-box, var(--border-grad) border-box`,
@@ -215,10 +239,18 @@ function StatCard({
         {icon}
       </div>
       {/* Subtle background glow */}
-      <div 
+      <div
         className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full blur-[60px] opacity-20"
         style={{ backgroundColor: glowColor }}
       />
     </div>
+  );
+
+  return href ? (
+    <Link href={href} aria-label={label} className="block">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

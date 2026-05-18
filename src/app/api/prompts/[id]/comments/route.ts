@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerAuthSession } from "@/lib/auth";
+import { sanitizeCommentHtml } from "@/lib/sanitize";
+
+const MAX_COMMENT_BYTES = 50_000;
+const ATTACHMENT_URL_REGEXP = /^(?:https?:\/\/|\/uploads\/)[^\s]+$/i;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -70,12 +74,27 @@ export async function POST(request: Request, { params }: RouteContext) {
     if (!content || typeof content !== "string" || content.trim() === "") {
       return NextResponse.json({ error: "Content is required" }, { status: 400 });
     }
+    if (content.length > MAX_COMMENT_BYTES) {
+      return NextResponse.json({ error: "Content too large" }, { status: 413 });
+    }
+    const safeContent = sanitizeCommentHtml(content).trim();
+    if (!safeContent || safeContent === "<p></p>") {
+      return NextResponse.json({ error: "Content is required" }, { status: 400 });
+    }
+
+    let safeAttachmentUrl: string | null = null;
+    if (attachmentUrl != null) {
+      if (typeof attachmentUrl !== "string" || !ATTACHMENT_URL_REGEXP.test(attachmentUrl)) {
+        return NextResponse.json({ error: "Invalid attachment URL" }, { status: 400 });
+      }
+      safeAttachmentUrl = attachmentUrl;
+    }
 
     const newComment = await prisma.$transaction(async (tx) => {
       const comment = await tx.prompt_comments.create({
         data: {
-          content: content.trim(),
-          attachment_url: attachmentUrl || null,
+          content: safeContent,
+          attachment_url: safeAttachmentUrl,
           prompt_id: promptId,
           user_id: Number(session.user.id),
           parent_id: parentId ? Number(parentId) : null,
@@ -94,7 +113,7 @@ export async function POST(request: Request, { params }: RouteContext) {
             commentId: comment.id,
             promptId: promptId,
             parentId: parentId || null,
-            attachmentUrl: attachmentUrl || null,
+            attachmentUrl: safeAttachmentUrl,
           },
         },
       });
