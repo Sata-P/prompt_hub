@@ -98,10 +98,13 @@ export async function GET(request: Request) {
       } else {
         andConditions.push({ status });
       }
-      // DRAFT / REJECTED / ARCHIVED are owner-only views by product policy —
-      // non-owners (including admin/editor) should never see other users' work
-      // in these states via the library filter.
-      if (userId && (status === "DRAFT" || status === "REJECTED" || status === "ARCHIVED")) {
+      // DRAFT / ARCHIVED stay owner-only. REJECTED is owner-only for viewers,
+      // but admin/editor must see others' rejected prompts to audit decisions.
+      const isPrivileged = userRole === "ADMIN" || userRole === "EDITOR";
+      if (userId && (status === "DRAFT" || status === "ARCHIVED")) {
+        andConditions.push({ owner_id: userId });
+      }
+      if (userId && status === "REJECTED" && !isPrivileged) {
         andConditions.push({ owner_id: userId });
       }
     }
